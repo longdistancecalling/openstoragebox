@@ -393,6 +393,251 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
   tr.stufe-bald    { border-left: 3px solid var(--amber); }
 }
 
+/* --- v2: Inventarnummer -------------------------------------------- */
+
+.invnr {
+  font: 500 12px/1 var(--mono);
+  letter-spacing: .04em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* --- v2: Lagerort ohne Kiste ---------------------------------------- */
+
+.platz-frei {
+  font: 500 11px/1 var(--sans);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: 5px 7px;
+  color: var(--muted);
+  background: var(--line-2);
+  border-radius: 2px;
+}
+
+.platz-leer { font-size: 13px; color: #a6aca5; font-style: italic; }
+
+.leihe {
+  display: block;
+  font: 400 12px/1.3 var(--sans);
+  color: var(--amber);
+  white-space: nowrap;
+}
+
+/* --- v2: Entnahmegründe --------------------------------------------- */
+
+.grund {
+  display: inline-block;
+  font-size: 13px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.grund--einsatz     { background: var(--blau-weich);  color: var(--blau); }
+.grund--verschleiss { background: var(--line-2);      color: var(--muted); }
+.grund--defekt      { background: var(--rot-weich);   color: var(--rot); }
+.grund--abgelaufen  { background: var(--amber-weich); color: var(--amber); }
+.grund--verliehen   { background: #e6f0e9;            color: var(--gruen); }
+
+.marke--gruen { background: #e6f0e9; color: var(--gruen); }
+
+/* --- v2: Abschnitte -------------------------------------------------- */
+
+.abschnitt {
+  margin: 26px 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.abschnitt:first-of-type { margin-top: 0; }
+
+/* --- v2: Artikelkarte über dem Entnahmeformular ---------------------- */
+
+.karte {
+  position: relative;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--blau);
+  border-radius: var(--r);
+}
+
+.karte-zahl {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font: 600 26px/1 var(--mono);
+}
+
+.karte-zahl small {
+  display: block;
+  font: 400 11px/1 var(--sans);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* --- v2: Lagerort-Auswahl im Artikelformular ------------------------ */
+
+.ortwahl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: #fafbf9;
+}
+
+.ortwahl legend {
+  padding: 0 6px;
+  font: 500 11px/1 var(--sans);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.radio { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; cursor: pointer; }
+.radio input { width: auto; margin: 0; }
+
+.hinweis--aktiv {
+  padding: 10px 12px;
+  background: #e6f0e9;
+  border-left: 3px solid var(--gruen);
+  border-radius: 0 var(--r) var(--r) 0;
+  color: var(--ink);
+}
+
+/* --- v2: Exportkacheln ---------------------------------------------- */
+
+.kacheln {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.kachel {
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.kachel h2 { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+.kachel p { margin: 0 0 14px; font-size: 14px; color: var(--muted); line-height: 1.45; }
+.kachel-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+
+/* --- v2: Kennzahlen der Inventur ------------------------------------ */
+
+.kennzahlen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.kennzahl {
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: var(--r);
+}
+
+.kennzahl--amber { border-left-color: var(--amber); }
+.kennzahl--rot   { border-left-color: var(--rot); }
+
+.kz-wert { display: block; font: 600 24px/1 var(--mono); }
+.kz-label {
+  display: block;
+  margin-top: 5px;
+  font: 500 11px/1 var(--sans);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* --- v2: Ortleiste der Zählung -------------------------------------- */
+
+.ortleiste { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+
+.ortknopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  font-size: 14px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.ortknopf:hover { border-color: var(--muted); }
+.ortknopf.is-active { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+.ortknopf-zahl {
+  font: 500 12px/1 var(--mono);
+  padding: 3px 6px;
+  border-radius: 10px;
+  background: var(--amber-weich);
+  color: var(--amber);
+}
+
+.ortknopf-zahl.ist-fertig { background: #e6f0e9; color: var(--gruen); }
+.ortknopf.is-active .ortknopf-zahl { background: rgba(255,255,255,.2); color: #fff; }
+
+/* --- v2: Zählmaske --------------------------------------------------- */
+
+.tabelle--zaehlen td { padding-top: 7px; padding-bottom: 7px; }
+
+.zaehlen-feld {
+  width: 84px;
+  text-align: right;
+  font: 500 16px/1.2 var(--mono);
+  padding: 7px 9px;
+}
+
+.diff {
+  display: inline-block;
+  margin-left: 8px;
+  font: 500 13px/1 var(--mono);
+  color: var(--rot);
+}
+
+.speicherleiste {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, .06);
+}
+
+.speicherleiste .hinweis { margin: 0; }
+
+@media (max-width: 760px) {
+  .karte-zahl { position: static; text-align: left; margin-top: 10px; }
+  .karte-zahl small { text-align: left; }
+  .zaehlen-feld { width: 100px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }

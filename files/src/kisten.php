@@ -36,6 +36,7 @@ require __DIR__ . '/inc/header.php';
   <h1>Kisten</h1>
   <span class="anzahl"><?= count($kisten) ?> Kisten</span>
   <span class="rechts">
+    <a class="btn" href="etikett.php">Alle Etiketten drucken</a>
     <a class="btn btn--primaer" href="kiste.php">Kiste anlegen</a>
   </span>
 </div>
@@ -76,6 +77,7 @@ require __DIR__ . '/inc/header.php';
       </td>
       <td class="zahl" data-label="Stück gesamt"><?= (int) $k['summe_menge'] ?></td>
       <td class="aktion" data-label="">
+        <a class="btn btn--klein" href="etikett.php?id=<?= (int) $k['kiste_id'] ?>">Etikett</a>
         <a class="btn btn--klein" href="kiste.php?id=<?= (int) $k['kiste_id'] ?>">Bearbeiten</a>
       </td>
     </tr>
