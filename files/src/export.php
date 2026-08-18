@@ -139,7 +139,10 @@ if ($was === 'artikel' && $format === 'druck') {
     </head>
     <body class="druck druck--liste">
       <div class="druck-kopf">
-        <h1>Artikelliste</h1>
+        <div>
+          <div class="druck-org"><?= h(ORGANISATION) ?></div>
+          <h1>Artikelliste</h1>
+        </div>
         <span><?= count($zeilen) ?> Positionen · Stand <?= date('d.m.Y') ?></span>
       </div>
       <table class="druck-tabelle">

@@ -80,7 +80,10 @@ foreach ($stmt->fetchAll() as $z) {
 <article class="etikett">
 
   <header class="etikett-kopf">
-    <div class="etikett-nr"><?= h($k['kiste_nr']) ?></div>
+    <div>
+      <div class="etikett-org"><?= h(ORGANISATION) ?></div>
+      <div class="etikett-nr"><?= h($k['kiste_nr']) ?></div>
+    </div>
     <div class="etikett-ort">
       <span class="etikett-ort-label">Lagerort</span>
       <span class="etikett-ort-wert">
@@ -132,8 +135,8 @@ foreach ($stmt->fetchAll() as $z) {
   <?php endif; ?>
 
   <footer class="etikett-fuss">
-    <span>Stand <?= date('d.m.Y') ?></span>
-    <span>Änderungen bitte im System nachtragen</span>
+    <span><?= h(ORGANISATION) ?></span>
+    <span>Stand <?= date('d.m.Y') ?> · Änderungen bitte im System nachtragen</span>
   </footer>
 
 </article>

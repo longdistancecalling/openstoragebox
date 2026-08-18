@@ -16,6 +16,13 @@ if (session_status() === PHP_SESSION_NONE) {
 
 const APP_NAME = 'Lagerverwaltung';
 
+/**
+ * Trägerorganisation. Erscheint auf allen Ausdrucken – Etiketten,
+ * Artikelliste, Zählliste. Steht hier zentral, damit sie sich an einer
+ * Stelle ändern lässt.
+ */
+const ORGANISATION = 'DRK KV Eisenach';
+
 $dsn = sprintf(
     'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
     getenv('DB_HOST') ?: 'db',

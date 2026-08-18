@@ -122,7 +122,10 @@ if (($_GET['format'] ?? '') === 'druck') {
     </head>
     <body class="druck druck--liste">
       <div class="druck-kopf">
-        <h1><?= h($inv['bezeichnung']) ?> – Zählliste</h1>
+        <div>
+          <div class="druck-org"><?= h(ORGANISATION) ?></div>
+          <h1><?= h($inv['bezeichnung']) ?> – Zählliste</h1>
+        </div>
         <span>Stand <?= date('d.m.Y') ?> · Gezählt von ______________________</span>
       </div>
 
