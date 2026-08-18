@@ -1,0 +1,398 @@
+/* =====================================================================
+   Lagerverwaltung – Stylesheet
+   Bildsprache: Lageretikett. Monospace für alles, was am Regal
+   angeschrieben steht, Grotesk für alles, was gelesen wird.
+   ===================================================================== */
+
+:root {
+  --ink:      #14181b;
+  --ink-2:    #2a3138;
+  --paper:    #f1f2ef;
+  --surface:  #ffffff;
+  --line:     #d7dad4;
+  --line-2:   #eceee9;
+  --muted:    #6a716b;
+  --blau:     #14568f;
+  --blau-weich:#e8eff7;
+  --amber:    #8a5a00;
+  --amber-weich:#fbf1dd;
+  --rot:      #9e1b14;
+  --rot-weich:#fbe9e7;
+  --gruen:    #2c6b3f;
+
+  --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --r: 3px;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 15px/1.5 var(--sans);
+}
+
+a { color: var(--blau); }
+
+/* --- Kopfleiste ---------------------------------------------------- */
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  padding: 10px 20px;
+  background: var(--ink);
+  color: #fff;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.brand-mark {
+  font: 600 13px/1 var(--mono);
+  letter-spacing: .12em;
+  padding: 6px 7px;
+  border: 1.5px solid rgba(255, 255, 255, .55);
+  border-radius: var(--r);
+}
+
+.brand-text { font-weight: 600; letter-spacing: -.01em; }
+
+.nav { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+
+.nav a {
+  padding: 6px 12px;
+  border-radius: var(--r);
+  color: rgba(255, 255, 255, .72);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.nav a:hover { background: rgba(255, 255, 255, .1); color: #fff; }
+.nav a.is-active { background: rgba(255, 255, 255, .16); color: #fff; font-weight: 500; }
+
+/* --- Grundgerüst --------------------------------------------------- */
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 22px 20px 56px; }
+
+.kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0 0 18px;
+}
+
+.kopf h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.015em; }
+
+.kopf .anzahl { font: 500 13px/1 var(--mono); color: var(--muted); }
+
+.kopf .rechts { margin-left: auto; display: flex; gap: 8px; }
+
+.foot {
+  display: flex;
+  justify-content: space-between;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 16px 20px 28px;
+  font: 400 12px/1 var(--mono);
+  color: var(--muted);
+}
+
+/* --- Meldungen ------------------------------------------------------ */
+
+.flash {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--gruen);
+  background: var(--surface);
+  border-radius: 0 var(--r) var(--r) 0;
+  font-size: 14px;
+}
+
+.flash--fehler { border-left-color: var(--rot); color: var(--rot); }
+
+.leer {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+/* --- Filterleiste --------------------------------------------------- */
+
+.filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.feld { display: flex; flex-direction: column; gap: 4px; }
+.feld--breit { flex: 1 1 240px; }
+
+.feld > label,
+.form label {
+  font: 500 11px/1 var(--sans);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+input[type="text"],
+input[type="search"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+  font: 400 15px/1.3 var(--sans);
+  color: var(--ink);
+  background: var(--surface);
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  width: 100%;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--blau);
+  outline-offset: 1px;
+}
+
+/* --- Buttons -------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 14px/1 var(--sans);
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:hover { border-color: var(--muted); }
+
+.btn--primaer {
+  background: var(--blau);
+  border-color: var(--blau);
+  color: #fff;
+}
+
+.btn--primaer:hover { background: #0f4676; border-color: #0f4676; }
+
+.btn--gefahr { color: var(--rot); border-color: #e6c9c6; background: var(--surface); }
+.btn--gefahr:hover { background: var(--rot-weich); border-color: var(--rot); }
+
+.btn--klein { padding: 6px 10px; font-size: 13px; }
+
+/* --- Tabelle -------------------------------------------------------- */
+
+.tabelle {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.tabelle th {
+  text-align: left;
+  font: 500 11px/1 var(--sans);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.tabelle th a { color: inherit; text-decoration: none; }
+.tabelle th a:hover { color: var(--ink); }
+.tabelle th .pfeil { color: var(--blau); }
+
+.tabelle td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line-2);
+  vertical-align: middle;
+}
+
+.tabelle tbody tr:last-child td { border-bottom: 0; }
+.tabelle tbody tr:hover { background: #fafbf9; }
+
+.tabelle .name { font-weight: 500; }
+.tabelle .zahl { font: 500 14px/1 var(--mono); text-align: right; white-space: nowrap; }
+.tabelle .aktion { text-align: right; white-space: nowrap; }
+.notiz { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+/* --- Signaturelement: der Lagerplatz-Chip --------------------------- */
+
+.platz { display: inline-flex; align-items: center; gap: 8px; }
+
+.platz-kiste {
+  font: 600 12px/1 var(--mono);
+  letter-spacing: .08em;
+  padding: 5px 7px;
+  color: #fff;
+  background: var(--ink-2);
+  border-radius: 2px;
+}
+
+.platz-pfad {
+  font: 400 13px/1 var(--mono);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.platz-pfad i { font-style: normal; color: #b9bfb7; padding: 0 2px; }
+
+/* --- Kategorie-Marke ------------------------------------------------ */
+
+.kat {
+  display: inline-block;
+  font-size: 13px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: var(--blau-weich);
+  color: var(--blau);
+  white-space: nowrap;
+}
+
+.kat--leer { background: var(--line-2); color: var(--muted); }
+
+/* --- Fälligkeits-Ampel ---------------------------------------------- */
+
+.faellig { display: inline-flex; flex-direction: column; gap: 1px; white-space: nowrap; }
+.faellig-datum { font: 500 14px/1.2 var(--mono); }
+.faellig-typ { font-size: 12px; color: var(--muted); }
+
+.stufe-bald .faellig-datum    { color: var(--amber); }
+.stufe-faellig .faellig-datum { color: var(--rot); }
+
+tr.stufe-faellig td:first-child { box-shadow: inset 3px 0 0 var(--rot); }
+tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
+
+.marke {
+  display: inline-block;
+  font: 500 11px/1 var(--sans);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: 4px 7px;
+  border-radius: 2px;
+}
+
+.marke--rot   { background: var(--rot-weich);   color: var(--rot); }
+.marke--amber { background: var(--amber-weich); color: var(--amber); }
+
+/* --- Formular ------------------------------------------------------- */
+
+.form {
+  max-width: 640px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.form .zeile { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+.form .paar { display: flex; flex-wrap: wrap; gap: 16px; }
+.form .paar > .zeile { flex: 1 1 180px; }
+.form .hinweis { font-size: 13px; color: var(--muted); }
+.form .knoepfe { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; border-top: 1px solid var(--line-2); }
+.form .knoepfe .weg { margin-left: auto; }
+
+.fehlerliste {
+  margin: 0 0 16px;
+  padding: 12px 14px 12px 30px;
+  background: var(--rot-weich);
+  border-left: 3px solid var(--rot);
+  border-radius: 0 var(--r) var(--r) 0;
+  color: var(--rot);
+  font-size: 14px;
+}
+
+.fehlerliste li + li { margin-top: 4px; }
+
+/* --- Mobil: Tabelle wird zur Liste ---------------------------------- */
+
+@media (max-width: 760px) {
+  .tabelle,
+  .tabelle tbody,
+  .tabelle tr,
+  .tabelle td { display: block; width: 100%; }
+
+  .tabelle thead { display: none; }
+
+  .tabelle { border: 0; background: none; }
+
+  .tabelle tr {
+    margin-bottom: 10px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 4px 0;
+  }
+
+  .tabelle td {
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--line-2);
+    padding: 8px 12px;
+    text-align: left;
+  }
+
+  .tabelle td:last-child { border-bottom: 0; }
+  .tabelle td:empty { display: none; }
+
+  .tabelle td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    font: 500 11px/1 var(--sans);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .tabelle .zahl,
+  .tabelle .aktion { text-align: right; }
+
+  tr.stufe-faellig td:first-child,
+  tr.stufe-bald td:first-child { box-shadow: none; }
+
+  tr.stufe-faellig { border-left: 3px solid var(--rot); }
+  tr.stufe-bald    { border-left: 3px solid var(--amber); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
