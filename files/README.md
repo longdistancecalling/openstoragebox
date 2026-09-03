@@ -1,4 +1,4 @@
-# Lagerverwaltung v2
+# Lagerverwaltung v2.3
 
 Artikelverwaltung mit Lagerplatz, Entnahmeprotokoll, Inventur und Exporten.
 PHP 8.3 + MariaDB 11, als Docker-Compose-Stack.
