@@ -74,3 +74,13 @@ const GRUND_LEIHE = 'verliehen';
 
 /** Präfix der automatisch vergebenen Inventarnummern. */
 const INVENTAR_PREFIX = 'A-';
+
+/* -------------------------------------------------------------------
+   Hilfsfunktionen und Anmeldung.
+   Ab hier ist auf jeder Seite außer login.php ein angemeldeter
+   Benutzer garantiert – die Seiten selbst müssen das nicht mehr prüfen,
+   nur noch die Rolle über erfordere().
+   ------------------------------------------------------------------- */
+require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/auth.php';
+auth_erzwingen();

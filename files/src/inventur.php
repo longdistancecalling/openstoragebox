@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/inc/config.php';
-require __DIR__ . '/inc/helpers.php';
 
 $id = isset($_GET['id']) && ctype_digit((string) $_GET['id']) ? (int) $_GET['id'] : null;
 
@@ -14,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /* ---- Neue Inventur starten ------------------------------------ */
     if ($aktion === 'starten') {
+        erfordere('bearbeiter');
         $bez = trim((string) ($_POST['bezeichnung'] ?? ''));
         if ($bez === '') {
             $bez = 'Inventur ' . date('Y');
@@ -57,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /* ---- Abschließen ---------------------------------------------- */
     if ($aktion === 'abschliessen' && $id !== null) {
+        erfordere('admin');
         $uebernehmen = isset($_POST['bestand_uebernehmen']);
 
         try {
@@ -91,6 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /* ---- Löschen --------------------------------------------------- */
     if ($aktion === 'loeschen' && $id !== null) {
+        erfordere('admin');
         $pdo->prepare('DELETE FROM inventur WHERE inventur_id = ?')->execute([$id]);
         flash('Inventur gelöscht.');
         redirect('inventur.php');
@@ -159,7 +161,7 @@ if ($id !== null) {
       <div class="kennzahl"><span class="kz-wert">−<?= $minus ?> / +<?= $plus ?></span><span class="kz-label">Stück Differenz</span></div>
     </div>
 
-    <?php if (!$inv['abgeschlossen_am']): ?>
+    <?php if (!$inv['abgeschlossen_am'] && darf('admin')): ?>
       <form class="form" method="post" action="inventur.php?id=<?= $id ?>" style="max-width:none;margin-bottom:18px"
             onsubmit="return confirm('Inventur abschließen? Danach ist keine Zählung mehr möglich.');">
         <?= csrf_field() ?>
@@ -213,12 +215,14 @@ if ($id !== null) {
       </tbody>
     </table>
 
+    <?php if (darf('admin')): ?>
     <form class="form" method="post" action="inventur.php?id=<?= $id ?>" style="margin-top:16px"
           onsubmit="return confirm('Inventur mitsamt allen Zählwerten löschen?');">
       <?= csrf_field() ?>
       <input type="hidden" name="aktion" value="loeschen">
       <button class="btn btn--gefahr" type="submit">Inventur löschen</button>
     </form>
+    <?php endif; ?>
 
     <?php
     require __DIR__ . '/inc/footer.php';
@@ -260,7 +264,7 @@ require __DIR__ . '/inc/header.php';
     <?= (int) $laufend['gezaehlt'] ?> von <?= (int) $laufend['positionen'] ?> Positionen gezählt.
     <a href="inventur_zaehlen.php?id=<?= (int) $laufend['inventur_id'] ?>">Weiterzählen</a>
   </p>
-<?php else: ?>
+<?php elseif (darf('bearbeiter')): ?>
   <form class="filter" method="post" action="inventur.php">
     <?= csrf_field() ?>
     <input type="hidden" name="aktion" value="starten">

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/inc/config.php';
-require __DIR__ . '/inc/helpers.php';
+erfordere('bearbeiter');
 
 $artikelId = isset($_GET['artikel']) && ctype_digit((string) $_GET['artikel'])
            ? (int) $_GET['artikel'] : null;
@@ -78,8 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ->execute([$menge, $artikelId]);
 
             $pdo->prepare(
-                'INSERT INTO entnahme (artikel_id, menge, grund, entnommen_am, person, bezug, notiz)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO entnahme (artikel_id, menge, grund, entnommen_am, person, bezug, notiz, erfasst_von)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
             )->execute([
                 $artikelId,
                 $menge,
@@ -88,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $daten['person'] !== '' ? $daten['person'] : null,
                 $daten['bezug']  !== '' ? $daten['bezug']  : null,
                 $daten['notiz']  !== '' ? $daten['notiz']  : null,
+                (int) benutzer()['benutzer_id'],
             ]);
 
             $pdo->commit();

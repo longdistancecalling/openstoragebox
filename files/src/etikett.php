@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/inc/config.php';
-require __DIR__ . '/inc/helpers.php';
 
 /*
  * Kistenetiketten im Format A5.

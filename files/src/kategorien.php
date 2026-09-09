@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/inc/config.php';
-require __DIR__ . '/inc/helpers.php';
 
 $fehler = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
+    erfordere('bearbeiter');
     $aktion = (string) ($_POST['aktion'] ?? '');
 
     if ($aktion === 'anlegen') {
@@ -44,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($aktion === 'loeschen') {
+        erfordere('admin');
         $kid = (int) ($_POST['kategorie_id'] ?? 0);
         // ON DELETE SET NULL: die Artikel bleiben erhalten und stehen
         // danach unter "ohne Kategorie".
@@ -73,6 +74,7 @@ require __DIR__ . '/inc/header.php';
   <span class="anzahl"><?= count($kategorien) ?> Kategorien · <?= $ohne ?> Artikel ohne</span>
 </div>
 
+<?php if (darf('bearbeiter')): ?>
 <form class="filter" method="post" action="kategorien.php">
   <?= csrf_field() ?>
   <input type="hidden" name="aktion" value="anlegen">
@@ -82,6 +84,7 @@ require __DIR__ . '/inc/header.php';
   </div>
   <button class="btn btn--primaer" type="submit">Hinzufügen</button>
 </form>
+<?php endif; ?>
 
 <?php if (!$kategorien): ?>
   <p class="leer">Noch keine Kategorien angelegt.</p>
@@ -104,7 +107,7 @@ require __DIR__ . '/inc/header.php';
           <input type="hidden" name="kategorie_id" value="<?= (int) $k['kategorie_id'] ?>">
           <input type="text" name="bezeichnung" maxlength="60" value="<?= h($k['bezeichnung']) ?>"
                  aria-label="Bezeichnung von <?= h($k['bezeichnung']) ?>">
-          <button class="btn btn--klein" type="submit">Umbenennen</button>
+          <button class="btn btn--klein" type="submit" <?= darf('bearbeiter') ? '' : 'disabled' ?>>Umbenennen</button>
         </form>
       </td>
       <td class="zahl" data-label="Artikel">
@@ -120,7 +123,7 @@ require __DIR__ . '/inc/header.php';
           <?= csrf_field() ?>
           <input type="hidden" name="aktion" value="loeschen">
           <input type="hidden" name="kategorie_id" value="<?= (int) $k['kategorie_id'] ?>">
-          <button class="btn btn--klein btn--gefahr" type="submit">Löschen</button>
+          <button class="btn btn--klein btn--gefahr" type="submit" <?= darf('admin') ? '' : 'disabled' ?>>Löschen</button>
         </form>
       </td>
     </tr>

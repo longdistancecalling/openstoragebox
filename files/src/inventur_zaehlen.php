@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/inc/config.php';
-require __DIR__ . '/inc/helpers.php';
+erfordere('bearbeiter');
 
 $id = isset($_GET['id']) && ctype_digit((string) $_GET['id']) ? (int) $_GET['id'] : null;
 if ($id === null) {
@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // parst die Abfrage nur einmal.
         $upd = $pdo->prepare(
             'UPDATE inventur_position
-                SET ist_menge = ?, bemerkung = ?, gezaehlt_am = NOW()
+                SET ist_menge = ?, bemerkung = ?, gezaehlt_am = NOW(), gezaehlt_von = ?
               WHERE inventur_id = ? AND artikel_id = ?'
         );
 
@@ -55,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $upd->execute([
                 (int) $wert,
                 $bem !== '' ? mb_substr($bem, 0, 255) : null,
+                (int) benutzer()['benutzer_id'],
                 $id,
                 (int) $artikelId,
             ]);

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/inc/config.php';
-require __DIR__ . '/inc/helpers.php';
+erfordere('bearbeiter');
 
 $id     = isset($_GET['id']) && ctype_digit((string) $_GET['id']) ? (int) $_GET['id'] : null;
 $fehler = [];
@@ -29,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /* ---- Löschen -------------------------------------------------- */
     if ($aktion === 'loeschen' && $id !== null) {
+        erfordere('admin');
         // Das Entnahmeprotokoll hängt per ON DELETE CASCADE daran und
         // verschwindet mit. Wer die Historie behalten will, setzt den
         // Bestand stattdessen auf 0.
@@ -308,7 +309,7 @@ require __DIR__ . '/inc/header.php';
   </div>
 </form>
 
-<?php if ($id !== null): ?>
+<?php if ($id !== null && darf('admin')): ?>
   <form class="form" method="post" action="artikel.php?id=<?= $id ?>" style="margin-top:16px"
         onsubmit="return confirm('Artikel löschen? Das Entnahmeprotokoll dieses Artikels verschwindet mit.');">
     <?= csrf_field() ?>

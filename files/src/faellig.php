@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/inc/config.php';
-require __DIR__ . '/inc/helpers.php';
 
 // Zeithorizont – ebenfalls über eine Whitelist, damit kein beliebiger
 // Wert in die Abfrage gelangt.

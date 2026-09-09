@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/inc/config.php';
-require __DIR__ . '/inc/helpers.php';
 
 /* ===================================================================
    POST – Rückgabe einer Leihe
    =================================================================== */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
+    erfordere('bearbeiter');
 
     if (($_POST['aktion'] ?? '') === 'rueckgabe') {
         $eid = ctype_digit((string) ($_POST['entnahme_id'] ?? '')) ? (int) $_POST['entnahme_id'] : 0;
@@ -78,9 +78,10 @@ if (DateTimeImmutable::createFromFormat('Y-m-d', $bis)) {
 }
 $where = $bedingungen ? 'WHERE ' . implode(' AND ', $bedingungen) : '';
 
-$sql = "SELECT e.*, a.artikelname, a.inventar_nr
+$sql = "SELECT e.*, a.artikelname, a.inventar_nr, b.anzeigename AS gebucht_von
         FROM entnahme e
         JOIN artikel a ON a.artikel_id = e.artikel_id
+        LEFT JOIN benutzer b ON b.benutzer_id = e.erfasst_von
         $where
         ORDER BY e.entnommen_am DESC, e.entnahme_id DESC";
 $stmt = $pdo->prepare($sql);
@@ -109,7 +110,7 @@ require __DIR__ . '/inc/header.php';
     <?= count($zeilen) ?> Buchungen<?= $offen ? ' · ' . count($offen) . ' Leihen offen' : '' ?>
   </span>
   <span class="rechts">
-    <a class="btn btn--primaer" href="entnahme.php">Entnahme buchen</a>
+    <?php if (darf('bearbeiter')): ?><a class="btn btn--primaer" href="entnahme.php">Entnahme buchen</a><?php endif; ?>
   </span>
 </div>
 
@@ -146,7 +147,7 @@ require __DIR__ . '/inc/header.php';
             <?= csrf_field() ?>
             <input type="hidden" name="aktion" value="rueckgabe">
             <input type="hidden" name="entnahme_id" value="<?= (int) $o['entnahme_id'] ?>">
-            <button class="btn btn--klein btn--primaer" type="submit">Zurück gebucht</button>
+            <button class="btn btn--klein btn--primaer" type="submit" <?= darf('bearbeiter') ? '' : 'disabled' ?>>Zurück gebucht</button>
           </form>
         </td>
       </tr>
@@ -206,6 +207,7 @@ require __DIR__ . '/inc/header.php';
       <td data-label="Person / Bezug">
         <?= h($z['person'] ?? '') ?>
         <?php if ($z['bezug']): ?><span class="notiz"><?= h($z['bezug']) ?></span><?php endif; ?>
+        <?php if ($z['gebucht_von']): ?><span class="notiz">gebucht von <?= h($z['gebucht_von']) ?></span><?php endif; ?>
       </td>
       <td data-label="Status">
         <?php if ($z['grund'] === GRUND_LEIHE): ?>

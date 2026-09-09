@@ -1,0 +1,7 @@
+# Zugangsdaten – gehören niemals ins Repository
+.env
+
+# Sicherungen und Protokolle
+*.sql.gz
+*.teil
+*.log

@@ -1,6 +1,7 @@
-# Lagerverwaltung v2.4
+# Lagerverwaltung v3
 
-Artikelverwaltung mit Lagerplatz, Entnahmeprotokoll, Inventur und Exporten.
+Artikelverwaltung mit Lagerplatz, Entnahmeprotokoll, Inventur, Benutzerverwaltung
+und Datenimport/-export.
 PHP 8.3 + MariaDB 11, als Docker-Compose-Stack.
 
 ---
@@ -82,10 +83,14 @@ docker compose exec -T db mariadb -u root -p"$(grep DB_ROOT_PASS .env | cut -d= 
   lager < db/02_v2.sql
 ```
 
-Das Skript ist wiederholbar – ein zweiter Durchlauf richtet keinen Schaden an.
-Bei einer **Neuinstallation** wird `db/02_v2.sql` automatisch nach `01_schema.sql`
-eingespielt, weil das MariaDB-Image alle Dateien im Init-Verzeichnis alphabetisch
-abarbeitet.
+Für v3 ebenso `db/03_v3.sql`. Beide Skripte sind wiederholbar – ein zweiter
+Durchlauf richtet keinen Schaden an. Bei einer **Neuinstallation** werden alle
+Dateien im Init-Verzeichnis alphabetisch eingespielt, du musst nichts migrieren.
+
+**Nach der v3-Migration** ruft der erste Aufruf der Anwendung die Ersteinrichtung
+auf: Solange kein Benutzer existiert, bietet die Login-Seite an, den ersten
+Administrator anzulegen. Danach ist dieser Weg geschlossen. Es gibt kein
+Standardpasswort.
 
 ### Schritt 3 – Datenbank kontrollieren
 
@@ -142,18 +147,43 @@ wirken sofort, ohne Rebuild.
 
 ## 4. Sicherheit
 
-**Diese Version hat keine Benutzeranmeldung.** Wer die URL erreicht, darf alles.
-Das ist für ein Heimnetz vertretbar, aber nicht fürs offene Internet. Drei Wege,
-je nach Bedarf:
+### Anmeldung und Rollen
 
-- **WireGuard**: den Port nur auf dem VPN-Interface binden, dann kommt niemand
-  von außen dran — passt zu deinem bestehenden Hub-Setup
-- **Traefik BasicAuth**: Middleware davor, ohne eine Zeile PHP zu ändern
-  (die Traefik-Labels liegen auskommentiert in der `docker-compose.yml`)
-- **Eigenes Login**: Tabelle `benutzer` mit `password_hash()`/`password_verify()`,
-  Session-Prüfung in `inc/config.php`
+Seit v3 verlangt jede Seite eine Anmeldung. Die Rollen bauen aufeinander auf:
 
-Adminer solltest du für den Dauerbetrieb aus der Compose-Datei nehmen.
+| Rolle | darf |
+|---|---|
+| Leser | alles ansehen, alle Exporte (CSV, Druck, JSON) |
+| Bearbeiter | zusätzlich anlegen, ändern, Entnahmen buchen, Rückgaben, Inventur starten und zählen, Kategorien anlegen, CSV-Import |
+| Administrator | zusätzlich Artikel/Kisten/Kategorien/Inventuren löschen, Inventur abschließen, JSON-Gesamtimport, Benutzer verwalten |
+
+Die Prüfung ist **serverseitig** in jedem POST-Handler (`erfordere('rolle')`).
+Ausgeblendete Buttons sind Bequemlichkeit, keine Sicherheit – wer die URL kennt
+und die Rolle nicht hat, bekommt 403.
+
+Was die Anmeldung mitbringt:
+
+- Passwörter mit `password_hash()` (bcrypt), mindestens 10 Zeichen
+- nach 5 Fehlversuchen 15 Minuten Sperre – Passwortraten übers Netz lohnt sich nicht
+- dieselbe Fehlermeldung, ob Benutzer unbekannt oder Passwort falsch: die Login-Seite
+  verrät nicht, welche Konten es gibt; ein Dummy-`password_verify()` gleicht auch
+  die Antwortzeit an
+- `session_regenerate_id()` nach dem Login gegen Session-Fixation
+- Logout nur per POST mit CSRF-Token – ein `<img src="logout.php">` auf einer
+  fremden Seite kann niemanden abmelden
+- ein Admin kann sich nicht selbst deaktivieren oder herabstufen
+- Benutzer werden deaktiviert statt gelöscht, damit „gebucht von" im
+  Entnahmeprotokoll erhalten bleibt
+
+### Netzwerk
+
+Die Anmeldung schützt die Anwendung, nicht den Transportweg. Ohne HTTPS gehen
+Passwörter im Klartext über die Leitung. Für den Betrieb außerhalb des eigenen
+Netzes gehört Traefik mit TLS davor, oder der Zugang läuft nur über WireGuard
+(Port an die VPN-IP binden statt an `0.0.0.0`).
+
+Adminer aus der Compose-Datei nehmen, sobald das Schema steht – das ist eine
+Datenbankoberfläche ohne eigene Anmeldung.
 
 Was schon drin ist: Prepared Statements ohne Emulation, konsequentes
 Output-Escaping über `h()`, CSRF-Token bei allen schreibenden Formularen,
@@ -170,6 +200,7 @@ db/01_schema.sql            Grundschema (v1)
 db/02_v2.sql                Migration auf v2, wiederholbar
 src/inc/config.php          PDO-Verbindung, Sortierkonstanten, Entnahmegründe
 src/inc/helpers.php         Escaping, CSRF, Flash, Lagerort-Chip, CSV-Ausgabe
+src/inc/auth.php            Anmeldung, Rollen, Brute-Force-Sperre
 src/inc/header.php          Kopf und Navigation
 src/inc/footer.php          Fuß
 src/assets/style.css        Stylesheet Bildschirm
@@ -186,6 +217,13 @@ src/export.php              Exportzentrale, CSV und Druckliste
 src/etikett.php             A5-Kistenetiketten
 src/inventur.php            Inventurübersicht, Start, Abschluss, Bericht
 src/inventur_zaehlen.php    Erfassungsmaske und Zählliste zum Drucken
+src/login.php               Anmeldung und Ersteinrichtung
+src/logout.php              Abmelden (nur per POST)
+src/profil.php              eigenes Passwort ändern
+src/benutzer.php            Benutzerverwaltung (Admin)
+src/daten.php               JSON-Gesamtexport/-import, CSV-Artikelimport
+db/03_v3.sql                Migration auf v3 (Benutzer)
+backup.sh / restore.sh      Datenbanksicherung und Wiederherstellung
 ```
 
 ---
@@ -219,7 +257,46 @@ alles in einer Spalte.
 
 ---
 
-## 7. Zwei Details, die leicht Ärger machen
+## 7. Datenimport und -export
+
+Unter *Daten* gibt es drei Funktionen:
+
+**Gesamtexport (JSON)** – alle Bestandsdaten in einer Datei: Kategorien, Kisten,
+Artikel, Entnahmen, Inventuren. Zum Umzug auf einen anderen Server oder als
+Sicherung, die man auch ohne Datenbankzugriff lesen kann. Benutzerkonten sind
+bewusst nicht enthalten – Passwort-Hashes gehören nicht in eine Datei, die per
+Mail weitergeschickt wird.
+
+**Gesamtimport (JSON, nur Admin)** – ersetzt alle Bestandsdaten durch die
+Datei. Alles-oder-nichts in einer Transaktion; schlägt eine Zeile fehl, bleibt
+die Datenbank unverändert. Zur Bestätigung muss `ERSETZEN` eingetippt werden.
+Der Import schreibt nur Spalten, die es in der Zieltabelle gibt, und verkraftet
+damit auch Dateien aus älteren Versionen. Benutzer bleiben erhalten.
+
+**Artikelimport (CSV, ab Bearbeiter)** – Massenerfassung aus einer
+Tabellenkalkulation. Erst Vorschau mit Prüfung jeder Zeile, dann Import.
+
+| Spalte | Pflicht | Bemerkung |
+|---|---|---|
+| Artikel | ja | auch „Artikelname", „Name", „Bezeichnung" |
+| Nummer | nein | vorhandene Inventarnummer → Artikel wird **aktualisiert** statt neu angelegt |
+| Kiste | nein | unbekannte Kiste wird angelegt, wenn Lager, Regal und Fach mitgegeben sind |
+| Lager, Regal, Fach | nein | nur für neue Kisten nötig |
+| Standort | nein | freier Standort, wenn keine Kiste |
+| Kategorie | nein | unbekannte Kategorie wird angelegt |
+| Menge | nein | Standard 1 |
+| Fällig am | nein | TT.MM.JJJJ oder JJJJ-MM-TT; ungültige Daten wie 31.02. werden abgewiesen |
+| Art | nein | Ablauf oder Prüfung; fehlt sie bei gesetztem Datum, wird Ablauf angenommen |
+| Notiz | nein | |
+
+Groß-/Kleinschreibung und Reihenfolge der Spalten sind egal, Trennzeichen
+Semikolon oder Komma, BOM und Windows-1252 werden erkannt. Die eigenen
+CSV-Exporte lassen sich direkt wieder einlesen. Enthält die Datei auch nur einen
+Fehler, wird nichts importiert – die Vorschau zeigt jede Zeile mit Problem.
+
+---
+
+## 8. Zwei Details, die leicht Ärger machen
 
 **Sortierung von Regalnummern.** Bei Textspalten sortiert `R10` vor `R2`, weil
 Zeichen für Zeichen verglichen wird. Die Abfragen sortieren deshalb über
@@ -236,6 +313,15 @@ deshalb mit `CONCAT_WS()` zusammen und braucht nur ein `:q`.
 
 ---
 
+Ein weiteres Detail aus v3: `ALTER TABLE … ADD CONSTRAINT IF NOT EXISTS` gilt
+für CHECK-Constraints, bei Fremdschlüsseln steht `IF NOT EXISTS` dagegen
+**hinter** `FOREIGN KEY`. Andersherum gibt es Syntaxfehler 1064.
+
+Und eines aus PHP: Funktionsdefinitionen werden beim Laden einer Datei
+vorgezogen, `const`-Deklarationen nicht. Eine Konstante, die unterhalb des Codes
+steht, der sie benutzt, ist beim Aufruf noch nicht definiert. Deshalb stehen
+alle Konstanten in `daten.php` ganz oben.
+
 Ein drittes Detail ist beim Bau von v2 aufgetaucht: MariaDB lehnt einen
 `CHECK` auf eine Spalte ab, die in einem Fremdschlüssel mit `ON UPDATE CASCADE`
 steht – die Fehlermeldung lautet dann
@@ -246,9 +332,77 @@ war CASCADE dort ohnehin wirkungslos.
 
 ---
 
-## 8. Naheliegende Erweiterungen
+## 9. Sicherung
 
-- Benutzeranmeldung mit Rollen (lesen / buchen / verwalten)
+Der Code liegt im Repository, die Bestandsdaten liegen im Docker-Volume.
+Ein `git clone` stellt also die Anwendung wieder her, aber keinen einzigen
+Artikel. Dafür gibt es zwei Skripte.
+
+### Einrichten
+
+```bash
+chmod +x backup.sh restore.sh
+./backup.sh                    # einmal von Hand testen
+```
+
+Täglich per Crontab (`crontab -e`):
+
+```
+15 3 * * * /home/marcel/docker/drk-lager/backup.sh --offsite >> /var/log/drk-lager-backup.log 2>&1
+```
+
+Das Skript legt einen komprimierten Dump unter `~/backup/drk-lager` ab,
+löscht Sicherungen älter als 30 Tage und schiebt die Datei mit `--offsite`
+per rclone auf die Storage Box. Das Remote lässt sich über die Variable
+`RCLONE_REMOTE` anpassen.
+
+### Warum die Optionen im Dump wichtig sind
+
+| Option | Grund |
+|---|---|
+| `--single-transaction` | konsistenter Stand ohne Tabellensperre; ohne sie wäre das Lager während des Dumps blockiert, und eine gleichzeitige Buchung könnte halb in der Sicherung landen |
+| `--routines --events` | nimmt den View `v_artikel` mit; fehlt er, startet die Anwendung nach dem Restore mit SQL-Fehlern |
+| `--default-character-set=utf8mb4` | ohne das stehen Umlaute kaputt im Dump – und zwar unbemerkt bis zur Wiederherstellung |
+
+Nach dem Dump prüft das Skript, ob die Tabelle `artikel` enthalten ist, und
+schreibt zuerst nach `.teil`. Bricht der Dump ab, entsteht so keine Datei,
+die fälschlich für eine gültige Sicherung gehalten wird.
+
+### Wiederherstellen
+
+```bash
+./restore.sh                                   # aus der Liste wählen
+./restore.sh ~/backup/drk-lager/lager_….sql.gz  # bestimmte Datei
+```
+
+Das Skript zeigt vorher den aktuellen Artikelbestand, verlangt eine
+Bestätigung mit `JA` und legt den jetzigen Stand vorher als
+`…_vor-restore_….sql.gz` ab. Die Datenbank wird verworfen und neu angelegt,
+statt den Dump nur darüberzuspielen – sonst blieben Tabellen stehen, die es
+zum Zeitpunkt der Sicherung noch nicht gab.
+
+### Getestet
+
+Datenbank vollständig gelöscht und aus dem Dump wiederhergestellt: 17 Artikel,
+8 Kisten, 3 Entnahmen und 17 Inventurpositionen kamen zurück, der View
+lieferte wieder Lagerorte und offene Leihen, Umlaute stimmten, und alle
+Constraints griffen erneut (UNIQUE auf Kistennummer, `chk_lagerort`,
+Fremdschlüssel).
+
+**Ein Backup, das nie zurückgespielt wurde, ist kein Backup.** Plane einmal
+im Quartal einen Restore auf einer Testdatenbank ein.
+
+### Zweite Ebene: CSV
+
+Die Dumps helfen nur, solange MariaDB läuft. Als menschenlesbaren Notnagel
+lohnt sich zusätzlich der CSV-Export unter *Export → Artikelliste* und
+*Kisteninhalt*. Diese Dateien kann jeder Tabellenkalkulation öffnen – auch
+dann, wenn kein Server mehr steht.
+
+---
+
+## 10. Naheliegende Erweiterungen
+
 - QR-Code auf dem Kistenetikett, der auf `index.php?q=K001` zeigt
 - Wareneingang als Gegenstück zur Entnahme (aktuell wird der Bestand direkt
   im Artikel korrigiert)

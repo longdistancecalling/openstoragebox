@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/inc/config.php';
-require __DIR__ . '/inc/helpers.php';
+erfordere('bearbeiter');
 
 $id     = isset($_GET['id']) && ctype_digit((string) $_GET['id']) ? (int) $_GET['id'] : null;
 $fehler = [];
@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /* ---- Löschen -------------------------------------------------- */
     if ($aktion === 'loeschen' && $id !== null) {
+        erfordere('admin');
         $stmt = $pdo->prepare('SELECT COUNT(*) FROM artikel WHERE kiste_id = ?');
         $stmt->execute([$id]);
         $belegt = (int) $stmt->fetchColumn();
@@ -157,7 +158,7 @@ require __DIR__ . '/inc/header.php';
   </div>
 </form>
 
-<?php if ($id !== null): ?>
+<?php if ($id !== null && darf('admin')): ?>
   <form class="form" method="post" action="kiste.php?id=<?= $id ?>" style="margin-top:16px"
         onsubmit="return confirm('Diese Kiste wirklich löschen?');">
     <?= csrf_field() ?>

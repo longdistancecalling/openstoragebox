@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/inc/config.php';
-require __DIR__ . '/inc/helpers.php';
 
 /* -------------------------------------------------------------------
    Sortierung
@@ -104,7 +103,7 @@ require __DIR__ . '/inc/header.php';
   </span>
   <span class="rechts">
     <a class="btn" href="export.php">Export</a>
-    <a class="btn btn--primaer" href="artikel.php">Artikel anlegen</a>
+    <?php if (darf('bearbeiter')): ?><a class="btn btn--primaer" href="artikel.php">Artikel anlegen</a><?php endif; ?>
   </span>
 </div>
 
@@ -154,7 +153,7 @@ require __DIR__ . '/inc/header.php';
 <?php if (!$artikel): ?>
   <p class="leer">
     Keine Artikel gefunden.
-    <a href="artikel.php">Artikel anlegen</a>
+    <?php if (darf('bearbeiter')): ?><a href="artikel.php">Artikel anlegen</a><?php endif; ?>
   </p>
 <?php else: ?>
 <table class="tabelle">
@@ -207,8 +206,10 @@ require __DIR__ . '/inc/header.php';
         <?php endif; ?>
       </td>
       <td class="aktion" data-label="">
+        <?php if (darf('bearbeiter')): ?>
         <a class="btn btn--klein" href="entnahme.php?artikel=<?= (int) $a['artikel_id'] ?>">Entnehmen</a>
         <a class="btn btn--klein" href="artikel.php?id=<?= (int) $a['artikel_id'] ?>">Bearbeiten</a>
+        <?php endif; ?>
       </td>
     </tr>
   <?php endforeach; ?>

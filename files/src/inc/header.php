@@ -12,8 +12,13 @@ $nav = [
     'kisten'     => ['Kisten',      'kisten.php'],
     'inventur'   => ['Inventur',    'inventur.php'],
     'export'     => ['Export',      'export.php'],
+    'daten'      => ['Daten',       'daten.php'],
     'kategorien' => ['Kategorien',  'kategorien.php'],
 ];
+if (darf('admin')) {
+    $nav['benutzer'] = ['Benutzer', 'benutzer.php'];
+}
+$ich = benutzer();
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -30,7 +35,7 @@ $nav = [
 
 <header class="topbar">
   <a class="brand" href="index.php">
-    <span class="brand-mark">Bereitschaft EA1</span>
+    <span class="brand-mark">LV</span>
     <span class="brand-text"><?= h(APP_NAME) ?></span>
   </a>
   <nav class="nav">
@@ -38,6 +43,13 @@ $nav = [
       <a href="<?= h($href) ?>"<?= $aktiv === $key ? ' class="is-active" aria-current="page"' : '' ?>><?= h($label) ?></a>
     <?php endforeach; ?>
   </nav>
+  <?php if ($ich): ?>
+  <div class="wer">
+    <a href="profil.php" class="wer-name" title="Passwort ändern"><?= h($ich['anzeigename']) ?></a>
+    <span class="wer-rolle"><?= h(ROLLEN_LABEL[$ich['rolle']]) ?></span>
+    <a href="logout.php" class="wer-aus">Abmelden</a>
+  </div>
+  <?php endif; ?>
 </header>
 
 <main class="wrap">
