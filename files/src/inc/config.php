@@ -32,7 +32,7 @@ const ORGANISATION = 'DRK KV Eisenach';
  * funktioniert das Scannen weiterhin über die Scan-Seite, aber die
  * Kamera-App kann nichts damit anfangen.
  */
-const BASIS_URL = '';
+const BASIS_URL = 'https://localhost:8080';
 
 $dsn = sprintf(
     'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
