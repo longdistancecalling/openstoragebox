@@ -21,7 +21,7 @@ const APP_NAME = 'Lagerverwaltung';
  * Artikelliste, Zählliste. Steht hier zentral, damit sie sich an einer
  * Stelle ändern lässt.
  */
-const ORGANISATION = 'DRK KV Eisenach';
+const ORGANISATION = 'DRK KV Eisenach | EA 1';
 
 /**
  * Adresse, unter der die Anwendung erreichbar ist – ohne Schrägstrich
