@@ -50,7 +50,7 @@ if ($suche !== '') {
      */
     $bedingungen[] = "CONCAT_WS(' ', inventar_nr, IFNULL(ean,''), artikelname, IFNULL(kiste_nr,''), "
                    . "IFNULL(lager,''), IFNULL(regal,''), IFNULL(fach,''), IFNULL(standort_frei,''), "
-                   . "IFNULL(notiz,'')) LIKE :q";
+                   . "IFNULL(notiz,''), IFNULL(zusatzfelder,'')) LIKE :q";
     $werte[':q']   = '%' . $suche . '%';
 }
 
@@ -112,7 +112,7 @@ require __DIR__ . '/inc/header.php';
   <div class="feld feld--breit">
     <label for="q">Suche</label>
     <input type="search" id="q" name="q" value="<?= h($suche) ?>"
-           placeholder="Nummer, EAN, Name, Kiste, Standort oder Notiz">
+           placeholder="Nummer, EAN, Name, Kiste, Standort, Notiz oder Zusatzangabe">
   </div>
   <div class="feld">
     <label for="kat">Kategorie</label>
@@ -183,6 +183,7 @@ require __DIR__ . '/inc/header.php';
       <td data-label="Artikel">
         <span class="name"><?= h($a['artikelname']) ?></span>
         <?php if ($a['notiz']): ?><span class="notiz"><?= h($a['notiz']) ?></span><?php endif; ?>
+        <?php if ($a['zusatzfelder']): ?><span class="zusatz"><?= h($a['zusatzfelder']) ?></span><?php endif; ?>
       </td>
       <td data-label="Lagerort"><?= lagerort($a) ?></td>
       <td data-label="Kategorie">

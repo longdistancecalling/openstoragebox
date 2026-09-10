@@ -197,6 +197,9 @@ require __DIR__ . '/inc/header.php';
         <span class="invnr"><?= h($a['inventar_nr']) ?></span>
         <strong class="scan-name"><?= h($a['artikelname']) ?></strong>
         <div style="margin-top:6px"><?= lagerort($a) ?></div>
+        <?php if ($a['zusatzfelder']): ?>
+          <div class="zusatz" style="margin-top:4px"><?= h($a['zusatzfelder']) ?></div>
+        <?php endif; ?>
         <?php if ($a['faellig_am']): ?>
           <?php $stufe = faellig_stufe((int) $a['tage_bis_faellig']); ?>
           <div style="margin-top:6px">

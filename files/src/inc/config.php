@@ -23,6 +23,17 @@ const APP_NAME = 'Lagerverwaltung';
  */
 const ORGANISATION = 'DRK KV Eisenach';
 
+/**
+ * Adresse, unter der die Anwendung erreichbar ist – ohne Schrägstrich
+ * am Ende. Wird für die QR-Codes gebraucht: ein Scan mit der
+ * Handykamera soll direkt die Buchungsseite öffnen.
+ *
+ * Leer lassen, wenn die Codes nur die Kennung enthalten sollen. Dann
+ * funktioniert das Scannen weiterhin über die Scan-Seite, aber die
+ * Kamera-App kann nichts damit anfangen.
+ */
+const BASIS_URL = '';
+
 $dsn = sprintf(
     'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
     getenv('DB_HOST') ?: 'db',

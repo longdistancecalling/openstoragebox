@@ -17,6 +17,7 @@ $nav = [
     'kategorien' => ['Kategorien',  'kategorien.php'],
 ];
 if (darf('admin')) {
+    $nav['felder']   = ['Felder',   'felder.php'];
     $nav['benutzer'] = ['Benutzer', 'benutzer.php'];
 }
 $ich = benutzer();

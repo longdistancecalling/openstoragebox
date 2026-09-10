@@ -35,7 +35,7 @@ $ids = array_column($kisten, 'kiste_id');
 $platzhalter = implode(',', array_fill(0, count($ids), '?'));
 
 $stmt = $pdo->prepare(
-    "SELECT kiste_id, inventar_nr, artikelname, menge, faellig_am, faellig_typ
+    "SELECT kiste_id, inventar_nr, artikelname, menge, faellig_am, faellig_typ, zusatzfelder
      FROM v_artikel WHERE kiste_id IN ($platzhalter)
      ORDER BY artikelname"
 );
@@ -89,6 +89,10 @@ foreach ($stmt->fetchAll() as $z) {
         <?= h($k['lager']) ?> <i>/</i> <?= h($k['regal']) ?> <i>/</i> <?= h($k['fach']) ?>
       </span>
     </div>
+    <div class="etikett-qr">
+      <?= qr_svg('kiste', (string) $k['kiste_nr'], 84) ?>
+      <span class="qr-label">scannen zum Buchen</span>
+    </div>
   </header>
 
   <?php if ($k['notiz']): ?>
@@ -121,6 +125,9 @@ foreach ($stmt->fetchAll() as $z) {
           <td class="e-menge"><?= (int) $a['menge'] ?>×</td>
           <td class="e-name">
             <?= h($a['artikelname']) ?>
+            <?php if ($a['zusatzfelder']): ?>
+              <span class="e-zusatz"><?= h($a['zusatzfelder']) ?></span>
+            <?php endif; ?>
             <?php if ($a['faellig_am']): ?>
               <span class="e-datum"><?= h(faellig_label($a['faellig_typ'])) ?>
                 <?= h(datum_de($a['faellig_am'])) ?></span>

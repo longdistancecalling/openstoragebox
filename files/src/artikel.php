@@ -6,6 +6,24 @@ erfordere('bearbeiter');
 $id     = isset($_GET['id']) && ctype_digit((string) $_GET['id']) ? (int) $_GET['id'] : null;
 $fehler = [];
 
+/**
+ * Schreibt die Zusatzfelder eines Artikels neu.
+ * Erst alles löschen, dann die gesetzten Werte einfügen – so
+ * verschwinden auch Felder, die geleert wurden oder nach einem
+ * Kategoriewechsel nicht mehr gelten.
+ */
+function feldwerte_speichern(PDO $pdo, int $artikelId, array $werte): void
+{
+    $pdo->prepare('DELETE FROM artikel_feldwert WHERE artikel_id = ?')->execute([$artikelId]);
+    if (!$werte) {
+        return;
+    }
+    $ins = $pdo->prepare('INSERT INTO artikel_feldwert (artikel_id, feld_id, wert) VALUES (?,?,?)');
+    foreach ($werte as $feldId => $wert) {
+        $ins->execute([$artikelId, $feldId, mb_substr($wert, 0, 255)]);
+    }
+}
+
 // Vorbelegung für ein neues Formular.
 $daten = [
     'inventar_nr'  => '',
@@ -92,6 +110,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fehler[] = 'Unbekannte Art der Fälligkeit.';
     }
 
+    /*
+     * Zusatzfelder prüfen – aber nur die, die zur gewählten Kategorie
+     * gehören. Ein Pflichtfeld der Kategorie Elektro darf das Speichern
+     * eines Kleidungsstücks nicht blockieren.
+     */
+    $zuFelder = $pdo->query('SELECT * FROM feld ORDER BY reihenfolge, bezeichnung')->fetchAll();
+    $zuSpeichern = [];
+    foreach ($zuFelder as $fd) {
+        if ($fd['kategorie_id'] !== null && (string) $fd['kategorie_id'] !== $daten['kategorie_id']) {
+            continue;
+        }
+        $wert = trim((string) ($_POST['feld_' . (int) $fd['feld_id']] ?? ''));
+        $meldung = feld_pruefen($fd, $wert);
+        if ($meldung !== null) {
+            $fehler[] = $meldung;
+        } elseif ($wert !== '') {
+            $zuSpeichern[(int) $fd['feld_id']] = $wert;
+        }
+    }
+
     if (!$fehler) {
         $werte = [
             $daten['ean'] !== '' ? $daten['ean'] : null,
@@ -131,6 +169,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare('UPDATE artikel SET inventar_nr = ? WHERE artikel_id = ?')
                     ->execute([$nummer, $neueId]);
 
+                feldwerte_speichern($pdo, $neueId, $zuSpeichern);
+
                 $pdo->commit();
                 flash("Artikel $nummer angelegt.");
             } else {
@@ -145,6 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                      WHERE artikel_id = ?'
                 );
                 $stmt->execute([...$werte, $nummer, $id]);
+                feldwerte_speichern($pdo, $id, $zuSpeichern);
                 flash('Änderungen gespeichert.');
             }
             redirect('index.php');
@@ -193,6 +234,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $id !== null) {
 
 $kisten = $pdo->query('SELECT kiste_id, kiste_nr, lager, regal, fach FROM kiste ORDER BY ' . ORDER_LAGERPLATZ)->fetchAll();
 $kategorien = $pdo->query('SELECT kategorie_id, bezeichnung FROM kategorie ORDER BY bezeichnung')->fetchAll();
+
+/*
+ * Benutzerdefinierte Felder.
+ *
+ * Es werden ALLE Definitionen geladen und im Formular gerendert; per
+ * JavaScript wird nur eingeblendet, was zur gewählten Kategorie passt.
+ * Grund: die Kategorie kann im Formular gewechselt werden, und ein
+ * Nachladen bei jedem Wechsel würde eingegebene Werte verlieren.
+ * Gespeichert wird trotzdem nur, was serverseitig zur Kategorie gehört.
+ */
+$felder = $pdo->query(
+    'SELECT * FROM feld ORDER BY kategorie_id IS NOT NULL, reihenfolge, bezeichnung'
+)->fetchAll();
+
+// Bereits erfasste Werte des Artikels.
+$feldwerte = [];
+if ($id !== null) {
+    $stmt = $pdo->prepare('SELECT feld_id, wert FROM artikel_feldwert WHERE artikel_id = ?');
+    $stmt->execute([$id]);
+    $feldwerte = array_column($stmt->fetchAll(), 'wert', 'feld_id');
+}
+// Nach einem fehlgeschlagenen POST die Eingaben zurückspielen.
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    foreach ($felder as $fd) {
+        $key = 'feld_' . (int) $fd['feld_id'];
+        if (isset($_POST[$key])) {
+            $feldwerte[(int) $fd['feld_id']] = trim((string) $_POST[$key]);
+        }
+    }
+}
+
+/** Gehört das Feld zur gewählten Kategorie? NULL-Kategorie gilt immer. */
+function feld_passt(array $feld, string $katId): bool
+{
+    return $feld['kategorie_id'] === null
+        || (string) $feld['kategorie_id'] === $katId;
+}
 
 $titel = $id === null ? 'Artikel anlegen' : 'Artikel bearbeiten';
 $aktiv = 'index';
@@ -325,6 +403,33 @@ require __DIR__ . '/inc/header.php';
     <input type="text" id="notiz" name="notiz" maxlength="255" value="<?= h($daten['notiz']) ?>">
   </div>
 
+  <?php if ($felder): ?>
+    <fieldset class="zusatzfelder">
+      <legend>Zusatzangaben</legend>
+      <?php foreach ($felder as $fd):
+          $fid  = (int) $fd['feld_id'];
+          $wert = (string) ($feldwerte[$fid] ?? '');
+          $passt = feld_passt($fd, $daten['kategorie_id']);
+      ?>
+        <div class="zeile zusatzfeld" data-kategorie="<?= h((string) ($fd['kategorie_id'] ?? '')) ?>"
+             <?= $passt ? '' : 'hidden' ?>>
+          <label for="feld_<?= $fid ?>">
+            <?= h($fd['bezeichnung']) ?>
+            <?php if ($fd['einheit']): ?><span class="hinweis-inline">in <?= h($fd['einheit']) ?></span><?php endif; ?>
+            <?php if ($fd['pflicht']): ?><span class="pflicht-marke">Pflicht</span><?php endif; ?>
+            <?php if ($fd['kategorie_id'] === null): ?><span class="hinweis-inline">alle Artikel</span><?php endif; ?>
+          </label>
+          <?= feld_eingabe($fd, $wert) ?>
+          <?php if ($fd['hinweis']): ?><p class="hinweis"><?= h($fd['hinweis']) ?></p><?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+      <p class="hinweis" id="zusatz-leer" hidden>
+        Für diese Kategorie sind keine Zusatzfelder definiert.
+        <?php if (darf('admin')): ?><a href="felder.php?neu=1">Feld anlegen</a><?php endif; ?>
+      </p>
+    </fieldset>
+  <?php endif; ?>
+
   <div class="knoepfe">
     <button class="btn btn--primaer" type="submit">Speichern</button>
     <a class="btn" href="index.php">Abbrechen</a>
@@ -348,6 +453,32 @@ require __DIR__ . '/inc/header.php';
 <?php endif; ?>
 
 <script>
+// Zusatzfelder an die gewählte Kategorie anpassen. Felder ohne
+// Kategoriebindung (data-kategorie="") gelten immer.
+(function () {
+  const kat = document.getElementById('kategorie_id');
+  const felder = document.querySelectorAll('.zusatzfeld');
+  const leer = document.getElementById('zusatz-leer');
+  if (!kat || !felder.length) return;
+  function zeigen() {
+    let sichtbar = 0;
+    felder.forEach(f => {
+      const k = f.dataset.kategorie;
+      const passt = k === '' || k === kat.value;
+      f.hidden = !passt;
+      // Ausgeblendete Pflichtfelder dürfen das Absenden nicht blockieren.
+      f.querySelectorAll('input, select').forEach(e => {
+        if (e.dataset.pflicht === undefined && e.required) e.dataset.pflicht = '1';
+        e.required = passt && e.dataset.pflicht === '1';
+      });
+      if (passt) sichtbar++;
+    });
+    if (leer) leer.hidden = sichtbar > 0;
+  }
+  kat.addEventListener('change', zeigen);
+  zeigen();
+})();
+
 // Zeigt nur das Feld, das zur gewählten Lagerort-Art gehört.
 // Ohne JavaScript bleiben beide sichtbar – die serverseitige Prüfung
 // entscheidet ohnehin, welches Feld ausgewertet wird.

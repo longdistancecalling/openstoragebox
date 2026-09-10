@@ -507,3 +507,25 @@ body.druck {
   .schein { break-after: page; }
   .schein:last-child { break-after: auto; }
 }
+
+/* Zusatzangaben auf Etikett und Schein: kleiner als der Artikelname,
+   aber lesbar – oft steht dort die Größe oder Leistung, nach der
+   jemand am Regal sucht. */
+.e-zusatz {
+  display: block;
+  font: 400 7.5pt/1.2 var(--sans);
+  color: #555;
+}
+
+/* QR-Code auf dem Etikett: klein genug, um den Kopf nicht zu
+   dominieren, groß genug fürs Handy aus 20 cm Abstand. */
+.etikett-qr { text-align: center; margin-left: 6mm; }
+.etikett-qr svg { display: block; width: 22mm; height: 22mm; }
+
+.qr-label {
+  display: block;
+  margin-top: 1mm;
+  font: 400 6.5pt/1.2 var(--sans);
+  letter-spacing: .04em;
+  color: #777;
+}

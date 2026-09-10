@@ -209,3 +209,110 @@ function ean_anzeigen(?string $ean): string
         ? substr($ean, 0, 1) . ' ' . substr($ean, 1, 6) . ' ' . substr($ean, 7)
         : $ean;
 }
+
+/**
+ * Rendert ein Eingabefeld für eine Felddefinition.
+ * $wert ist der aktuell gespeicherte Wert (oder '').
+ */
+function feld_eingabe(array $feld, string $wert): string
+{
+    $name = 'feld_' . (int) $feld['feld_id'];
+    $id   = h($name);
+    $pf   = $feld['pflicht'] ? ' required' : '';
+
+    switch ($feld['typ']) {
+        case 'zahl':
+            return '<input type="number" step="any" id="' . $id . '" name="' . $id . '" '
+                 . 'value="' . h($wert) . '"' . $pf . '>';
+
+        case 'datum':
+            return '<input type="date" id="' . $id . '" name="' . $id . '" '
+                 . 'value="' . h($wert) . '"' . $pf . '>';
+
+        case 'ja_nein':
+            $html = '<select id="' . $id . '" name="' . $id . '"' . $pf . '>'
+                  . '<option value="">– keine Angabe –</option>';
+            foreach (['ja' => 'Ja', 'nein' => 'Nein'] as $w => $l) {
+                $html .= '<option value="' . $w . '"' . ($wert === $w ? ' selected' : '') . '>' . $l . '</option>';
+            }
+            return $html . '</select>';
+
+        case 'auswahl':
+            $html = '<select id="' . $id . '" name="' . $id . '"' . $pf . '>'
+                  . '<option value="">– bitte wählen –</option>';
+            foreach (explode('|', (string) $feld['optionen']) as $opt) {
+                $opt = trim($opt);
+                if ($opt === '') {
+                    continue;
+                }
+                $html .= '<option value="' . h($opt) . '"' . ($wert === $opt ? ' selected' : '') . '>'
+                       . h($opt) . '</option>';
+            }
+            return $html . '</select>';
+
+        default:
+            return '<input type="text" maxlength="255" id="' . $id . '" name="' . $id . '" '
+                 . 'value="' . h($wert) . '"' . $pf . '>';
+    }
+}
+
+/**
+ * Prüft einen eingegebenen Feldwert. Gibt Fehlertext oder null zurück.
+ *
+ * Achtung bei den Meldungen: PHP lässt Bytes ab 0x80 in Variablennamen zu.
+ * In "„$name“" liest der Parser deshalb $name“ als Variablennamen – das
+ * typografische Schlusszeichen gehört mit dazu – und setzt einen leeren
+ * String ein. Geschweifte Klammern um die Variable lösen das.
+ */
+function feld_pruefen(array $feld, string $wert): ?string
+{
+    $name = $feld['bezeichnung'];
+
+    if ($wert === '') {
+        return $feld['pflicht'] ? "Das Pflichtfeld „{$name}“ ist leer." : null;
+    }
+    if ($feld['typ'] === 'zahl' && !is_numeric(str_replace(',', '.', $wert))) {
+        return "„{$name}“ muss eine Zahl sein.";
+    }
+    if ($feld['typ'] === 'datum' && !DateTimeImmutable::createFromFormat('Y-m-d', $wert)) {
+        return "„{$name}“ enthält kein gültiges Datum.";
+    }
+    if ($feld['typ'] === 'auswahl') {
+        $erlaubt = array_map('trim', explode('|', (string) $feld['optionen']));
+        if (!in_array($wert, $erlaubt, true)) {
+            return "„{$name}“ enthält keinen der zulässigen Werte.";
+        }
+    }
+    if ($feld['typ'] === 'ja_nein' && !in_array($wert, ['ja', 'nein'], true)) {
+        return "„{$name}“ muss Ja oder Nein sein.";
+    }
+    return null;
+}
+
+/**
+ * Inhalt eines QR-Codes für eine Kiste oder einen Artikel.
+ *
+ * Mit gesetzter BASIS_URL entsteht eine vollständige Adresse – ein
+ * Scan mit der Handykamera öffnet dann direkt die Buchungsseite.
+ * Ohne sie bleibt die reine Kennung, die die Scan-Seite ebenfalls
+ * versteht.
+ */
+function qr_inhalt(string $art, string $kennung): string
+{
+    $code = ($art === 'kiste' ? 'K:' : 'A:') . $kennung;
+    return BASIS_URL !== ''
+        ? rtrim(BASIS_URL, '/') . '/scan.php?c=' . rawurlencode($code)
+        : $code;
+}
+
+/** Fertiges SVG für ein Etikett. Gibt bei zu langem Inhalt einen leeren String zurück. */
+function qr_svg(string $art, string $kennung, int $px = 90): string
+{
+    require_once __DIR__ . '/qr.php';
+    try {
+        return QrCode::svg(qr_inhalt($art, $kennung), $px);
+    } catch (Throwable $e) {
+        error_log('QR: ' . $e->getMessage());
+        return '';
+    }
+}
