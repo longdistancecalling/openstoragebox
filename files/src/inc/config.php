@@ -72,6 +72,14 @@ const ENTNAHME_GRUENDE = [
 
 const GRUND_LEIHE = 'verliehen';
 
+/** Gründe für einen Wareneingang. Spiegelbild der Entnahmegründe. */
+const ZUGANG_GRUENDE = [
+    'beschaffung' => 'Beschaffung',
+    'spende'      => 'Spende',
+    'ruecklauf'   => 'Rücklauf',
+    'korrektur'   => 'Korrektur',
+];
+
 /** Präfix der automatisch vergebenen Inventarnummern. */
 const INVENTAR_PREFIX = 'A-';
 

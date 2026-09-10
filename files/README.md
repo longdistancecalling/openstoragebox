@@ -1,7 +1,7 @@
-# Lagerverwaltung v3
+# Lagerverwaltung v4
 
-Artikelverwaltung mit Lagerplatz, Entnahmeprotokoll, Inventur, Benutzerverwaltung
-und Datenimport/-export.
+Artikelverwaltung mit Lagerplatz, Barcode-Buchung, Bewegungsprotokoll, Inventur,
+Benutzerverwaltung und Datenimport/-export.
 PHP 8.3 + MariaDB 11, als Docker-Compose-Stack.
 
 ---
@@ -83,7 +83,7 @@ docker compose exec -T db mariadb -u root -p"$(grep DB_ROOT_PASS .env | cut -d= 
   lager < db/02_v2.sql
 ```
 
-Für v3 ebenso `db/03_v3.sql`. Beide Skripte sind wiederholbar – ein zweiter
+Für v3 und v4 ebenso `db/03_v3.sql` und `db/04_v4.sql`. Beide Skripte sind wiederholbar – ein zweiter
 Durchlauf richtet keinen Schaden an. Bei einer **Neuinstallation** werden alle
 Dateien im Init-Verzeichnis alphabetisch eingespielt, du musst nichts migrieren.
 
@@ -222,6 +222,10 @@ src/logout.php              Abmelden (nur per POST)
 src/profil.php              eigenes Passwort ändern
 src/benutzer.php            Benutzerverwaltung (Admin)
 src/daten.php               JSON-Gesamtexport/-import, CSV-Artikelimport
+src/zugang.php              Wareneingang buchen
+src/scan.php                Buchen per Barcode
+src/aushang.php             Lagerübersicht zum Aushängen
+db/04_v4.sql                Migration auf v4 (EAN, Zugänge)
 db/03_v3.sql                Migration auf v3 (Benutzer)
 backup.sh / restore.sh      Datenbanksicherung und Wiederherstellung
 ```
@@ -257,7 +261,76 @@ alles in einer Spalte.
 
 ---
 
-## 7. Suchen und Filtern
+## 7. Barcode und Bewegungen
+
+### Scannen
+
+Unter *Scannen* wird per EAN gebucht. Ein USB-Handscanner verhält sich wie eine
+Tastatur – er tippt die Ziffern und schickt Enter hinterher. Deshalb genügt ein
+Textfeld mit Autofokus; es braucht keine Scanner-Bibliothek und keine
+Kamerarechte. Am Handy tippt man die Nummer ein oder nutzt die normale Suche.
+
+Der Ablauf ist zweistufig: Scannen zeigt den Artikel mit Bestand, Lagerort und
+Fälligkeit. Gebucht wird erst mit dem zweiten Klick – ein versehentlicher Scan
+verändert nichts. Nach der Buchung bleibt die EAN stehen, damit sich derselbe
+Artikel mehrfach hintereinander buchen lässt.
+
+Gebucht wird immer auf den angemeldeten Benutzer und das heutige Datum. Für
+Leihen verweist die Seite bewusst auf *Entnahme buchen* – dort wird festgehalten,
+wer das Material hat, und das ist per Schnellscan nicht sinnvoll zu erfassen.
+
+Eine unbekannte EAN ist kein Fehler, sondern der Normalfall beim ersten Scan:
+die Seite bietet an, sie einem vorhandenen Artikel zuzuordnen oder einen neuen
+anzulegen.
+
+Die EAN ist **absichtlich nicht eindeutig**. Derselbe Artikel darf in mehreren
+Kisten liegen und trägt dann überall dieselbe Nummer – beim Scannen erscheinen
+dann beide Positionen mit ihrem jeweiligen Lagerort, und du buchst dort, wo du
+gerade stehst. Die Prüfziffer wird nach dem EAN-Verfahren kontrolliert; stimmt
+sie nicht, gibt es einen Hinweis, aber keine Sperre, weil hausinterne Codes
+keine gültige Prüfziffer haben.
+
+### Zugänge
+
+Bis v3 konnte der Bestand nur sinken. Seit v4 gibt es den Wareneingang als
+Gegenstück mit den Gründen Beschaffung, Spende, Rücklauf und Korrektur – in
+einer eigenen Tabelle, weil eine Entnahme mit negativer Menge niemand lesen kann.
+
+Gebucht wird über *Zugang buchen* (verlinkt aus der Artikelliste, dem
+Entnahmeformular und der Bewegungsseite) oder per Scan. Anders als beim
+Entnahmeformular sind hier auch Artikel mit Bestand 0 wählbar – genau die will
+man einbuchen, wenn Nachschub kommt.
+
+`Korrektur` ist für Zählfehler gedacht. Für regelmäßige Abgleiche ist die
+Inventur der bessere Weg, weil sie Soll und Ist nebeneinander festhält statt
+nur die Differenz zu buchen.
+
+Der View `v_bewegung` fasst Zu- und Abgänge zusammen, deshalb zeigt *Bewegungen*
+beides in einer Liste, mit Vorzeichen und Filter nach Richtung.
+
+### Nur angemeldete Benutzer buchen
+
+Das gilt seit v3 für alles: jede Seite verlangt eine Anmeldung, das Buchen
+zusätzlich die Rolle Bearbeiter. Bei der Entnahme ist das Personenfeld mit dem
+angemeldeten Benutzer vorbelegt (überschreibbar, weil man auch für jemand anderen
+buchen kann), und unabhängig davon hält `erfasst_von` fest, wer die Buchung
+tatsächlich angelegt hat.
+
+### Lagerübersicht zum Aushängen
+
+Unter *Export → Lagerübersicht* entsteht ein A4-Ausdruck für die Tür oder die
+Wand neben dem Lager: kompletter Bestand, zweispaltig, gruppiert nach Lagerort,
+Anfangsbuchstabe oder Kategorie. Wer etwas sucht, findet den Ort, ohne einen
+Rechner zu starten.
+
+Zweispaltig, weil eine einspaltige Liste dieselbe Information auf doppelt so
+viele Blätter verteilt – und niemand hängt fünf Seiten an die Tür. Überfällige
+Prüftermine sind markiert. Über der Liste steht der Hinweis, dass der Ausdruck
+mit jeder Buchung veraltet und Entnahmen trotzdem im System erfasst gehören.
+
+---
+
+## 8. Suchen und Filtern
 
 **Entnahme buchen** – über der Artikelauswahl steht ein Suchfeld. Es durchsucht
 Inventarnummer, Name, Kiste, Lagerort, Kategorie und Notiz und schränkt die
@@ -282,7 +355,7 @@ zusätzlich Kategorie und den buchenden Benutzer.
 
 ---
 
-## 8. Datenimport und -export
+## 9. Datenimport und -export
 
 Unter *Daten* gibt es drei Funktionen:
 
@@ -321,7 +394,7 @@ Fehler, wird nichts importiert – die Vorschau zeigt jede Zeile mit Problem.
 
 ---
 
-## 9. Zwei Details, die leicht Ärger machen
+## 10. Zwei Details, die leicht Ärger machen
 
 **Sortierung von Regalnummern.** Bei Textspalten sortiert `R10` vor `R2`, weil
 Zeichen für Zeichen verglichen wird. Die Abfragen sortieren deshalb über
@@ -357,7 +430,7 @@ war CASCADE dort ohnehin wirkungslos.
 
 ---
 
-## 10. Sicherung
+## 11. Sicherung
 
 Der Code liegt im Repository, die Bestandsdaten liegen im Docker-Volume.
 Ein `git clone` stellt also die Anwendung wieder her, aber keinen einzigen
@@ -426,11 +499,10 @@ dann, wenn kein Server mehr steht.
 
 ---
 
-## 11. Naheliegende Erweiterungen
+## 12. Naheliegende Erweiterungen
 
 - QR-Code auf dem Kistenetikett, der auf `index.php?q=K001` zeigt
-- Wareneingang als Gegenstück zur Entnahme (aktuell wird der Bestand direkt
-  im Artikel korrigiert)
+- Barcode-Etiketten für Artikel ohne Hersteller-EAN drucken
 - Kistenverlauf: wann lag welche Kiste wo
 - Mail-Erinnerung bei fälligen Prüfterminen (Cron-Container gegen `v_artikel`)
 - Einsatzbezogene Auswertung: was wurde bei welchem Einsatz verbraucht

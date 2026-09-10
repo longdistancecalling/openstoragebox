@@ -9,6 +9,8 @@ $fehler = [];
 // Vorbelegung für ein neues Formular.
 $daten = [
     'inventar_nr'  => '',
+    // Vorbelegung aus dem Scan: ?ean=… kommt von einer unbekannten EAN.
+    'ean'          => ean_saeubern((string) ($_GET['ean'] ?? '')),
     'artikelname'  => '',
     'ortart'       => 'kiste',   // 'kiste' | 'frei' | 'ohne'
     'kiste_id'     => '',
@@ -41,6 +43,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     /* ---- Speichern ------------------------------------------------ */
     foreach (array_keys($daten) as $feld) {
         $daten[$feld] = trim((string) ($_POST[$feld] ?? ''));
+    }
+
+    $daten['ean'] = ean_saeubern($daten['ean']);
+    if ($daten['ean'] !== '' && !ean_gueltig($daten['ean'])) {
+        // Kein harter Fehler: hausinterne Codes haben keine gültige
+        // Prüfziffer. Der Hinweis steht im Formular.
+        $daten['ean_warnung'] = true;
     }
 
     if ($daten['artikelname'] === '') {
@@ -85,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$fehler) {
         $werte = [
+            $daten['ean'] !== '' ? $daten['ean'] : null,
             $daten['artikelname'],
             $daten['kiste_id']      !== '' ? (int) $daten['kiste_id'] : null,
             $daten['standort_frei'] !== '' ? $daten['standort_frei']  : null,
@@ -107,9 +117,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $stmt = $pdo->prepare(
                     'INSERT INTO artikel
-                       (artikelname, kiste_id, standort_frei, kategorie_id, menge,
+                       (ean, artikelname, kiste_id, standort_frei, kategorie_id, menge,
                         faellig_am, faellig_typ, notiz)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
                 );
                 $stmt->execute($werte);
                 $neueId = (int) $pdo->lastInsertId();
@@ -130,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $stmt = $pdo->prepare(
                     'UPDATE artikel SET
-                        artikelname = ?, kiste_id = ?, standort_frei = ?, kategorie_id = ?,
+                        ean = ?, artikelname = ?, kiste_id = ?, standort_frei = ?, kategorie_id = ?,
                         menge = ?, faellig_am = ?, faellig_typ = ?, notiz = ?, inventar_nr = ?
                      WHERE artikel_id = ?'
                 );
@@ -167,6 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $id !== null) {
 
     $daten = [
         'inventar_nr'  => (string) ($vorhanden['inventar_nr'] ?? ''),
+        'ean'          => (string) ($vorhanden['ean'] ?? ''),
         'artikelname'  => (string) $vorhanden['artikelname'],
         'ortart'       => $vorhanden['kiste_id'] !== null ? 'kiste'
                         : ($vorhanden['standort_frei'] !== null ? 'frei' : 'ohne'),
@@ -221,6 +232,20 @@ require __DIR__ . '/inc/header.php';
     Leer lassen vergibt automatisch eine Nummer im Format
     <code><?= h(INVENTAR_PREFIX) ?>00042</code>. Eigene Nummern sind erlaubt, müssen aber eindeutig sein.
   </p>
+
+  <div class="zeile">
+    <label for="ean">EAN / Barcode</label>
+    <input type="text" id="ean" name="ean" maxlength="14" inputmode="numeric"
+           value="<?= h($daten['ean']) ?>" placeholder="scannen oder eintippen">
+    <p class="hinweis">
+      Ermöglicht Suche und Buchung per Scanner. Nicht eindeutig – derselbe Artikel
+      darf in mehreren Kisten liegen und trägt dann überall dieselbe EAN.
+      <?php if ($daten['ean'] !== '' && !ean_gueltig($daten['ean'])): ?>
+        <strong>Die Prüfziffer stimmt nicht.</strong> Bei einem hausinternen Code ist das in Ordnung,
+        bei einer abgetippten Herstellernummer meist ein Zahlendreher.
+      <?php endif; ?>
+    </p>
+  </div>
 
   <fieldset class="ortwahl">
     <legend>Lagerort</legend>
@@ -304,7 +329,8 @@ require __DIR__ . '/inc/header.php';
     <button class="btn btn--primaer" type="submit">Speichern</button>
     <a class="btn" href="index.php">Abbrechen</a>
     <?php if ($id !== null): ?>
-      <a class="btn weg" href="entnahme.php?artikel=<?= $id ?>">Entnahme buchen</a>
+      <a class="btn weg" href="zugang.php?artikel=<?= $id ?>">Zugang buchen</a>
+      <a class="btn" href="entnahme.php?artikel=<?= $id ?>">Entnahme buchen</a>
     <?php endif; ?>
   </div>
 </form>

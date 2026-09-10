@@ -11,7 +11,9 @@ $daten = [
     'menge'        => '1',
     'grund'        => 'einsatz',
     'entnommen_am' => date('Y-m-d'),
-    'person'       => '',
+    // Wer bucht, ist angemeldet – der Name steht also schon fest.
+    // Überschreibbar, weil man auch für jemand anderen buchen kann.
+    'person'       => benutzer()['anzeigename'],
     'bezug'        => '',
     'notiz'        => '',
 ];
@@ -120,13 +122,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // POST steckt sie im versteckten Feld, damit die Auswahl nicht verloren geht.
 $suche = trim((string) ($_POST['q'] ?? $_GET['q'] ?? ''));
 
-$sql   = 'SELECT artikel_id, inventar_nr, artikelname, menge, lagerort_text, kategorie
+$sql   = 'SELECT artikel_id, inventar_nr, ean, artikelname, menge, lagerort_text, kategorie
           FROM v_artikel WHERE menge > 0';
 $werte = [];
 if ($suche !== '') {
     // Ein Platzhalter, deshalb die Spalten zusammengefasst – siehe Kommentar
     // in index.php zu PDO::ATTR_EMULATE_PREPARES.
-    $sql .= " AND CONCAT_WS(' ', inventar_nr, artikelname, IFNULL(kiste_nr,''), "
+    $sql .= " AND CONCAT_WS(' ', inventar_nr, IFNULL(ean,''), artikelname, IFNULL(kiste_nr,''), "
           . "IFNULL(lagerort_text,''), IFNULL(kategorie,''), IFNULL(notiz,'')) LIKE :q";
     $werte[':q'] = '%' . $suche . '%';
 }
@@ -159,7 +161,10 @@ require __DIR__ . '/inc/header.php';
 
 <div class="kopf">
   <h1>Entnahme buchen</h1>
-  <span class="rechts"><a class="btn" href="entnahmen.php">Protokoll ansehen</a></span>
+  <span class="rechts">
+    <a class="btn" href="zugang.php">Zugang buchen</a>
+    <a class="btn" href="entnahmen.php">Protokoll</a>
+  </span>
 </div>
 
 <?php if ($fehler): ?>
@@ -172,7 +177,7 @@ require __DIR__ . '/inc/header.php';
   <div class="feld feld--breit">
     <label for="q">Artikel suchen</label>
     <input type="search" id="q" name="q" value="<?= h($suche) ?>" autofocus
-           placeholder="Name, Inventarnummer, Kiste oder Kategorie">
+           placeholder="Name, Nummer, EAN, Kiste oder Kategorie">
   </div>
   <button class="btn" type="submit">Suchen</button>
   <?php if ($suche !== ''): ?>

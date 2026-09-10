@@ -48,8 +48,9 @@ if ($suche !== '') {
      * nur EINMAL vorkommen. Deshalb werden die Spalten zu einem
      * Suchtext zusammengefasst.
      */
-    $bedingungen[] = "CONCAT_WS(' ', inventar_nr, artikelname, IFNULL(kiste_nr,''), IFNULL(lager,''), "
-                   . "IFNULL(regal,''), IFNULL(fach,''), IFNULL(standort_frei,''), IFNULL(notiz,'')) LIKE :q";
+    $bedingungen[] = "CONCAT_WS(' ', inventar_nr, IFNULL(ean,''), artikelname, IFNULL(kiste_nr,''), "
+                   . "IFNULL(lager,''), IFNULL(regal,''), IFNULL(fach,''), IFNULL(standort_frei,''), "
+                   . "IFNULL(notiz,'')) LIKE :q";
     $werte[':q']   = '%' . $suche . '%';
 }
 
@@ -111,7 +112,7 @@ require __DIR__ . '/inc/header.php';
   <div class="feld feld--breit">
     <label for="q">Suche</label>
     <input type="search" id="q" name="q" value="<?= h($suche) ?>"
-           placeholder="Nummer, Name, Kiste, Standort oder Notiz">
+           placeholder="Nummer, EAN, Name, Kiste, Standort oder Notiz">
   </div>
   <div class="feld">
     <label for="kat">Kategorie</label>
@@ -175,7 +176,10 @@ require __DIR__ . '/inc/header.php';
       $leihe = (int) $a['verliehen_offen'];
   ?>
     <tr<?= $stufe && $stufe !== 'ok' ? ' class="stufe-' . $stufe . '"' : '' ?>>
-      <td data-label="Nr."><span class="invnr"><?= h($a['inventar_nr']) ?></span></td>
+      <td data-label="Nr.">
+        <span class="invnr"><?= h($a['inventar_nr']) ?></span>
+        <?php if ($a['ean']): ?><span class="ean" style="display:block"><?= h($a['ean']) ?></span><?php endif; ?>
+      </td>
       <td data-label="Artikel">
         <span class="name"><?= h($a['artikelname']) ?></span>
         <?php if ($a['notiz']): ?><span class="notiz"><?= h($a['notiz']) ?></span><?php endif; ?>
@@ -207,6 +211,7 @@ require __DIR__ . '/inc/header.php';
       </td>
       <td class="aktion" data-label="">
         <?php if (darf('bearbeiter')): ?>
+        <a class="btn btn--klein" href="zugang.php?artikel=<?= (int) $a['artikel_id'] ?>">Einbuchen</a>
         <a class="btn btn--klein" href="entnahme.php?artikel=<?= (int) $a['artikel_id'] ?>">Entnehmen</a>
         <a class="btn btn--klein" href="artikel.php?id=<?= (int) $a['artikel_id'] ?>">Bearbeiten</a>
         <?php endif; ?>

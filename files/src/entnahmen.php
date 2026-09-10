@@ -55,8 +55,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
    Filter
    =================================================================== */
 $grund = (string) ($_GET['grund'] ?? '');
-if ($grund !== '' && !isset(ENTNAHME_GRUENDE[$grund])) {
+if ($grund !== '' && !isset(ENTNAHME_GRUENDE[$grund]) && !isset(ZUGANG_GRUENDE[$grund])) {
     $grund = '';
+}
+
+// Richtung: leer = beides, sonst zugang oder abgang.
+$richtung = (string) ($_GET['richtung'] ?? '');
+if (!in_array($richtung, ['zugang', 'abgang'], true)) {
+    $richtung = '';
 }
 $von = (string) ($_GET['von'] ?? '');
 $bis = (string) ($_GET['bis'] ?? '');
@@ -69,6 +75,10 @@ if ($grund !== '') {
     $bedingungen[] = 'e.grund = :grund';
     $werte[':grund'] = $grund;
 }
+if ($richtung !== '') {
+    $bedingungen[] = 'e.richtung = :richtung';
+    $werte[':richtung'] = $richtung;
+}
 if ($kat === 'ohne') {
     // Eigener Zweig: kategorie_id IS NULL lässt sich nicht mit = abfragen.
     $bedingungen[] = 'a.kategorie_id IS NULL';
@@ -77,24 +87,24 @@ if ($kat === 'ohne') {
     $werte[':kat'] = (int) $kat;
 }
 if (DateTimeImmutable::createFromFormat('Y-m-d', $von)) {
-    $bedingungen[] = 'e.entnommen_am >= :von';
+    $bedingungen[] = 'e.datum >= :von';
     $werte[':von'] = $von;
 }
 if (DateTimeImmutable::createFromFormat('Y-m-d', $bis)) {
-    $bedingungen[] = 'e.entnommen_am <= :bis';
+    $bedingungen[] = 'e.datum <= :bis';
     $werte[':bis'] = $bis;
 }
 $where = $bedingungen ? 'WHERE ' . implode(' AND ', $bedingungen) : '';
 
-$sql = "SELECT e.*, a.artikelname, a.inventar_nr,
+$sql = "SELECT e.*, a.artikelname, a.inventar_nr, a.ean,
                a.kategorie_id, k.bezeichnung AS kategorie,
                b.anzeigename AS gebucht_von
-        FROM entnahme e
+        FROM v_bewegung e
         JOIN artikel a ON a.artikel_id = e.artikel_id
         LEFT JOIN kategorie k ON k.kategorie_id = a.kategorie_id
         LEFT JOIN benutzer b ON b.benutzer_id = e.erfasst_von
         $where
-        ORDER BY e.entnommen_am DESC, e.entnahme_id DESC";
+        ORDER BY e.datum DESC, e.erfasst_am DESC";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($werte);
 $zeilen = $stmt->fetchAll();
@@ -103,7 +113,11 @@ $kategorien = $pdo->query('SELECT kategorie_id, bezeichnung FROM kategorie ORDER
 
 // Summe der gefilterten Menge – bei einer Kategorieauswahl die eigentlich
 // interessante Zahl: wie viel wurde davon insgesamt entnommen.
-$summeMenge = array_sum(array_column($zeilen, 'menge'));
+$summeZu = 0; $summeAb = 0;
+foreach ($zeilen as $z) {
+    if ($z['richtung'] === 'zugang') { $summeZu += (int) $z['menge']; }
+    else                             { $summeAb += (int) $z['menge']; }
+}
 
 // Offene Leihen immer separat, unabhängig vom Filter – das ist die
 // Frage, die im Lager am häufigsten gestellt wird.
@@ -116,18 +130,21 @@ $offen = $pdo->query(
       ORDER BY e.entnommen_am"
 )->fetchAll();
 
-$titel = 'Entnahmen';
+$titel = 'Bewegungen';
 $aktiv = 'entnahmen';
 require __DIR__ . '/inc/header.php';
 ?>
 
 <div class="kopf">
-  <h1>Entnahmen</h1>
+  <h1>Bewegungen</h1>
   <span class="anzahl">
-    <?= count($zeilen) ?> Buchungen · <?= (int) $summeMenge ?> Stück<?= $offen ? ' · ' . count($offen) . ' Leihen offen' : '' ?>
+    <?= count($zeilen) ?> Buchungen<?= $summeZu ? ' · +' . $summeZu : '' ?><?= $summeAb ? ' · −' . $summeAb : '' ?> Stück<?= $offen ? ' · ' . count($offen) . ' Leihen offen' : '' ?>
   </span>
   <span class="rechts">
-    <?php if (darf('bearbeiter')): ?><a class="btn btn--primaer" href="entnahme.php">Entnahme buchen</a><?php endif; ?>
+    <?php if (darf('bearbeiter')): ?>
+      <a class="btn" href="zugang.php">Zugang buchen</a>
+      <a class="btn btn--primaer" href="entnahme.php">Entnahme buchen</a>
+    <?php endif; ?>
   </span>
 </div>
 
@@ -173,16 +190,31 @@ require __DIR__ . '/inc/header.php';
   </table>
 <?php endif; ?>
 
-<h2 class="abschnitt">Protokoll</h2>
+<h2 class="abschnitt">Protokoll aller Bewegungen</h2>
 
 <form class="filter" method="get" action="entnahmen.php">
+  <div class="feld">
+    <label for="richtung">Richtung</label>
+    <select id="richtung" name="richtung">
+      <option value="">Zugang und Abgang</option>
+      <option value="zugang" <?= $richtung === 'zugang' ? 'selected' : '' ?>>nur Zugänge</option>
+      <option value="abgang" <?= $richtung === 'abgang' ? 'selected' : '' ?>>nur Abgänge</option>
+    </select>
+  </div>
   <div class="feld">
     <label for="grund">Grund</label>
     <select id="grund" name="grund">
       <option value="">alle</option>
-      <?php foreach (ENTNAHME_GRUENDE as $wert => $label): ?>
-        <option value="<?= h($wert) ?>" <?= $grund === $wert ? 'selected' : '' ?>><?= h($label) ?></option>
-      <?php endforeach; ?>
+      <optgroup label="Abgang">
+        <?php foreach (ENTNAHME_GRUENDE as $wert => $label): ?>
+          <option value="<?= h($wert) ?>" <?= $grund === $wert ? 'selected' : '' ?>><?= h($label) ?></option>
+        <?php endforeach; ?>
+      </optgroup>
+      <optgroup label="Zugang">
+        <?php foreach (ZUGANG_GRUENDE as $wert => $label): ?>
+          <option value="<?= h($wert) ?>" <?= $grund === $wert ? 'selected' : '' ?>><?= h($label) ?></option>
+        <?php endforeach; ?>
+      </optgroup>
     </select>
   </div>
   <div class="feld">
@@ -207,12 +239,12 @@ require __DIR__ . '/inc/header.php';
     <input type="date" id="bis" name="bis" value="<?= h($bis) ?>">
   </div>
   <button class="btn" type="submit">Anzeigen</button>
-  <?php if ($grund !== '' || $von !== '' || $bis !== '' || $kat !== ''): ?>
+  <?php if ($grund !== '' || $von !== '' || $bis !== '' || $kat !== '' || $richtung !== ''): ?>
     <a class="btn" href="entnahmen.php">Zurücksetzen</a>
   <?php endif; ?>
   <a class="btn" href="export.php?<?= h(http_build_query(array_filter([
         'was' => 'entnahmen', 'format' => 'csv',
-        'grund' => $grund, 'kat' => $kat, 'von' => $von, 'bis' => $bis,
+        'grund' => $grund, 'kat' => $kat, 'von' => $von, 'bis' => $bis, 'richtung' => $richtung,
      ]))) ?>">CSV dieser Auswahl</a>
 </form>
 
@@ -229,7 +261,7 @@ require __DIR__ . '/inc/header.php';
   <tbody>
   <?php foreach ($zeilen as $z): ?>
     <tr>
-      <td data-label="Datum"><span class="faellig-datum"><?= h(datum_de($z['entnommen_am'])) ?></span></td>
+      <td data-label="Datum"><span class="faellig-datum"><?= h(datum_de($z['datum'])) ?></span></td>
       <td data-label="Artikel">
         <span class="invnr"><?= h($z['inventar_nr']) ?></span>
         <span class="name" style="margin-left:6px"><?= h($z['artikelname']) ?></span>
@@ -244,15 +276,24 @@ require __DIR__ . '/inc/header.php';
           <span class="kat kat--leer">ohne</span>
         <?php endif; ?>
       </td>
-      <td data-label="Grund"><span class="grund grund--<?= h($z['grund']) ?>"><?= h(grund_label($z['grund'])) ?></span></td>
-      <td class="zahl" data-label="Menge"><?= (int) $z['menge'] ?></td>
+      <td data-label="Grund">
+        <span class="grund grund--<?= h($z['grund']) ?>"><?= h($z['richtung'] === 'zugang'
+              ? zugang_label($z['grund']) : grund_label($z['grund'])) ?></span>
+      </td>
+      <td class="zahl" data-label="Menge">
+        <span class="<?= $z['richtung'] === 'zugang' ? 'menge-plus' : 'menge-minus' ?>">
+          <?= $z['richtung'] === 'zugang' ? '+' : '−' ?><?= (int) $z['menge'] ?>
+        </span>
+      </td>
       <td data-label="Person / Bezug">
         <?= h($z['person'] ?? '') ?>
         <?php if ($z['bezug']): ?><span class="notiz"><?= h($z['bezug']) ?></span><?php endif; ?>
         <?php if ($z['gebucht_von']): ?><span class="notiz">gebucht von <?= h($z['gebucht_von']) ?></span><?php endif; ?>
       </td>
       <td data-label="Status">
-        <?php if ($z['grund'] === GRUND_LEIHE): ?>
+        <?php if ($z['richtung'] === 'zugang'): ?>
+          <span class="notiz">Zugang</span>
+        <?php elseif ($z['grund'] === GRUND_LEIHE): ?>
           <?php if ($z['zurueck_am']): ?>
             <span class="marke marke--gruen">zurück <?= h(datum_de($z['zurueck_am'])) ?></span>
           <?php else: ?>

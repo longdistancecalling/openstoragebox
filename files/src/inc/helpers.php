@@ -162,3 +162,50 @@ function csv_ausgeben(string $dateiname, array $kopf, array $zeilen): never
     fclose($out);
     exit;
 }
+
+/** Klartext eines Zugangsgrunds. */
+function zugang_label(?string $grund): string
+{
+    return ZUGANG_GRUENDE[$grund] ?? (string) $grund;
+}
+
+/**
+ * Reduziert eine gescannte Eingabe auf Ziffern.
+ * Handscanner hängen gern Leerzeichen oder Bindestriche an.
+ */
+function ean_saeubern(string $roh): string
+{
+    return preg_replace('/\D+/', '', $roh) ?? '';
+}
+
+/**
+ * Prüft die EAN-Prüfziffer (EAN-8, EAN-13, UPC-A mit 12 Stellen).
+ *
+ * Jede zweite Ziffer von rechts zählt dreifach, die Summe muss ohne
+ * Rest durch 10 teilbar sein. Ein Tippfehler fällt damit sofort auf –
+ * beim Scannen passiert das selten, beim Abtippen ständig.
+ */
+function ean_gueltig(string $ean): bool
+{
+    $len = strlen($ean);
+    if (!in_array($len, [8, 12, 13, 14], true) || !ctype_digit($ean)) {
+        return false;
+    }
+    $summe = 0;
+    // Von rechts nach links, beginnend bei der Stelle vor der Prüfziffer.
+    for ($i = $len - 2, $faktor = 3; $i >= 0; $i--, $faktor = 4 - $faktor) {
+        $summe += (int) $ean[$i] * $faktor;
+    }
+    return (10 - $summe % 10) % 10 === (int) $ean[$len - 1];
+}
+
+/** EAN gruppiert darstellen, damit sie sich vorlesen lässt. */
+function ean_anzeigen(?string $ean): string
+{
+    if (!$ean) {
+        return '';
+    }
+    return strlen($ean) === 13
+        ? substr($ean, 0, 1) . ' ' . substr($ean, 1, 6) . ' ' . substr($ean, 7)
+        : $ean;
+}

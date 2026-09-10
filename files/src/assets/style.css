@@ -726,3 +726,100 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
 @media (max-width: 760px) {
   .wer { border-left: 0; padding-left: 0; width: 100%; }
 }
+
+/* --- v4: Scan-Oberfläche --------------------------------------------- */
+
+.scanfeld {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: var(--ink);
+  border-radius: var(--r);
+}
+
+.scanfeld label {
+  flex: 1 0 100%;
+  font: 500 11px/1 var(--sans);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .65);
+  margin-bottom: 2px;
+}
+
+/* Groß und monospaced: Ziffern sollen auch aus Armlänge lesbar sein,
+   wenn das Tablet neben der Kiste liegt. */
+.scanfeld input {
+  flex: 1 1 240px;
+  font: 500 22px/1.2 var(--mono);
+  letter-spacing: .06em;
+  padding: 12px 14px;
+  border: 0;
+}
+
+.scanfeld .btn { padding: 13px 18px; }
+
+.scan-karte {
+  padding: 18px;
+  margin-bottom: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--blau);
+  border-radius: var(--r);
+}
+
+.scan-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.scan-name { display: block; margin-top: 4px; font-size: 19px; font-weight: 600; }
+
+.scan-bestand { text-align: right; }
+.scan-zahl { display: block; font: 600 40px/1 var(--mono); }
+.scan-label {
+  display: block;
+  margin-top: 4px;
+  font: 500 11px/1 var(--sans);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.scan-aktionen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin: 16px 0 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-2);
+}
+
+.scan-zeile { display: flex; gap: 8px; }
+.scan-zeile input[type="number"] { width: 78px; text-align: right; font: 500 16px/1.2 var(--mono); }
+.scan-zeile select { flex: 1 1 auto; }
+.scan-zeile .btn { white-space: nowrap; }
+
+.scan-karte .hinweis { margin: 0; }
+
+/* --- v4: EAN ---------------------------------------------------------- */
+
+.ean {
+  font: 400 12px/1 var(--mono);
+  letter-spacing: .04em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.menge-plus  { color: var(--gruen); font-weight: 600; }
+.menge-minus { color: var(--ink); }
+
+.grund--beschaffung { background: #e6f0e9; color: var(--gruen); }
+.grund--spende      { background: var(--blau-weich); color: var(--blau); }
+.grund--ruecklauf   { background: var(--line-2); color: var(--muted); }
+.grund--korrektur   { background: var(--amber-weich); color: var(--amber); }

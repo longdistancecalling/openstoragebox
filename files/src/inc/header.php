@@ -7,7 +7,8 @@ $aktiv = $aktiv ?? '';
 
 $nav = [
     'index'      => ['Artikel',     'index.php'],
-    'entnahmen'  => ['Entnahmen',   'entnahmen.php'],
+    'scan'       => ['Scannen',     'scan.php'],
+    'entnahmen'  => ['Bewegungen',  'entnahmen.php'],
     'faellig'    => ['Fälligkeiten','faellig.php'],
     'kisten'     => ['Kisten',      'kisten.php'],
     'inventur'   => ['Inventur',    'inventur.php'],

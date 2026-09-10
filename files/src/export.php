@@ -228,6 +228,16 @@ require __DIR__ . '/inc/header.php';
   </section>
 
   <section class="kachel">
+    <h2>Lagerübersicht zum Aushängen</h2>
+    <p>Kompletter Bestand, zweispaltig auf A4, gruppiert nach Lagerort.
+       Für die Tür oder die Wand neben dem Lager – wer etwas sucht, findet den
+       Ort, ohne einen Rechner zu starten.</p>
+    <div class="kachel-knoepfe">
+      <a class="btn btn--primaer" href="aushang.php">Aushang öffnen</a>
+    </div>
+  </section>
+
+  <section class="kachel">
     <h2>Kistenetiketten A5</h2>
     <p>Eine A5-Seite je Kiste mit Nummer, Lagerort und vollständigem Inhalt.
        Zum Aufkleben oder Einlegen. <?= $anzKisten ?> Kisten.</p>
