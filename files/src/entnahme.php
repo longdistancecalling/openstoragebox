@@ -115,10 +115,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 /* ===================================================================
    Anzeige
    =================================================================== */
-$artikelListe = $pdo->query(
-    'SELECT artikel_id, inventar_nr, artikelname, menge, lagerort_text
-     FROM v_artikel WHERE menge > 0 ORDER BY artikelname'
-)->fetchAll();
+
+// Die Suche kommt per GET aus dem Suchformular. Nach einem fehlgeschlagenen
+// POST steckt sie im versteckten Feld, damit die Auswahl nicht verloren geht.
+$suche = trim((string) ($_POST['q'] ?? $_GET['q'] ?? ''));
+
+$sql   = 'SELECT artikel_id, inventar_nr, artikelname, menge, lagerort_text, kategorie
+          FROM v_artikel WHERE menge > 0';
+$werte = [];
+if ($suche !== '') {
+    // Ein Platzhalter, deshalb die Spalten zusammengefasst – siehe Kommentar
+    // in index.php zu PDO::ATTR_EMULATE_PREPARES.
+    $sql .= " AND CONCAT_WS(' ', inventar_nr, artikelname, IFNULL(kiste_nr,''), "
+          . "IFNULL(lagerort_text,''), IFNULL(kategorie,''), IFNULL(notiz,'')) LIKE :q";
+    $werte[':q'] = '%' . $suche . '%';
+}
+$sql .= ' ORDER BY artikelname';
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($werte);
+$artikelListe = $stmt->fetchAll();
+
+// Genau ein Treffer: direkt auswählen, dann ist das Formular nach der
+// Suche sofort fertig ausgefüllt.
+if ($artikelId === null && $suche !== '' && count($artikelListe) === 1) {
+    $artikelId = (int) $artikelListe[0]['artikel_id'];
+}
+
+// Wie viele Artikel gäbe es ohne Filter? Für den Hinweis unter der Suche.
+$gesamt = (int) $pdo->query('SELECT COUNT(*) FROM artikel WHERE menge > 0')->fetchColumn();
 
 $gewaehlt = null;
 if ($artikelId !== null) {
@@ -143,8 +168,30 @@ require __DIR__ . '/inc/header.php';
   </ul>
 <?php endif; ?>
 
+<form class="filter" method="get" action="entnahme.php">
+  <div class="feld feld--breit">
+    <label for="q">Artikel suchen</label>
+    <input type="search" id="q" name="q" value="<?= h($suche) ?>" autofocus
+           placeholder="Name, Inventarnummer, Kiste oder Kategorie">
+  </div>
+  <button class="btn" type="submit">Suchen</button>
+  <?php if ($suche !== ''): ?>
+    <a class="btn" href="entnahme.php">Alle zeigen</a>
+  <?php endif; ?>
+  <span class="hinweis" style="align-self:center">
+    <?= count($artikelListe) ?> von <?= $gesamt ?> Artikeln mit Bestand
+  </span>
+</form>
+
 <?php if (!$artikelListe): ?>
-  <p class="leer">Kein Artikel hat einen Bestand über 0. Es gibt nichts zu entnehmen.</p>
+  <p class="leer">
+    <?php if ($suche !== ''): ?>
+      Kein Artikel mit Bestand passt zu „<?= h($suche) ?>“.
+      <a href="entnahme.php">Alle anzeigen</a>
+    <?php else: ?>
+      Kein Artikel hat einen Bestand über 0. Es gibt nichts zu entnehmen.
+    <?php endif; ?>
+  </p>
 <?php else: ?>
 
 <?php if ($gewaehlt): ?>
@@ -160,13 +207,18 @@ require __DIR__ . '/inc/header.php';
 
 <form class="form" method="post" action="entnahme.php">
   <?= csrf_field() ?>
+  <input type="hidden" name="q" value="<?= h($suche) ?>">
 
   <div class="zeile">
-    <label for="artikel_id">Artikel</label>
-    <select id="artikel_id" name="artikel_id" required>
-      <option value="">– bitte wählen –</option>
+    <label for="artikel_id">Artikel<?= count($artikelListe) > 12 ? ' <span class="hinweis-inline">tippen filtert die Liste</span>' : '' ?></label>
+    <?php if (count($artikelListe) > 12): ?>
+      <input type="text" id="schnellfilter" placeholder="Liste eingrenzen …" autocomplete="off"
+             style="margin-bottom:6px">
+    <?php endif; ?>
+    <select id="artikel_id" name="artikel_id" required size="<?= min(10, max(1, count($artikelListe))) ?>">
       <?php foreach ($artikelListe as $a): ?>
         <option value="<?= (int) $a['artikel_id'] ?>"
+          data-suchtext="<?= h(mb_strtolower($a['inventar_nr'] . ' ' . $a['artikelname'] . ' ' . ($a['kategorie'] ?? '') . ' ' . ($a['lagerort_text'] ?? ''))) ?>"
           <?= $artikelId === (int) $a['artikel_id'] ? ' selected' : '' ?>>
           <?= h($a['inventar_nr']) ?> — <?= h($a['artikelname']) ?>
           (<?= (int) $a['menge'] ?> Stück<?= $a['lagerort_text'] ? ', ' . h($a['lagerort_text']) : '' ?>)
@@ -229,6 +281,29 @@ require __DIR__ . '/inc/header.php';
 </form>
 
 <script>
+// Sofortfilter für die Auswahlliste. Rein optisch – gefiltert wird
+// serverseitig über das Suchformular, das auch ohne JavaScript geht.
+(function () {
+  const feld = document.getElementById('schnellfilter');
+  if (!feld) return;
+  const select = document.getElementById('artikel_id');
+  const alle = Array.from(select.options);
+  feld.addEventListener('input', () => {
+    const suche = feld.value.trim().toLowerCase();
+    let sichtbar = 0;
+    alle.forEach(o => {
+      const treffer = suche === '' || (o.dataset.suchtext || '').includes(suche);
+      o.hidden = !treffer;
+      if (treffer) sichtbar++;
+    });
+    // Ausgeblendete Auswahl aufheben, damit nichts Unsichtbares gebucht wird.
+    if (select.selectedOptions.length && select.selectedOptions[0].hidden) {
+      select.selectedIndex = -1;
+    }
+    select.size = Math.min(10, Math.max(1, sichtbar));
+  });
+})();
+
 // Person-Feld bei einer Leihe hervorheben, dort ist es Pflicht.
 (function () {
   const grund   = document.getElementById('grund');

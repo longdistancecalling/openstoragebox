@@ -60,6 +60,7 @@ if ($grund !== '' && !isset(ENTNAHME_GRUENDE[$grund])) {
 }
 $von = (string) ($_GET['von'] ?? '');
 $bis = (string) ($_GET['bis'] ?? '');
+$kat = (string) ($_GET['kat'] ?? '');
 
 $bedingungen = [];
 $werte       = [];
@@ -67,6 +68,13 @@ $werte       = [];
 if ($grund !== '') {
     $bedingungen[] = 'e.grund = :grund';
     $werte[':grund'] = $grund;
+}
+if ($kat === 'ohne') {
+    // Eigener Zweig: kategorie_id IS NULL lässt sich nicht mit = abfragen.
+    $bedingungen[] = 'a.kategorie_id IS NULL';
+} elseif ($kat !== '' && ctype_digit($kat)) {
+    $bedingungen[] = 'a.kategorie_id = :kat';
+    $werte[':kat'] = (int) $kat;
 }
 if (DateTimeImmutable::createFromFormat('Y-m-d', $von)) {
     $bedingungen[] = 'e.entnommen_am >= :von';
@@ -78,15 +86,24 @@ if (DateTimeImmutable::createFromFormat('Y-m-d', $bis)) {
 }
 $where = $bedingungen ? 'WHERE ' . implode(' AND ', $bedingungen) : '';
 
-$sql = "SELECT e.*, a.artikelname, a.inventar_nr, b.anzeigename AS gebucht_von
+$sql = "SELECT e.*, a.artikelname, a.inventar_nr,
+               a.kategorie_id, k.bezeichnung AS kategorie,
+               b.anzeigename AS gebucht_von
         FROM entnahme e
         JOIN artikel a ON a.artikel_id = e.artikel_id
+        LEFT JOIN kategorie k ON k.kategorie_id = a.kategorie_id
         LEFT JOIN benutzer b ON b.benutzer_id = e.erfasst_von
         $where
         ORDER BY e.entnommen_am DESC, e.entnahme_id DESC";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($werte);
 $zeilen = $stmt->fetchAll();
+
+$kategorien = $pdo->query('SELECT kategorie_id, bezeichnung FROM kategorie ORDER BY bezeichnung')->fetchAll();
+
+// Summe der gefilterten Menge – bei einer Kategorieauswahl die eigentlich
+// interessante Zahl: wie viel wurde davon insgesamt entnommen.
+$summeMenge = array_sum(array_column($zeilen, 'menge'));
 
 // Offene Leihen immer separat, unabhängig vom Filter – das ist die
 // Frage, die im Lager am häufigsten gestellt wird.
@@ -107,7 +124,7 @@ require __DIR__ . '/inc/header.php';
 <div class="kopf">
   <h1>Entnahmen</h1>
   <span class="anzahl">
-    <?= count($zeilen) ?> Buchungen<?= $offen ? ' · ' . count($offen) . ' Leihen offen' : '' ?>
+    <?= count($zeilen) ?> Buchungen · <?= (int) $summeMenge ?> Stück<?= $offen ? ' · ' . count($offen) . ' Leihen offen' : '' ?>
   </span>
   <span class="rechts">
     <?php if (darf('bearbeiter')): ?><a class="btn btn--primaer" href="entnahme.php">Entnahme buchen</a><?php endif; ?>
@@ -169,6 +186,19 @@ require __DIR__ . '/inc/header.php';
     </select>
   </div>
   <div class="feld">
+    <label for="kat">Kategorie</label>
+    <select id="kat" name="kat">
+      <option value="">alle</option>
+      <?php foreach ($kategorien as $k): ?>
+        <option value="<?= (int) $k['kategorie_id'] ?>"
+          <?= $kat === (string) $k['kategorie_id'] ? ' selected' : '' ?>>
+          <?= h($k['bezeichnung']) ?>
+        </option>
+      <?php endforeach; ?>
+      <option value="ohne" <?= $kat === 'ohne' ? 'selected' : '' ?>>ohne Kategorie</option>
+    </select>
+  </div>
+  <div class="feld">
     <label for="von">Von</label>
     <input type="date" id="von" name="von" value="<?= h($von) ?>">
   </div>
@@ -177,19 +207,22 @@ require __DIR__ . '/inc/header.php';
     <input type="date" id="bis" name="bis" value="<?= h($bis) ?>">
   </div>
   <button class="btn" type="submit">Anzeigen</button>
-  <?php if ($grund !== '' || $von !== '' || $bis !== ''): ?>
+  <?php if ($grund !== '' || $von !== '' || $bis !== '' || $kat !== ''): ?>
     <a class="btn" href="entnahmen.php">Zurücksetzen</a>
   <?php endif; ?>
-  <a class="btn" href="export.php?was=entnahmen&amp;format=csv<?= $grund !== '' ? '&amp;grund=' . h($grund) : '' ?>">CSV</a>
+  <a class="btn" href="export.php?<?= h(http_build_query(array_filter([
+        'was' => 'entnahmen', 'format' => 'csv',
+        'grund' => $grund, 'kat' => $kat, 'von' => $von, 'bis' => $bis,
+     ]))) ?>">CSV dieser Auswahl</a>
 </form>
 
 <?php if (!$zeilen): ?>
-  <p class="leer">Für diesen Filter sind keine Buchungen erfasst.</p>
+  <p class="leer">Für diese Auswahl sind keine Buchungen erfasst.</p>
 <?php else: ?>
 <table class="tabelle">
   <thead>
     <tr>
-      <th>Datum</th><th>Artikel</th><th>Grund</th>
+      <th>Datum</th><th>Artikel</th><th>Kategorie</th><th>Grund</th>
       <th style="text-align:right">Menge</th><th>Person / Bezug</th><th>Status</th>
     </tr>
   </thead>
@@ -201,6 +234,15 @@ require __DIR__ . '/inc/header.php';
         <span class="invnr"><?= h($z['inventar_nr']) ?></span>
         <span class="name" style="margin-left:6px"><?= h($z['artikelname']) ?></span>
         <?php if ($z['notiz']): ?><span class="notiz"><?= h($z['notiz']) ?></span><?php endif; ?>
+      </td>
+      <td data-label="Kategorie">
+        <?php if ($z['kategorie']): ?>
+          <a href="<?= h(url_mit(['kat' => (string) $z['kategorie_id']])) ?>"
+             style="text-decoration:none" title="nach dieser Kategorie filtern">
+            <span class="kat"><?= h($z['kategorie']) ?></span></a>
+        <?php else: ?>
+          <span class="kat kat--leer">ohne</span>
+        <?php endif; ?>
       </td>
       <td data-label="Grund"><span class="grund grund--<?= h($z['grund']) ?>"><?= h(grund_label($z['grund'])) ?></span></td>
       <td class="zahl" data-label="Menge"><?= (int) $z['menge'] ?></td>

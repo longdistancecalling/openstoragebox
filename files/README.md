@@ -257,7 +257,32 @@ alles in einer Spalte.
 
 ---
 
-## 7. Datenimport und -export
+## 7. Suchen und Filtern
+
+**Entnahme buchen** – über der Artikelauswahl steht ein Suchfeld. Es durchsucht
+Inventarnummer, Name, Kiste, Lagerort, Kategorie und Notiz und schränkt die
+Auswahlliste ein. Bleibt genau ein Treffer, wird er automatisch ausgewählt –
+nach der Suche ist das Formular sofort fertig. Ab 13 Artikeln in der Liste
+erscheint zusätzlich ein Sofortfilter, der ohne Neuladen weiter eingrenzt; die
+eigentliche Suche läuft serverseitig und funktioniert auch ohne JavaScript.
+
+Der Suchbegriff steht in einem versteckten Feld des Buchungsformulars. Schlägt
+eine Buchung fehl (etwa weil der Bestand nicht reicht), bleibt die Auswahl
+erhalten statt zurück auf die volle Liste zu springen.
+
+**Entnahmeliste** – neben Grund und Zeitraum lässt sich nach Kategorie filtern,
+einschließlich „ohne Kategorie". Die Filter kombinieren sich, und die Kopfzeile
+zeigt neben der Anzahl der Buchungen die Summe der entnommenen Stück – bei einer
+Kategorieauswahl die eigentlich interessante Zahl. Ein Klick auf eine
+Kategoriemarke in der Tabelle filtert direkt danach.
+
+Der Knopf **CSV dieser Auswahl** übernimmt alle gesetzten Filter, sodass der
+Export wirklich das enthält, was auf dem Bildschirm steht. Die Datei führt
+zusätzlich Kategorie und den buchenden Benutzer.
+
+---
+
+## 8. Datenimport und -export
 
 Unter *Daten* gibt es drei Funktionen:
 
@@ -296,7 +321,7 @@ Fehler, wird nichts importiert – die Vorschau zeigt jede Zeile mit Problem.
 
 ---
 
-## 8. Zwei Details, die leicht Ärger machen
+## 9. Zwei Details, die leicht Ärger machen
 
 **Sortierung von Regalnummern.** Bei Textspalten sortiert `R10` vor `R2`, weil
 Zeichen für Zeichen verglichen wird. Die Abfragen sortieren deshalb über
@@ -332,7 +357,7 @@ war CASCADE dort ohnehin wirkungslos.
 
 ---
 
-## 9. Sicherung
+## 10. Sicherung
 
 Der Code liegt im Repository, die Bestandsdaten liegen im Docker-Volume.
 Ein `git clone` stellt also die Anwendung wieder her, aber keinen einzigen
@@ -401,7 +426,7 @@ dann, wenn kein Server mehr steht.
 
 ---
 
-## 10. Naheliegende Erweiterungen
+## 11. Naheliegende Erweiterungen
 
 - QR-Code auf dem Kistenetikett, der auf `index.php?q=K001` zeigt
 - Wareneingang als Gegenstück zur Entnahme (aktuell wird der Bestand direkt

@@ -35,15 +35,45 @@ if ($format === 'csv') {
     }
 
     if ($was === 'entnahmen') {
+        // Dieselben Filter wie auf der Entnahmeseite, damit der Knopf
+        // "CSV dieser Auswahl" auch wirklich diese Auswahl liefert.
         $grund = (string) ($_GET['grund'] ?? '');
-        $sql   = 'SELECT e.entnommen_am, a.inventar_nr, a.artikelname, e.menge, e.grund,
-                         IFNULL(e.person, "") AS person, IFNULL(e.bezug, "") AS bezug,
-                         IFNULL(e.notiz, "") AS notiz, IFNULL(e.zurueck_am, "") AS zurueck_am
-                  FROM entnahme e JOIN artikel a ON a.artikel_id = e.artikel_id';
+        $kat   = (string) ($_GET['kat'] ?? '');
+        $von   = (string) ($_GET['von'] ?? '');
+        $bis   = (string) ($_GET['bis'] ?? '');
+
+        $sql = 'SELECT e.entnommen_am, a.inventar_nr, a.artikelname,
+                       IFNULL(k.bezeichnung, "") AS kategorie, e.menge, e.grund,
+                       IFNULL(e.person, "") AS person, IFNULL(e.bezug, "") AS bezug,
+                       IFNULL(e.notiz, "") AS notiz, IFNULL(e.zurueck_am, "") AS zurueck_am,
+                       IFNULL(b.anzeigename, "") AS gebucht_von
+                FROM entnahme e
+                JOIN artikel a ON a.artikel_id = e.artikel_id
+                LEFT JOIN kategorie k ON k.kategorie_id = a.kategorie_id
+                LEFT JOIN benutzer b ON b.benutzer_id = e.erfasst_von';
+
+        $bed = [];
         $werte = [];
         if (isset(ENTNAHME_GRUENDE[$grund])) {
-            $sql .= ' WHERE e.grund = :grund';
+            $bed[] = 'e.grund = :grund';
             $werte[':grund'] = $grund;
+        }
+        if ($kat === 'ohne') {
+            $bed[] = 'a.kategorie_id IS NULL';
+        } elseif ($kat !== '' && ctype_digit($kat)) {
+            $bed[] = 'a.kategorie_id = :kat';
+            $werte[':kat'] = (int) $kat;
+        }
+        if (DateTimeImmutable::createFromFormat('Y-m-d', $von)) {
+            $bed[] = 'e.entnommen_am >= :von';
+            $werte[':von'] = $von;
+        }
+        if (DateTimeImmutable::createFromFormat('Y-m-d', $bis)) {
+            $bed[] = 'e.entnommen_am <= :bis';
+            $werte[':bis'] = $bis;
+        }
+        if ($bed) {
+            $sql .= ' WHERE ' . implode(' AND ', $bed);
         }
         $sql .= ' ORDER BY e.entnommen_am DESC, e.entnahme_id DESC';
 
@@ -51,14 +81,15 @@ if ($format === 'csv') {
         $stmt->execute($werte);
 
         $daten = array_map(static fn($z) => [
-            datum_de($z['entnommen_am']), $z['inventar_nr'], $z['artikelname'],
+            datum_de($z['entnommen_am']), $z['inventar_nr'], $z['artikelname'], $z['kategorie'],
             $z['menge'], grund_label($z['grund']), $z['person'], $z['bezug'], $z['notiz'],
-            $z['zurueck_am'] ? datum_de($z['zurueck_am']) : '',
+            $z['zurueck_am'] ? datum_de($z['zurueck_am']) : '', $z['gebucht_von'],
         ], $stmt->fetchAll());
 
         csv_ausgeben(
             'entnahmen_' . date('Y-m-d') . '.csv',
-            ['Datum', 'Nummer', 'Artikel', 'Menge', 'Grund', 'Person', 'Bezug', 'Notiz', 'Zurück am'],
+            ['Datum', 'Nummer', 'Artikel', 'Kategorie', 'Menge', 'Grund', 'Person', 'Bezug',
+             'Notiz', 'Zurück am', 'Gebucht von'],
             $daten
         );
     }
