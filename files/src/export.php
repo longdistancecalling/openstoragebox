@@ -229,11 +229,23 @@ require __DIR__ . '/inc/header.php';
 
   <section class="kachel">
     <h2>Lagerübersicht zum Aushängen</h2>
-    <p>Kompletter Bestand, zweispaltig auf A4, gruppiert nach Lagerort.
-       Für die Tür oder die Wand neben dem Lager – wer etwas sucht, findet den
-       Ort, ohne einen Rechner zu starten.</p>
+    <p>Kompletter Bestand, zweispaltig auf A4. Wahlweise gruppiert nach Lagerort
+       oder durchgehend alphabetisch nach Artikel – für die Tür oder die Wand
+       neben dem Lager.</p>
     <div class="kachel-knoepfe">
-      <a class="btn btn--primaer" href="aushang.php">Aushang öffnen</a>
+      <a class="btn btn--primaer" href="aushang.php">nach Lagerort</a>
+      <a class="btn" href="aushang.php?sortierung=liste">Artikel A–Z</a>
+    </div>
+  </section>
+
+  <section class="kachel">
+    <h2>Regalschilder</h2>
+    <p>Ein A4-Blatt je Regal, gegliedert nach Fächern und Kisten – für die
+       Stirnseite des Regals. Wer davorsteht, sieht ohne Suchen, was in welchem
+       Fach liegt.</p>
+    <div class="kachel-knoepfe">
+      <a class="btn btn--primaer" href="regal.php">Alle Regale</a>
+      <a class="btn" href="regal.php#auswahl">Einzelnes Regal</a>
     </div>
   </section>
 

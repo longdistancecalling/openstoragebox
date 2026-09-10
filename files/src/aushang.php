@@ -16,7 +16,7 @@ require __DIR__ . '/inc/config.php';
  */
 
 $sortierung = (string) ($_GET['sortierung'] ?? 'ort');
-if (!in_array($sortierung, ['ort', 'name', 'kategorie'], true)) {
+if (!in_array($sortierung, ['ort', 'name', 'liste', 'kategorie'], true)) {
     $sortierung = 'ort';
 }
 $nurBestand = ($_GET['bestand'] ?? '1') === '1';
@@ -26,22 +26,28 @@ if ($nurBestand) {
     $sql .= ' WHERE menge > 0';
 }
 $sql .= ' ORDER BY ' . match ($sortierung) {
-    'name'      => 'artikelname, ' . ORDER_LAGERORT,
-    'kategorie' => 'kategorie IS NULL, kategorie, artikelname',
-    default     => ORDER_LAGERORT . ', artikelname',
+    'name', 'liste' => 'artikelname, ' . ORDER_LAGERORT,
+    'kategorie'     => 'kategorie IS NULL, kategorie, artikelname',
+    default         => ORDER_LAGERORT . ', artikelname',
 };
 
 $alle = $pdo->query($sql)->fetchAll();
 
 // Gruppieren – die Überschrift hängt von der gewählten Sortierung ab.
+// 'liste' bleibt bewusst ungruppiert: eine durchgehende A-bis-Z-Liste,
+// in der man einen Namen sucht und den Lagerort abliest.
 $gruppen = [];
-foreach ($alle as $a) {
-    $schluessel = match ($sortierung) {
-        'name'      => mb_strtoupper(mb_substr($a['artikelname'], 0, 1)),
-        'kategorie' => $a['kategorie'] ?? 'Ohne Kategorie',
-        default     => $a['lagerort_text'] ?? 'Ohne Lagerort',
-    };
-    $gruppen[$schluessel][] = $a;
+if ($sortierung === 'liste') {
+    $gruppen[''] = $alle;
+} else {
+    foreach ($alle as $a) {
+        $schluessel = match ($sortierung) {
+            'name'      => mb_strtoupper(mb_substr($a['artikelname'], 0, 1)),
+            'kategorie' => $a['kategorie'] ?? 'Ohne Kategorie',
+            default     => $a['lagerort_text'] ?? 'Ohne Lagerort',
+        };
+        $gruppen[$schluessel][] = $a;
+    }
 }
 
 $summe = array_sum(array_column($alle, 'menge'));
@@ -70,6 +76,7 @@ $summe = array_sum(array_column($alle, 'menge'));
     <select id="sortierung" name="sortierung" onchange="this.form.submit()">
       <option value="ort"       <?= $sortierung === 'ort'       ? 'selected' : '' ?>>Lagerort</option>
       <option value="name"      <?= $sortierung === 'name'      ? 'selected' : '' ?>>Anfangsbuchstabe</option>
+      <option value="liste"     <?= $sortierung === 'liste'     ? 'selected' : '' ?>>Artikel A–Z (durchgehend)</option>
       <option value="kategorie" <?= $sortierung === 'kategorie' ? 'selected' : '' ?>>Kategorie</option>
     </select>
     <label class="radio">
@@ -80,23 +87,34 @@ $summe = array_sum(array_column($alle, 'menge'));
   <span class="hinweis">A4, beidseitig sparsam – bitte im Druckdialog Hintergrundfarben nicht aktivieren.</span>
 </div>
 
-<header class="aushang-kopf">
+<!--
+  Derselbe Kopfaufbau wie bei Kistenetikett und Regalschild: Trägername
+  als Eyebrow, große Hauptzeile links, Label-Wert-Block rechts, darunter
+  die kräftige Trennlinie. Nur das Blattformat bleibt A4 – der komplette
+  Bestand auf A5 quer wären vier Blätter statt einem.
+-->
+<header class="etikett-kopf aushang-kopf">
   <div>
-    <div class="aushang-org"><?= h(ORGANISATION) ?></div>
-    <h1>Lagerübersicht</h1>
+    <div class="etikett-org"><?= h(ORGANISATION) ?></div>
+    <div class="etikett-nr">Lagerübersicht</div>
   </div>
-  <div class="aushang-meta">
-    <div><strong><?= count($alle) ?></strong> Positionen · <strong><?= (int) $summe ?></strong> Stück</div>
-    <div>Stand <?= date('d.m.Y') ?></div>
-    <div>gruppiert nach <?= h(match ($sortierung) {
-        'name' => 'Anfangsbuchstabe', 'kategorie' => 'Kategorie', default => 'Lagerort' }) ?></div>
+  <div class="etikett-ort">
+    <span class="etikett-ort-label">Bestand</span>
+    <span class="etikett-ort-wert"><?= count($alle) ?> Pos. · <?= (int) $summe ?> Stück</span>
+    <span class="aushang-stand">
+      Stand <?= date('d.m.Y') ?> · <?= h(match ($sortierung) {
+        'name'      => 'nach Anfangsbuchstabe',
+        'liste'     => 'alphabetisch nach Artikel',
+        'kategorie' => 'nach Kategorie',
+        default     => 'nach Lagerort' }) ?>
+    </span>
   </div>
 </header>
 
-<p class="aushang-hinweis">
-  Diese Liste ist ein Ausdruck vom <?= date('d.m.Y') ?> und veraltet mit jeder Buchung.
-  <strong>Entnahmen bitte immer im System erfassen</strong> – wer etwas mitnimmt, ohne es
-  einzutragen, sorgt dafür, dass es im Einsatz fehlt.
+<p class="etikett-notiz aushang-hinweis">
+  Ausdruck vom <?= date('d.m.Y') ?> – veraltet mit jeder Buchung.
+  <strong>Entnahmen bitte immer im System erfassen.</strong>
+  Wer etwas mitnimmt, ohne es einzutragen, sorgt dafür, dass es im Einsatz fehlt.
 </p>
 
 <?php if (!$alle): ?>
@@ -104,8 +122,10 @@ $summe = array_sum(array_column($alle, 'menge'));
 <?php else: ?>
 <div class="aushang-spalten">
   <?php foreach ($gruppen as $titel => $liste): ?>
-    <section class="aushang-gruppe">
-      <h2><?= h((string) $titel) ?><span><?= count($liste) ?></span></h2>
+    <section class="aushang-gruppe<?= $sortierung === 'liste' ? ' aushang-gruppe--flach' : '' ?>">
+      <?php if ((string) $titel !== ''): ?>
+        <h2 class="aushang-titel"><?= h((string) $titel) ?><span><?= count($liste) ?></span></h2>
+      <?php endif; ?>
       <table>
         <tbody>
         <?php foreach ($liste as $a):
@@ -113,19 +133,19 @@ $summe = array_sum(array_column($alle, 'menge'));
             $stufe = faellig_stufe($tage);
         ?>
           <tr>
-            <td class="a-menge"><?= (int) $a['menge'] ?>×</td>
-            <td class="a-name">
+            <td class="e-menge"><?= (int) $a['menge'] ?>×</td>
+            <td class="e-name">
               <?= h($a['artikelname']) ?>
               <?php if ($sortierung !== 'ort'): ?>
-                <span class="a-ort"><?= h($a['lagerort_text'] ?? 'ohne Lagerort') ?></span>
+                <span class="e-datum"><?= h($a['lagerort_text'] ?? 'ohne Lagerort') ?></span>
               <?php endif; ?>
               <?php if ($stufe === 'faellig'): ?>
-                <span class="a-warn">seit <?= h(datum_de($a['faellig_am'])) ?> überfällig</span>
+                <span class="e-datum e-warn">seit <?= h(datum_de($a['faellig_am'])) ?> überfällig</span>
               <?php elseif ($stufe === 'bald'): ?>
-                <span class="a-warn">fällig <?= h(datum_de($a['faellig_am'])) ?></span>
+                <span class="e-datum e-warn">fällig <?= h(datum_de($a['faellig_am'])) ?></span>
               <?php endif; ?>
             </td>
-            <td class="a-kiste"><?= h($a['kiste_nr'] ?? '') ?></td>
+            <td class="e-nr"><?= h($a['kiste_nr'] ?? '') ?></td>
           </tr>
         <?php endforeach; ?>
         </tbody>
@@ -135,9 +155,9 @@ $summe = array_sum(array_column($alle, 'menge'));
 </div>
 <?php endif; ?>
 
-<footer class="aushang-fuss">
-  <span><?= h(ORGANISATION) ?> · Lagerverwaltung</span>
-  <span>Fragen oder Fehler in der Liste: bitte im System korrigieren</span>
+<footer class="etikett-fuss aushang-fuss">
+  <span><?= h(ORGANISATION) ?></span>
+  <span>Stand <?= date('d.m.Y') ?> · Änderungen bitte im System nachtragen</span>
 </footer>
 
 </body>

@@ -225,6 +225,7 @@ src/daten.php               JSON-Gesamtexport/-import, CSV-Artikelimport
 src/zugang.php              Wareneingang buchen
 src/scan.php                Buchen per Barcode
 src/aushang.php             Lagerübersicht zum Aushängen
+src/regal.php               Regalschilder
 db/04_v4.sql                Migration auf v4 (EAN, Zugänge)
 db/03_v3.sql                Migration auf v3 (Benutzer)
 backup.sh / restore.sh      Datenbanksicherung und Wiederherstellung
@@ -237,6 +238,8 @@ backup.sh / restore.sh      Datenbanksicherung und Wiederherstellung
 | Export | Format | Zweck |
 |---|---|---|
 | Artikelliste | Druck (A4) + CSV | alphabetisch, mit Nummer, Kiste und Lagerort |
+| Regalschilder | Druck (A4) | ein Blatt je Regal, gegliedert nach Fach und Kiste |
+| Lagerübersicht | Druck (A4) | kompletter Bestand zum Aushängen, vier Gliederungen |
 | Kistenetiketten | Druck (A5 quer) | eine Seite je Kiste mit vollständigem Inhalt |
 | Kisteninhalt | CSV | eine Zeile je Artikel, nach Kiste gruppiert |
 | Zählliste | Druck (A4) | nach Lagerort gruppiert, mit Leerfeldern zum Eintragen |
@@ -316,12 +319,25 @@ angemeldeten Benutzer vorbelegt (überschreibbar, weil man auch für jemand ande
 buchen kann), und unabhängig davon hält `erfasst_von` fest, wer die Buchung
 tatsächlich angelegt hat.
 
-### Lagerübersicht zum Aushängen
+### Ausdrucke fürs Lager
 
-Unter *Export → Lagerübersicht* entsteht ein A4-Ausdruck für die Tür oder die
-Wand neben dem Lager: kompletter Bestand, zweispaltig, gruppiert nach Lagerort,
-Anfangsbuchstabe oder Kategorie. Wer etwas sucht, findet den Ort, ohne einen
-Rechner zu starten.
+Drei Ebenen, die sich ergänzen:
+
+| Ausdruck | Hängt wo | Beantwortet |
+|---|---|---|
+| Lagerübersicht | Tür, Wand am Eingang | Wo ist Artikel X? |
+| Regalschild | Stirnseite des Regals | Was liegt in diesem Regal? |
+| Kistenetikett | Auf oder in der Kiste | Was ist in dieser Kiste? |
+
+Die **Lagerübersicht** (*Export → Lagerübersicht*) zeigt den kompletten Bestand
+zweispaltig auf A4, in vier Gliederungen: nach Lagerort, nach Anfangsbuchstabe,
+nach Kategorie oder als durchgehende A-bis-Z-Liste. Die letzte ist die
+Suchliste – Name ablesen, Lagerort danebenstehen sehen.
+
+Das **Regalschild** (*Export → Regalschilder*) druckt ein A4-Blatt je Regal,
+gegliedert nach Fächern und darin nach Kisten. Die Regalnummer steht in 46pt,
+damit sie den Gang runter lesbar ist. Wahlweise alle Regale auf einmal oder ein
+einzelnes nach dem Umräumen.
 
 Zweispaltig, weil eine einspaltige Liste dieselbe Information auf doppelt so
 viele Blätter verteilt – und niemand hängt fünf Seiten an die Tür. Überfällige
