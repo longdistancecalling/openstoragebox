@@ -19,36 +19,19 @@ Jeder Punkt nennt, was zu tun ist und warum er an dieser Stelle steht.
 | v6 | Verpackungseinheiten mit Gebinde- und Einzelzählung |
 | v7 | Inventur zählt Gebinde und lose Stücke getrennt |
 
+Zuletzt ohne eigene Migration: Scan-Seite versteht die eigenen QR-Codes
+(`K:` und `A:`) und bucht Gebinde korrekt; Blanko-Scheine zum Ausdrucken.
+
 Dazu quer über die Versionen: Regalschilder, Lagerübersicht zum Aushängen,
 Entnahme- und Leihscheine, QR-Code auf dem Kistenetikett, Backup und Restore.
 
 ---
 
-## 1. Scan-Seite um die eigenen Codes erweitern
+## 1. Eigene Codes für Artikel
 
-**Warum zuerst:** Der QR-Code auf dem Kistenetikett existiert bereits und
-enthält `K:K001`. Die Scan-Seite versteht diesen Code aber noch nicht – sie
-sucht nur nach EAN. Der Code ist damit gedruckt, aber ohne Funktion. Das ist
-die kleinste Lücke mit der größten Wirkung.
-
-**Zu tun:**
-- `scan.php`: Eingabe zuerst auf das Präfix prüfen
-  - `K:` → Kiste laden, Inhalt zeigen, Buchung je Artikel anbieten
-  - `A:` → Artikel laden wie bisher bei der EAN
-  - sonst → EAN-Suche wie bisher
-- Kommt der Code aus einer URL (`?c=K:K001`), muss `scan.php` den Parameter
-  ebenso auswerten – die Handykamera ruft die Seite direkt auf.
-- Kistenansicht: nicht nur ein Artikel, sondern die Liste des Kisteninhalts
-  mit je einem Entnehmen- und Einbuchen-Knopf.
-
-**Aufwand:** überschaubar, eine Datei.
-
----
-
-## 2. Eigene Codes für Artikel
-
-**Warum danach:** Erst wenn die Scan-Seite `A:`-Codes versteht, ergibt ein
-Artikeletikett Sinn.
+**Warum zuerst:** Die Scan-Seite versteht `A:`-Codes jetzt – es fehlt nur
+noch das Etikett zum Aufkleben. Damit ließen sich Gegenstände ohne
+Hersteller-EAN scannen: Aggregat, Zelt, Getränkekiste.
 
 **Zu tun:**
 - Neue Seite `code.php`: druckbare Bögen mit Klebeetiketten, je Etikett
@@ -65,22 +48,7 @@ Raster sollte dazu passen, sonst wird geklebt statt bedruckt.
 
 ---
 
-## 3. Blanko-Scheine
-
-**Warum hier:** Unabhängig von allem anderen, klein, jederzeit machbar.
-
-**Zu tun:**
-- `schein.php?blanko=entnahme` und `?blanko=zugang`
-- Gleiches Layout wie der gefüllte Schein, aber mit Linien statt Werten:
-  Artikel, Menge, Grund, Person, Datum, Unterschrift.
-- Mehrere je Seite oder einzeln – vermutlich ein Vorrat, den man ausdruckt
-  und ins Lager legt, damit auch ohne Rechner etwas festgehalten wird.
-- Sinnvolle Ergänzung: eine kurze Zeile „bitte nachtragen unter …“ mit der
-  Adresse aus `BASIS_URL`.
-
----
-
-## 4. QR-Code auch auf Regalschild und Schein
+## 2. QR-Code auch auf Regalschild und Schein
 
 **Zu tun:**
 - Regalschild: QR mit `R:Lager|Regal`, führt auf eine Regalansicht.
@@ -91,7 +59,7 @@ Raster sollte dazu passen, sonst wird geklebt statt bedruckt.
 
 ---
 
-## 5. Kleinere offene Punkte
+## 3. Kleinere offene Punkte
 
 - **Etikett und Aushang mit Gebindeangabe:** zeigen aktuell die Menge, nicht
   die Gesamtzahl. Auf einem Aushang ist „8 Kisten = 167 Flaschen“ die

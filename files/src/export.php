@@ -260,6 +260,17 @@ require __DIR__ . '/inc/header.php';
   </section>
 
   <section class="kachel">
+    <h2>Blanko-Scheine</h2>
+    <p>Leere Entnahme- und Einlagerungsscheine zum Ausdrucken und ins Lager legen.
+       Für den Fall, dass niemand am Rechner ist – besser ein handschriftlicher
+       Zettel als gar keine Spur.</p>
+    <div class="kachel-knoepfe">
+      <a class="btn btn--primaer" href="schein.php?blanko=entnahme">Entnahme</a>
+      <a class="btn" href="schein.php?blanko=zugang">Einlagerung</a>
+    </div>
+  </section>
+
+  <section class="kachel">
     <h2>Entnahmeprotokoll</h2>
     <p>Alle Buchungen mit Grund, Person und Rückgabestatus.
        <?= $anzEntn ?> Einträge.</p>

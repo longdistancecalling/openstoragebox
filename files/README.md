@@ -246,6 +246,7 @@ backup.sh / restore.sh      Datenbanksicherung und Wiederherstellung
 |---|---|---|
 | Artikelliste | Druck (A4) + CSV | alphabetisch, mit Nummer, Kiste und Lagerort |
 | Entnahmeschein | Druck (A5 quer) | Beleg je Buchung, bei Leihe mit Unterschriftsfeldern |
+| Blanko-Scheine | Druck (A5 quer) | leere Entnahme- und Einlagerungsscheine für den Vorrat |
 | Regalschilder | Druck (A5 quer) | ein Blatt je Regal, gegliedert nach Fach und Kiste |
 | Lagerübersicht | Druck (A4) | kompletter Bestand zum Aushängen, vier Gliederungen |
 | Kistenetiketten | Druck (A5 quer) | eine Seite je Kiste mit vollständigem Inhalt |
@@ -280,6 +281,14 @@ Unter *Scannen* wird per EAN gebucht. Ein USB-Handscanner verhält sich wie eine
 Tastatur – er tippt die Ziffern und schickt Enter hinterher. Deshalb genügt ein
 Textfeld mit Autofokus; es braucht keine Scanner-Bibliothek und keine
 Kamerarechte. Am Handy tippt man die Nummer ein oder nutzt die normale Suche.
+
+Erkannt werden drei Eingaben: der eigene QR-Code einer Kiste (`K:K001`), der
+eines Artikels (`A:A-00042`) und die Hersteller-EAN. Wird der QR-Code mit der
+Handykamera gescannt, ruft diese die Seite direkt über `?c=…` auf – auch eine
+komplett eingefügte URL wird verstanden.
+
+Bei einer Kiste erscheint der gesamte Inhalt mit Buchungsknöpfen je Position –
+man steht vor der Kiste, scannt einmal und bucht, was herausgeht.
 
 Der Ablauf ist zweistufig: Scannen zeigt den Artikel mit Bestand, Lagerort und
 Fälligkeit. Gebucht wird erst mit dem zweiten Klick – ein versehentlicher Scan

@@ -19,6 +19,137 @@ require __DIR__ . '/inc/config.php';
 $id    = isset($_GET['id']) && ctype_digit((string) $_GET['id']) ? (int) $_GET['id'] : null;
 $offen = ($_GET['offen'] ?? '') === '1';
 
+/* ===================================================================
+   Blanko-Scheine
+   ===================================================================
+   Vorrat zum Ausdrucken und ins Lager legen: wer ohne Rechner etwas
+   mitnimmt, trägt es von Hand ein und der Zettel wird später
+   nachgebucht. Besser ein Papierzettel als gar keine Spur.
+   =================================================================== */
+$blanko = (string) ($_GET['blanko'] ?? '');
+if (!in_array($blanko, ['entnahme', 'zugang'], true)) {
+    $blanko = '';
+}
+
+if ($blanko !== '') {
+    $anzahl = (int) ($_GET['anzahl'] ?? 4);
+    $anzahl = max(1, min(20, $anzahl));
+    $zeilen = (int) ($_GET['zeilen'] ?? 6);
+    $zeilen = max(3, min(12, $zeilen));
+    $istEntnahme = $blanko === 'entnahme';
+    ?>
+    <!DOCTYPE html>
+    <html lang="de">
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Blanko-<?= $istEntnahme ? 'Entnahmeschein' : 'Einlagerungsschein' ?></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/druck.css">
+    <style>@page { size: A5 landscape; margin: 8mm 10mm; }</style>
+    </head>
+    <body class="druck druck--etikett">
+
+    <div class="nur-bildschirm steuerung">
+      <a class="btn" href="entnahmen.php">Zurück</a>
+      <button class="btn btn--primaer" onclick="window.print()">Drucken</button>
+      <form method="get" action="schein.php" class="steuerung-form">
+        <input type="hidden" name="blanko" value="<?= h($blanko) ?>">
+        <label for="anzahl">Blätter</label>
+        <select id="anzahl" name="anzahl" onchange="this.form.submit()">
+          <?php foreach ([1, 2, 4, 8, 10, 20] as $n): ?>
+            <option value="<?= $n ?>" <?= $anzahl === $n ? 'selected' : '' ?>><?= $n ?></option>
+          <?php endforeach; ?>
+        </select>
+        <label for="zeilen">Zeilen je Blatt</label>
+        <select id="zeilen" name="zeilen" onchange="this.form.submit()">
+          <?php foreach ([4, 6, 8, 10] as $n): ?>
+            <option value="<?= $n ?>" <?= $zeilen === $n ? 'selected' : '' ?>><?= $n ?></option>
+          <?php endforeach; ?>
+        </select>
+      </form>
+      <span class="hinweis">
+        <a href="schein.php?blanko=<?= $istEntnahme ? 'zugang' : 'entnahme' ?>">
+          zu Blanko-<?= $istEntnahme ? 'Einlagerungsscheinen' : 'Entnahmescheinen' ?> wechseln</a>
+      </span>
+    </div>
+
+    <?php for ($blatt = 0; $blatt < $anzahl; $blatt++): ?>
+    <article class="etikett schein schein--blanko">
+
+      <header class="etikett-kopf">
+        <div>
+          <div class="etikett-org"><?= h(ORGANISATION) ?></div>
+          <div class="etikett-nr"><?= $istEntnahme ? 'Entnahme' : 'Einlagerung' ?></div>
+        </div>
+        <div class="etikett-ort">
+          <span class="etikett-ort-label">Datum</span>
+          <span class="etikett-ort-wert bl-feld bl-feld--kurz"></span>
+        </div>
+      </header>
+
+      <div class="bl-kopfzeile">
+        <div><span class="bl-label"><?= $istEntnahme ? 'Entnommen von' : 'Angenommen von' ?></span>
+             <span class="bl-feld"></span></div>
+        <div><span class="bl-label"><?= $istEntnahme ? 'Einsatz / Zweck' : 'Lieferant / Spender' ?></span>
+             <span class="bl-feld"></span></div>
+      </div>
+
+      <table class="etikett-tabelle bl-tabelle">
+        <thead>
+          <tr>
+            <th class="bl-th-menge">Menge</th>
+            <th>Artikel</th>
+            <th class="bl-th-ort">Kiste / Ort</th>
+            <?php if ($istEntnahme): ?><th class="bl-th-grund">Grund</th><?php endif; ?>
+          </tr>
+        </thead>
+        <tbody>
+        <?php for ($i = 0; $i < $zeilen; $i++): ?>
+          <tr class="bl-zeile"><td></td><td></td><td></td><?php if ($istEntnahme): ?><td></td><?php endif; ?></tr>
+        <?php endfor; ?>
+        </tbody>
+      </table>
+
+      <div class="schein-unterschriften">
+        <div class="us-block">
+          <div class="us-titel"><?= $istEntnahme ? 'Empfang bestätigt' : 'Eingelagert' ?></div>
+          <div class="us-zeile">
+            <span class="us-linie"></span>
+            <span class="us-label">Unterschrift</span>
+          </div>
+        </div>
+        <div class="us-block">
+          <div class="us-titel">Ins System eingetragen</div>
+          <div class="us-zeile">
+            <span class="us-linie"></span>
+            <span class="us-label">Datum und Kürzel</span>
+          </div>
+        </div>
+      </div>
+
+      <footer class="etikett-fuss">
+        <span><?= h(ORGANISATION) ?></span>
+        <span>
+          <?php if (BASIS_URL !== ''): ?>
+            Bitte zeitnah nachtragen unter <?= h(rtrim(BASIS_URL, '/')) ?>
+          <?php else: ?>
+            Bitte zeitnah in der Lagerverwaltung nachtragen
+          <?php endif; ?>
+        </span>
+      </footer>
+
+    </article>
+    <?php endfor; ?>
+
+    </body>
+    </html>
+    <?php
+    exit;
+}
+
 $sql = 'SELECT e.*, a.inventar_nr, a.ean, a.artikelname,
                v.lagerort_text, v.kiste_nr,
                kat.bezeichnung AS kategorie,

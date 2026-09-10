@@ -143,6 +143,7 @@ require __DIR__ . '/inc/header.php';
   </span>
   <span class="rechts">
     <?php if ($offen): ?><a class="btn" href="schein.php?offen=1">Leihscheine drucken</a><?php endif; ?>
+    <a class="btn" href="schein.php?blanko=entnahme">Blanko-Scheine</a>
     <?php if (darf('bearbeiter')): ?>
       <a class="btn" href="zugang.php">Zugang buchen</a>
       <a class="btn btn--primaer" href="entnahme.php">Entnahme buchen</a>

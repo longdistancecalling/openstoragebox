@@ -537,3 +537,62 @@ body.druck {
   font: 400 7.5pt/1.2 var(--sans);
   color: #666;
 }
+
+/* =====================================================================
+   Blanko-Scheine
+   Dieselbe Bildsprache wie die gefüllten Scheine, aber mit Linien
+   statt Werten. Die Felder sind bewusst hoch genug für Handschrift –
+   eine 4 mm hohe Zeile schreibt niemand aus.
+   ===================================================================== */
+
+.bl-feld {
+  display: inline-block;
+  min-width: 45mm;
+  min-height: 5mm;
+  border-bottom: 0.8pt solid #000;
+}
+
+.bl-feld--kurz { min-width: 32mm; }
+
+.bl-kopfzeile {
+  display: flex;
+  gap: 8mm;
+  margin: 4mm 0 3mm;
+}
+
+.bl-kopfzeile > div { flex: 1 1 0; }
+
+.bl-label {
+  display: block;
+  margin-bottom: 1mm;
+  font: 500 7pt/1.2 var(--sans);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #666;
+}
+
+.bl-kopfzeile .bl-feld { display: block; min-width: 0; width: 100%; }
+
+.bl-tabelle th {
+  padding: 1.2mm 1mm !important;
+  border-bottom: 1.2px solid #000 !important;
+  font: 600 7.5pt/1 var(--sans);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.bl-th-menge { width: 18mm; }
+.bl-th-ort   { width: 32mm; }
+.bl-th-grund { width: 30mm; }
+
+/* Schreibhöhe: 7 mm reicht für eine Zeile Handschrift. */
+.bl-zeile td {
+  height: 7mm;
+  border-bottom: 0.5pt solid #999 !important;
+  border-right: 0.5pt solid #ddd;
+}
+
+.bl-zeile td:last-child { border-right: 0; }
+
+.schein--blanko .schein-unterschriften { padding-top: 4mm; }
