@@ -226,6 +226,7 @@ src/zugang.php              Wareneingang buchen
 src/scan.php                Buchen per Barcode
 src/aushang.php             Lagerübersicht zum Aushängen
 src/regal.php               Regalschilder
+src/schein.php              Entnahme- und Leihschein
 db/04_v4.sql                Migration auf v4 (EAN, Zugänge)
 db/03_v3.sql                Migration auf v3 (Benutzer)
 backup.sh / restore.sh      Datenbanksicherung und Wiederherstellung
@@ -238,7 +239,8 @@ backup.sh / restore.sh      Datenbanksicherung und Wiederherstellung
 | Export | Format | Zweck |
 |---|---|---|
 | Artikelliste | Druck (A4) + CSV | alphabetisch, mit Nummer, Kiste und Lagerort |
-| Regalschilder | Druck (A4) | ein Blatt je Regal, gegliedert nach Fach und Kiste |
+| Entnahmeschein | Druck (A5 quer) | Beleg je Buchung, bei Leihe mit Unterschriftsfeldern |
+| Regalschilder | Druck (A5 quer) | ein Blatt je Regal, gegliedert nach Fach und Kiste |
 | Lagerübersicht | Druck (A4) | kompletter Bestand zum Aushängen, vier Gliederungen |
 | Kistenetiketten | Druck (A5 quer) | eine Seite je Kiste mit vollständigem Inhalt |
 | Kisteninhalt | CSV | eine Zeile je Artikel, nach Kiste gruppiert |
@@ -333,6 +335,17 @@ Die **Lagerübersicht** (*Export → Lagerübersicht*) zeigt den kompletten Best
 zweispaltig auf A4, in vier Gliederungen: nach Lagerort, nach Anfangsbuchstabe,
 nach Kategorie oder als durchgehende A-bis-Z-Liste. Die letzte ist die
 Suchliste – Name ablesen, Lagerort danebenstehen sehen.
+
+Der **Entnahmeschein** (*Bewegungen → Schein*) ist der Beleg zu einer Buchung.
+Bei einer Leihe ist er der eigentliche Zweck: er hält fest, wer wann was
+mitgenommen hat, und wird unterschrieben. Deshalb trägt er dort zwei
+Unterschriftsblöcke – Übergabe und Rückgabe – samt Hinweis auf Eigentum und
+Haftung. Bei endgültigen Entnahmen genügt eine Empfangsbestätigung.
+
+Nach dem Buchen einer Leihe springt die Anwendung direkt auf den Schein, damit
+er unterschrieben wird, solange der Entleiher noch danebensteht. Über
+*Leihscheine drucken* lassen sich alle offenen Leihen auf einmal ausgeben – etwa
+für eine Nachfassaktion, wenn Material zu lange draußen ist.
 
 Das **Regalschild** (*Export → Regalschilder*) druckt ein A4-Blatt je Regal,
 gegliedert nach Fächern und darin nach Kisten. Die Regalnummer steht in 46pt,

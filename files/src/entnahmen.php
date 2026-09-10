@@ -141,6 +141,7 @@ require __DIR__ . '/inc/header.php';
     <?= count($zeilen) ?> Buchungen<?= $summeZu ? ' · +' . $summeZu : '' ?><?= $summeAb ? ' · −' . $summeAb : '' ?> Stück<?= $offen ? ' · ' . count($offen) . ' Leihen offen' : '' ?>
   </span>
   <span class="rechts">
+    <?php if ($offen): ?><a class="btn" href="schein.php?offen=1">Leihscheine drucken</a><?php endif; ?>
     <?php if (darf('bearbeiter')): ?>
       <a class="btn" href="zugang.php">Zugang buchen</a>
       <a class="btn btn--primaer" href="entnahme.php">Entnahme buchen</a>
@@ -176,7 +177,8 @@ require __DIR__ . '/inc/header.php';
         <td data-label="Bei wem"><?= h($o['person'] ?? '—') ?></td>
         <td class="zahl" data-label="Menge"><?= (int) $o['menge'] ?></td>
         <td class="aktion" data-label="">
-          <form method="post" action="entnahmen.php"
+          <a class="btn btn--klein" href="schein.php?id=<?= (int) $o['entnahme_id'] ?>">Schein</a>
+          <form method="post" action="entnahmen.php" style="display:inline"
                 onsubmit="return confirm('Rückgabe buchen? Der Bestand wird wieder erhöht.');">
             <?= csrf_field() ?>
             <input type="hidden" name="aktion" value="rueckgabe">
@@ -255,7 +257,7 @@ require __DIR__ . '/inc/header.php';
   <thead>
     <tr>
       <th>Datum</th><th>Artikel</th><th>Kategorie</th><th>Grund</th>
-      <th style="text-align:right">Menge</th><th>Person / Bezug</th><th>Status</th>
+      <th style="text-align:right">Menge</th><th>Person / Bezug</th><th>Status</th><th></th>
     </tr>
   </thead>
   <tbody>
@@ -301,6 +303,11 @@ require __DIR__ . '/inc/header.php';
           <?php endif; ?>
         <?php else: ?>
           <span class="notiz">endgültig</span>
+        <?php endif; ?>
+      </td>
+      <td class="aktion" data-label="">
+        <?php if ($z['richtung'] === 'abgang'): ?>
+          <a class="btn btn--klein" href="schein.php?id=<?= (int) $z['bewegung_id'] ?>">Schein</a>
         <?php endif; ?>
       </td>
     </tr>

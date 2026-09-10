@@ -93,15 +93,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (int) benutzer()['benutzer_id'],
             ]);
 
+            // Vor dem Commit abfragen: danach liefert lastInsertId() je nach
+            // Treiber 0, weil die Verbindung den Wert der abgeschlossenen
+            // Transaktion nicht mehr führt.
+            $neueId = (int) $pdo->lastInsertId();
+
             $pdo->commit();
 
             $text = $menge . '× ' . $art['artikelname'] . ' entnommen ('
                   . grund_label($daten['grund']) . ').';
             if ($daten['grund'] === GRUND_LEIHE) {
-                $text .= ' Die Rückgabe steht unter „Entnahmen" offen.';
+                $text .= ' Die Rückgabe steht unter „Bewegungen" offen.';
             }
             flash($text);
-            redirect('entnahmen.php');
+            // Bei einer Leihe direkt zum Schein – der wird unterschrieben,
+            // solange der Entleiher noch danebensteht.
+            redirect($daten['grund'] === GRUND_LEIHE
+                ? 'schein.php?id=' . $neueId
+                : 'entnahmen.php');
 
         } catch (RuntimeException $e) {
             $pdo->rollBack();
