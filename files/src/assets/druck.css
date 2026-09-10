@@ -529,3 +529,11 @@ body.druck {
   letter-spacing: .04em;
   color: #777;
 }
+
+/* Verpackungseinheit auf der Zählliste: wer im Lager steht, muss ohne
+   Nachdenken wissen, was in ein Gebinde gehört. */
+.z-ve {
+  display: block;
+  font: 400 7.5pt/1.2 var(--sans);
+  color: #666;
+}

@@ -16,6 +16,7 @@ $fehler = [];
 
 $daten = [
     'menge'  => '1',
+    'einheit'=> 'gebinde',
     'grund'  => 'beschaffung',
     'datum'  => date('Y-m-d'),
     'person' => benutzer()['anzeigename'],
@@ -55,23 +56,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // dass zwei gleichzeitige Buchungen sich überschreiben.
             $pdo->beginTransaction();
 
-            $stmt = $pdo->prepare('SELECT artikelname, menge FROM artikel WHERE artikel_id = ? FOR UPDATE');
+            $stmt = $pdo->prepare(
+                'SELECT artikelname, menge, lose, ve_inhalt, ve_einheit, gebinde_einheit
+                 FROM artikel WHERE artikel_id = ? FOR UPDATE'
+            );
             $stmt->execute([$artikelId]);
             $art = $stmt->fetch();
             if (!$art) {
                 throw new RuntimeException('Dieser Artikel existiert nicht.');
             }
 
-            $menge = (int) $daten['menge'];
+            $menge   = (int) $daten['menge'];
+            $einheit = empty($art['ve_inhalt']) ? 'einzeln' : $daten['einheit'];
 
-            $pdo->prepare('UPDATE artikel SET menge = menge + ? WHERE artikel_id = ?')
-                ->execute([$menge, $artikelId]);
+            [$neueMenge, $neueLose] = bestand_rechnen($art, $menge, $einheit, true);
+
+            $pdo->prepare('UPDATE artikel SET menge = ?, lose = ? WHERE artikel_id = ?')
+                ->execute([$neueMenge, $neueLose, $artikelId]);
 
             $pdo->prepare(
-                'INSERT INTO zugang (artikel_id, menge, grund, datum, person, bezug, notiz, erfasst_von)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO zugang (artikel_id, menge, einheit, grund, datum, person, bezug, notiz, erfasst_von)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
             )->execute([
-                $artikelId, $menge, $daten['grund'], $daten['datum'],
+                $artikelId, $menge, $einheit, $daten['grund'], $daten['datum'],
                 $daten['person'] !== '' ? $daten['person'] : null,
                 $daten['bezug']  !== '' ? $daten['bezug']  : null,
                 $daten['notiz']  !== '' ? $daten['notiz']  : null,
@@ -80,9 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $pdo->commit();
 
-            flash($menge . '× ' . $art['artikelname'] . ' eingebucht ('
-                . zugang_label($daten['grund']) . '). Neuer Bestand: '
-                . ((int) $art['menge'] + $menge) . '.');
+            flash(einheit_text($art, $einheit, $menge) . ' ' . $art['artikelname']
+                . ' eingebucht (' . zugang_label($daten['grund']) . ').');
             redirect('entnahmen.php?richtung=zugang');
 
         } catch (RuntimeException $e) {
@@ -101,8 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
    =================================================================== */
 $suche = trim((string) ($_POST['q'] ?? $_GET['q'] ?? ''));
 
-$sql   = 'SELECT artikel_id, inventar_nr, ean, artikelname, menge, lagerort_text, kategorie
-          FROM v_artikel';
+$sql   = 'SELECT * FROM v_artikel';
 $werte = [];
 if ($suche !== '') {
     $sql .= " WHERE CONCAT_WS(' ', inventar_nr, IFNULL(ean,''), artikelname, IFNULL(kiste_nr,''), "
@@ -176,7 +181,12 @@ require __DIR__ . '/inc/header.php';
       <strong style="margin-left:8px"><?= h($gewaehlt['artikelname']) ?></strong>
     </div>
     <div style="margin-top:6px"><?= lagerort($gewaehlt) ?></div>
-    <div class="karte-zahl"><?= (int) $gewaehlt['menge'] ?> <small>im Bestand</small></div>
+    <div class="karte-zahl">
+      <?= $gewaehlt['hat_gebinde'] ? (int) $gewaehlt['menge'] : (int) $gewaehlt['gesamt_einzeln'] ?>
+      <small><?= $gewaehlt['hat_gebinde']
+          ? h(mehrzahl($gewaehlt['gebinde_einheit'] ?: 'Gebinde')) . ' · ' . (int) $gewaehlt['gesamt_einzeln'] . ' ' . h($gewaehlt['ve_einheit'] ?: 'Stück')
+          : 'im Bestand' ?></small>
+    </div>
   </div>
 <?php endif; ?>
 
@@ -195,7 +205,7 @@ require __DIR__ . '/inc/header.php';
           data-suchtext="<?= h(mb_strtolower($a['inventar_nr'] . ' ' . $a['artikelname'] . ' ' . ($a['kategorie'] ?? '') . ' ' . ($a['lagerort_text'] ?? ''))) ?>"
           <?= $artikelId === (int) $a['artikel_id'] ? ' selected' : '' ?>>
           <?= h($a['inventar_nr']) ?> — <?= h($a['artikelname']) ?>
-          (<?= (int) $a['menge'] ?> Stück<?= $a['lagerort_text'] ? ', ' . h($a['lagerort_text']) : '' ?>)
+          (<?= h(bestand_text($a)) ?><?= $a['lagerort_text'] ? ', ' . h($a['lagerort_text']) : '' ?>)
         </option>
       <?php endforeach; ?>
     </select>
@@ -205,6 +215,17 @@ require __DIR__ . '/inc/header.php';
     <div class="zeile">
       <label for="menge">Menge</label>
       <input type="number" id="menge" name="menge" min="1" step="1" required value="<?= h($daten['menge']) ?>">
+    </div>
+    <div class="zeile" id="feld-einheit"<?= $gewaehlt && $gewaehlt['hat_gebinde'] ? '' : ' hidden' ?>>
+      <label for="einheit">Einheit</label>
+      <select id="einheit" name="einheit">
+        <option value="gebinde" <?= $daten['einheit'] === 'gebinde' ? 'selected' : '' ?>>
+          <?= $gewaehlt && $gewaehlt['gebinde_einheit'] ? h(mehrzahl($gewaehlt['gebinde_einheit'])) : 'Gebinde' ?>
+        </option>
+        <option value="einzeln" <?= $daten['einheit'] === 'einzeln' ? 'selected' : '' ?>>
+          <?= $gewaehlt && $gewaehlt['ve_einheit'] ? h($gewaehlt['ve_einheit']) : 'Einzelstücke' ?>
+        </option>
+      </select>
     </div>
     <div class="zeile">
       <label for="grund">Grund</label>

@@ -1,7 +1,9 @@
-# Lagerverwaltung v4
+# Lagerverwaltung v7
 
-Artikelverwaltung mit Lagerplatz, Barcode-Buchung, Bewegungsprotokoll, Inventur,
-Benutzerverwaltung und Datenimport/-export.
+Artikelverwaltung mit Lagerplatz, Verpackungseinheiten, Barcode-Buchung,
+Bewegungsprotokoll, Inventur, Benutzerverwaltung und Datenimport/-export.
+
+Offene Punkte stehen in ROADMAP.md.
 PHP 8.3 + MariaDB 11, als Docker-Compose-Stack.
 
 ---
@@ -83,7 +85,7 @@ docker compose exec -T db mariadb -u root -p"$(grep DB_ROOT_PASS .env | cut -d= 
   lager < db/02_v2.sql
 ```
 
-Für v3 und v4 ebenso `db/03_v3.sql` und `db/04_v4.sql`. Beide Skripte sind wiederholbar – ein zweiter
+Für die weiteren Versionen ebenso `db/03_v3.sql` bis `db/06_v6.sql`, der Reihe nach. Beide Skripte sind wiederholbar – ein zweiter
 Durchlauf richtet keinen Schaden an. Bei einer **Neuinstallation** werden alle
 Dateien im Init-Verzeichnis alphabetisch eingespielt, du musst nichts migrieren.
 
@@ -223,6 +225,10 @@ src/profil.php              eigenes Passwort ändern
 src/benutzer.php            Benutzerverwaltung (Admin)
 src/daten.php               JSON-Gesamtexport/-import, CSV-Artikelimport
 src/zugang.php              Wareneingang buchen
+src/gebinde.php             Gebindeübersicht
+db/06_v6.sql                Migration auf v6 (Verpackungseinheiten)
+db/07_v7.sql                Migration auf v7 (Inventur mit Gebinden)
+ROADMAP.md                  offene Bausteine
 src/scan.php                Buchen per Barcode
 src/aushang.php             Lagerübersicht zum Aushängen
 src/regal.php               Regalschilder
@@ -294,6 +300,52 @@ dann beide Positionen mit ihrem jeweiligen Lagerort, und du buchst dort, wo du
 gerade stehst. Die Prüfziffer wird nach dem EAN-Verfahren kontrolliert; stimmt
 sie nicht, gibt es einen Hinweis, aber keine Sperre, weil hausinterne Codes
 keine gültige Prüfziffer haben.
+
+### Verpackungseinheiten
+
+Ware, die in Gebinden lagert, wird so gezählt, wie sie im Regal steht:
+
+```
+menge  = Anzahl voller Gebinde        8 Kisten
+lose   = Einzelstücke außerhalb       7 Flaschen aus einer angebrochenen
+gesamt = menge × ve_inhalt + lose     8×20 + 7 = 167 Flaschen
+```
+
+Wer Bestand aufnimmt, zählt Kisten und schaut in die angebrochene hinein –
+genau das bildet die Aufteilung ab. Eine reine Gesamtzahl müsste bei jeder
+Inventur zurückgerechnet werden.
+
+Beim Buchen wird die Einheit gewählt. Reichen bei einer Einzelentnahme die
+losen Stücke nicht, **bricht das System automatisch ein Gebinde auf** – so wie
+im Regal, wo jemand eine Kiste öffnet. Umgekehrt bildet ein Zugang einzelner
+Stücke wieder volle Gebinde, sobald genug zusammenkommen:
+
+```
+8 Kisten + 7 lose   −2 Kisten     →  6 Kisten + 7 lose
+6 Kisten + 7 lose   −10 Flaschen  →  5 Kisten + 17 lose   (aufgebrochen)
+5 Kisten + 17 lose  +13 Flaschen  →  6 Kisten + 10 lose   (Kiste voll)
+```
+
+Die gebuchte Einheit steht mit im Protokoll – ohne sie wäre später nicht mehr
+lesbar, ob „3" drei Kisten oder drei Flaschen meinte.
+
+Unter *Gebinde* gibt es die Gesamtübersicht: volle Gebinde, Einzelstücke
+gesamt, davon lose, gruppiert nach Gebindeart.
+
+**In der Inventur** wird ebenfalls getrennt gezählt: eine Spalte für volle
+Gebinde, eine für lose Einzelstücke. Ohne diese Trennung wäre bei acht Kisten
+Wasser nicht klar, ob „8" acht Kisten oder acht Flaschen meint – zwei Zähler
+trügen unterschiedliche Zahlen ein, und die Differenz wäre Glückssache.
+Ausgewiesen wird die Differenz in **Einzelstücken**: eine fehlende Kiste à 24
+erscheint als −24 Flaschen, nicht als −1. Nur so lassen sich Gebinde- und
+Stückartikel in einer Zahl zusammenfassen.
+
+Die Gebindeangaben werden beim Start der Inventur mitkopiert – wie Name und
+Lagerort auch, damit ein abgeschlossener Beleg lesbar bleibt, wenn die
+Verpackungseinheit später geändert wird.
+
+Artikel ohne Verpackungseinheit bleiben unverändert – `ve_inhalt` leer heißt
+Stückzählung wie bisher.
 
 ### Zugänge
 

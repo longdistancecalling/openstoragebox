@@ -9,6 +9,7 @@ $fehler = [];
 
 $daten = [
     'menge'        => '1',
+    'einheit'      => 'gebinde',
     'grund'        => 'einsatz',
     'entnommen_am' => date('Y-m-d'),
     // Wer bucht, ist angemeldet – der Name steht also schon fest.
@@ -60,7 +61,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
              */
             $pdo->beginTransaction();
 
-            $stmt = $pdo->prepare('SELECT artikelname, menge FROM artikel WHERE artikel_id = ? FOR UPDATE');
+            $stmt = $pdo->prepare(
+                'SELECT artikelname, menge, lose, ve_inhalt, ve_einheit, gebinde_einheit
+                 FROM artikel WHERE artikel_id = ? FOR UPDATE'
+            );
             $stmt->execute([$artikelId]);
             $art = $stmt->fetch();
 
@@ -68,23 +72,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('Dieser Artikel existiert nicht.');
             }
 
-            $menge = (int) $daten['menge'];
-            if ($menge > (int) $art['menge']) {
-                throw new RuntimeException(
-                    'Es sind nur ' . (int) $art['menge'] . ' Stück im Bestand, '
-                    . "entnommen werden sollen $menge."
-                );
-            }
+            $menge   = (int) $daten['menge'];
+            $einheit = empty($art['ve_inhalt']) ? 'einzeln' : $daten['einheit'];
 
-            $pdo->prepare('UPDATE artikel SET menge = menge - ? WHERE artikel_id = ?')
-                ->execute([$menge, $artikelId]);
+            // Rechnet Gebinde und lose Stücke aus und wirft, wenn der
+            // Bestand nicht reicht.
+            [$neueMenge, $neueLose] = bestand_rechnen($art, $menge, $einheit, false);
+
+            $pdo->prepare('UPDATE artikel SET menge = ?, lose = ? WHERE artikel_id = ?')
+                ->execute([$neueMenge, $neueLose, $artikelId]);
 
             $pdo->prepare(
-                'INSERT INTO entnahme (artikel_id, menge, grund, entnommen_am, person, bezug, notiz, erfasst_von)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO entnahme (artikel_id, menge, einheit, grund, entnommen_am, person, bezug, notiz, erfasst_von)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
             )->execute([
                 $artikelId,
                 $menge,
+                $einheit,
                 $daten['grund'],
                 $daten['entnommen_am'],
                 $daten['person'] !== '' ? $daten['person'] : null,
@@ -100,8 +104,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $pdo->commit();
 
-            $text = $menge . '× ' . $art['artikelname'] . ' entnommen ('
-                  . grund_label($daten['grund']) . ').';
+            $text = einheit_text($art, $einheit, $menge) . ' ' . $art['artikelname']
+                  . ' entnommen (' . grund_label($daten['grund']) . ').';
             if ($daten['grund'] === GRUND_LEIHE) {
                 $text .= ' Die Rückgabe steht unter „Bewegungen" offen.';
             }
@@ -131,8 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // POST steckt sie im versteckten Feld, damit die Auswahl nicht verloren geht.
 $suche = trim((string) ($_POST['q'] ?? $_GET['q'] ?? ''));
 
-$sql   = 'SELECT artikel_id, inventar_nr, ean, artikelname, menge, lagerort_text, kategorie
-          FROM v_artikel WHERE menge > 0';
+$sql   = 'SELECT * FROM v_artikel WHERE gesamt_einzeln > 0';
 $werte = [];
 if ($suche !== '') {
     // Ein Platzhalter, deshalb die Spalten zusammengefasst – siehe Kommentar
@@ -215,7 +218,12 @@ require __DIR__ . '/inc/header.php';
       <strong style="margin-left:8px"><?= h($gewaehlt['artikelname']) ?></strong>
     </div>
     <div style="margin-top:6px"><?= lagerort($gewaehlt) ?></div>
-    <div class="karte-zahl"><?= (int) $gewaehlt['menge'] ?> <small>im Bestand</small></div>
+    <div class="karte-zahl">
+      <?= $gewaehlt['hat_gebinde'] ? (int) $gewaehlt['menge'] : (int) $gewaehlt['gesamt_einzeln'] ?>
+      <small><?= $gewaehlt['hat_gebinde']
+          ? h(mehrzahl($gewaehlt['gebinde_einheit'] ?: 'Gebinde')) . ' · ' . (int) $gewaehlt['gesamt_einzeln'] . ' ' . h($gewaehlt['ve_einheit'] ?: 'Stück')
+          : 'im Bestand' ?></small>
+    </div>
   </div>
 <?php endif; ?>
 
@@ -235,7 +243,7 @@ require __DIR__ . '/inc/header.php';
           data-suchtext="<?= h(mb_strtolower($a['inventar_nr'] . ' ' . $a['artikelname'] . ' ' . ($a['kategorie'] ?? '') . ' ' . ($a['lagerort_text'] ?? ''))) ?>"
           <?= $artikelId === (int) $a['artikel_id'] ? ' selected' : '' ?>>
           <?= h($a['inventar_nr']) ?> — <?= h($a['artikelname']) ?>
-          (<?= (int) $a['menge'] ?> Stück<?= $a['lagerort_text'] ? ', ' . h($a['lagerort_text']) : '' ?>)
+          (<?= h(bestand_text($a)) ?><?= $a['lagerort_text'] ? ', ' . h($a['lagerort_text']) : '' ?>)
         </option>
       <?php endforeach; ?>
     </select>
@@ -246,6 +254,17 @@ require __DIR__ . '/inc/header.php';
       <label for="menge">Menge</label>
       <input type="number" id="menge" name="menge" min="1" step="1" required
              value="<?= h($daten['menge']) ?>">
+    </div>
+    <div class="zeile" id="feld-einheit"<?= $gewaehlt && $gewaehlt['hat_gebinde'] ? '' : ' hidden' ?>>
+      <label for="einheit">Einheit</label>
+      <select id="einheit" name="einheit">
+        <option value="gebinde" <?= $daten['einheit'] === 'gebinde' ? 'selected' : '' ?>>
+          <?= $gewaehlt && $gewaehlt['gebinde_einheit'] ? h(mehrzahl($gewaehlt['gebinde_einheit'])) : 'Gebinde' ?>
+        </option>
+        <option value="einzeln" <?= $daten['einheit'] === 'einzeln' ? 'selected' : '' ?>>
+          <?= $gewaehlt && $gewaehlt['ve_einheit'] ? h($gewaehlt['ve_einheit']) : 'Einzelstücke' ?>
+        </option>
+      </select>
     </div>
     <div class="zeile">
       <label for="grund">Grund</label>

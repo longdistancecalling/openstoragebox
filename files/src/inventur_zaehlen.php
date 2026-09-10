@@ -29,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $ist        = $_POST['ist']        ?? [];
+    $istLose    = $_POST['ist_lose']   ?? [];
     $bemerkung  = $_POST['bemerkung']  ?? [];
     $gespeichert = 0;
 
@@ -39,7 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // parst die Abfrage nur einmal.
         $upd = $pdo->prepare(
             'UPDATE inventur_position
-                SET ist_menge = ?, bemerkung = ?, gezaehlt_am = NOW(), gezaehlt_von = ?
+                SET ist_menge = ?, ist_lose = ?, bemerkung = ?,
+                    gezaehlt_am = NOW(), gezaehlt_von = ?
               WHERE inventur_id = ? AND artikel_id = ?'
         );
 
@@ -51,9 +53,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($wert === '' || !ctype_digit($wert)) {
                 continue;   // leer heißt "nicht gezählt", nicht "null Stück"
             }
+            // Lose Stücke sind optional: wer nur Gebinde zählt, lässt
+            // das zweite Feld leer, dann gilt 0.
+            $lose = trim((string) ($istLose[$artikelId] ?? ''));
+            $lose = ctype_digit($lose) ? (int) $lose : 0;
+
             $bem = trim((string) ($bemerkung[$artikelId] ?? ''));
             $upd->execute([
                 (int) $wert,
+                $lose,
                 $bem !== '' ? mb_substr($bem, 0, 255) : null,
                 (int) benutzer()['benutzer_id'],
                 $id,
@@ -79,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $ortFilter = trim((string) ($_GET['ort'] ?? ''));
 $nurOffen  = isset($_GET['offen']);
 
-$sql   = 'SELECT * FROM inventur_position WHERE inventur_id = :id';
+$sql   = 'SELECT * FROM v_inventur_position WHERE inventur_id = :id';
 $werte = [':id' => $id];
 
 if ($ortFilter !== '') {
@@ -98,7 +106,7 @@ $positionen = $stmt->fetchAll();
 // Lagerorte für den Filter – die Reihenfolge entspricht dem Rundgang.
 $stmt = $pdo->prepare(
     'SELECT lagerort, COUNT(*) AS gesamt, SUM(ist_menge IS NULL) AS offen
-     FROM inventur_position WHERE inventur_id = ?
+     FROM v_inventur_position WHERE inventur_id = ?
      GROUP BY lagerort ORDER BY lagerort'
 );
 $stmt->execute([$id]);
@@ -134,15 +142,32 @@ if (($_GET['format'] ?? '') === 'druck') {
         <h2 class="druck-gruppe"><?= h((string) $ort) ?></h2>
         <table class="druck-tabelle">
           <thead>
-            <tr><th>Nr.</th><th>Artikel</th><th class="r">Soll</th><th class="r zaehlfeld">Ist</th><th>Bemerkung</th></tr>
+            <tr>
+              <th>Nr.</th><th>Artikel</th>
+              <th class="r">Soll</th>
+              <th class="r zaehlfeld">Ist Gebinde</th>
+              <th class="r zaehlfeld">Ist lose</th>
+              <th>Bemerkung</th>
+            </tr>
           </thead>
           <tbody>
           <?php foreach ($liste as $p): ?>
+            <?php $ve = (int) ($p['ve_inhalt'] ?? 0); ?>
             <tr>
               <td class="mono"><?= h($p['inventar_nr'] ?? '') ?></td>
-              <td><?= h($p['artikelname']) ?></td>
-              <td class="r mono"><?= (int) $p['soll_menge'] ?></td>
+              <td>
+                <?= h($p['artikelname']) ?>
+                <?php if ($ve): ?>
+                  <span class="z-ve"><?= (int) $ve ?> <?= h($p['ve_einheit'] ?: 'Stück') ?>
+                    je <?= h($p['gebinde_einheit'] ?: 'Gebinde') ?></span>
+                <?php endif; ?>
+              </td>
+              <td class="r mono">
+                <?= (int) $p['soll_menge'] ?><?php
+                if ($ve && (int) $p['soll_lose'] > 0) { echo ' + ' . (int) $p['soll_lose']; } ?>
+              </td>
               <td class="r zaehlfeld"><?= $p['ist_menge'] !== null ? (int) $p['ist_menge'] : '' ?></td>
+              <td class="r zaehlfeld"><?= $ve ? ($p['ist_lose'] !== null ? (int) $p['ist_lose'] : '') : '—' ?></td>
               <td class="bemerkfeld"></td>
             </tr>
           <?php endforeach; ?>
@@ -205,7 +230,10 @@ require __DIR__ . '/inc/header.php';
 </div>
 
 <p class="hinweis" style="margin:0 0 14px">
-  Ein leeres Feld bedeutet „noch nicht gezählt". Für „nichts mehr da" trägst du eine 0 ein.
+  Ein leeres Feld bedeutet „noch nicht gezählt“. Für „nichts mehr da“ trägst du eine 0 ein.
+  Bei Ware in Gebinden zählst du links die vollen Gebinde und rechts die losen
+  Einzelstücke aus einer angebrochenen Packung – die Differenz wird in
+  Einzelstücken ausgewiesen.
 </p>
 
 <?php if (!$positionen): ?>
@@ -219,27 +247,55 @@ require __DIR__ . '/inc/header.php';
     <thead>
       <tr>
         <th>Nr.</th><th>Artikel</th><th>Lagerort</th>
-        <th style="text-align:right">Soll</th><th style="text-align:right">Ist</th><th>Bemerkung</th>
+        <th style="text-align:right">Soll</th>
+        <th style="text-align:right">Ist</th>
+        <th style="text-align:right">lose</th>
+        <th>Bemerkung</th>
       </tr>
     </thead>
     <tbody>
     <?php foreach ($positionen as $p):
         $aid = (int) $p['artikel_id'];
-        $d   = $p['ist_menge'] === null ? null : (int) $p['ist_menge'] - (int) $p['soll_menge'];
+        $d   = $p['ist_menge'] === null ? null : (int) $p['differenz_gesamt'];
+        $ve  = (int) ($p['ve_inhalt'] ?? 0);
+        $eE  = $p['ve_einheit'] ?: 'Stück';
+        $eG  = $p['gebinde_einheit'] ?: 'Gebinde';
     ?>
       <tr<?= $d !== null && $d !== 0 ? ' class="stufe-faellig"' : '' ?>>
         <td data-label="Nr."><span class="invnr"><?= h($p['inventar_nr'] ?? '') ?></span></td>
-        <td data-label="Artikel"><span class="name"><?= h($p['artikelname']) ?></span></td>
+        <td data-label="Artikel">
+          <span class="name"><?= h($p['artikelname']) ?></span>
+          <?php if ($ve): ?>
+            <span class="notiz"><?= $ve ?> <?= h($eE) ?> je <?= h($eG) ?></span>
+          <?php endif; ?>
+        </td>
         <td data-label="Lagerort"><span class="platz-pfad"><?= h($p['lagerort'] ?? '') ?></span></td>
-        <td class="zahl" data-label="Soll"><?= (int) $p['soll_menge'] ?></td>
-        <td data-label="Ist" style="text-align:right">
+        <td class="zahl" data-label="Soll">
+          <?= (int) $p['soll_menge'] ?><?php
+          if ($ve): ?><small class="je"><?= h(mehrzahl($eG)) ?></small>
+            <span class="notiz"><?= (int) $p['soll_gesamt'] ?> <?= h($eE) ?><?php
+              if ((int) $p['soll_lose'] > 0) { echo ', ' . (int) $p['soll_lose'] . ' lose'; } ?></span>
+          <?php endif; ?>
+        </td>
+        <td data-label="Ist<?= $ve ? ' (' . h(mehrzahl($eG)) . ')' : '' ?>" style="text-align:right">
           <input class="zaehlen-feld" type="number" min="0" step="1" inputmode="numeric"
                  name="ist[<?= $aid ?>]"
                  value="<?= $p['ist_menge'] !== null ? (int) $p['ist_menge'] : '' ?>"
                  <?= $inv['abgeschlossen_am'] ? 'disabled' : '' ?>
-                 aria-label="Ist-Menge <?= h($p['artikelname']) ?>">
+                 aria-label="Ist <?= $ve ? h($eG) : 'Menge' ?> <?= h($p['artikelname']) ?>">
           <?php if ($d !== null && $d !== 0): ?>
-            <span class="diff"><?= $d > 0 ? '+' : '' ?><?= $d ?></span>
+            <span class="diff"><?= $d > 0 ? '+' : '' ?><?= $d ?><?= $ve ? ' ' . h($eE) : '' ?></span>
+          <?php endif; ?>
+        </td>
+        <td data-label="lose" style="text-align:right">
+          <?php if ($ve): ?>
+            <input class="zaehlen-feld zaehlen-feld--klein" type="number" min="0" step="1" inputmode="numeric"
+                   name="ist_lose[<?= $aid ?>]"
+                   value="<?= $p['ist_lose'] !== null ? (int) $p['ist_lose'] : '' ?>"
+                   <?= $inv['abgeschlossen_am'] ? 'disabled' : '' ?>
+                   aria-label="Lose <?= h($eE) ?> <?= h($p['artikelname']) ?>">
+          <?php else: ?>
+            <span class="notiz">—</span>
           <?php endif; ?>
         </td>
         <td data-label="Bemerkung">

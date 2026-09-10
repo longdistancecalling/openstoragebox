@@ -75,7 +75,9 @@ $artikel = $stmt->fetchAll();
 
 $kategorien = $pdo->query('SELECT kategorie_id, bezeichnung FROM kategorie ORDER BY bezeichnung')->fetchAll();
 
-$summe     = array_sum(array_column($artikel, 'menge'));
+$summe       = array_sum(array_column($artikel, 'menge'));
+$summeGesamt = array_sum(array_column($artikel, 'gesamt_einzeln'));
+$mitGebinde  = count(array_filter($artikel, fn($a) => (int) $a['hat_gebinde'] === 1));
 $verliehen = array_sum(array_column($artikel, 'verliehen_offen'));
 
 /** Erzeugt einen sortierbaren Spaltenkopf mit Richtungswechsel. */
@@ -99,10 +101,12 @@ require __DIR__ . '/inc/header.php';
 <div class="kopf">
   <h1>Artikel</h1>
   <span class="anzahl">
-    <?= count($artikel) ?> Positionen · <?= (int) $summe ?> Stück<?php
+    <?= count($artikel) ?> Positionen · <?= (int) $summeGesamt ?> Einzelstücke<?php
+    if ($mitGebinde > 0) { echo ' · ' . $mitGebinde . ' in Gebinden'; }
     if ($verliehen > 0) { echo ' · ' . (int) $verliehen . ' verliehen'; } ?>
   </span>
   <span class="rechts">
+    <a class="btn" href="gebinde.php">Gebinde</a>
     <a class="btn" href="export.php">Export</a>
     <?php if (darf('bearbeiter')): ?><a class="btn btn--primaer" href="artikel.php">Artikel anlegen</a><?php endif; ?>
   </span>
@@ -194,7 +198,13 @@ require __DIR__ . '/inc/header.php';
         <?php endif; ?>
       </td>
       <td class="zahl" data-label="Bestand">
-        <?= (int) $a['menge'] ?>
+        <?php if ($a['hat_gebinde']): ?>
+          <span class="best-gebinde"><?= (int) $a['menge'] ?><small><?= h(mehrzahl($a['gebinde_einheit'] ?: 'Gebinde')) ?></small></span>
+          <span class="best-gesamt"><?= (int) $a['gesamt_einzeln'] ?> <?= h($a['ve_einheit'] ?: 'Stück') ?><?php
+            if ((int) $a['lose'] > 0) { echo ', davon ' . (int) $a['lose'] . ' lose'; } ?></span>
+        <?php else: ?>
+          <?= (int) $a['menge'] ?>
+        <?php endif; ?>
         <?php if ($leihe > 0): ?>
           <span class="leihe"><?= $leihe ?> verliehen</span>
         <?php endif; ?>

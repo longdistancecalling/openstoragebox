@@ -33,11 +33,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ->execute([$bez]);
             $neu = (int) $pdo->lastInsertId();
 
+            // Auch die Gebindeangaben werden kopiert – die Inventur ist
+            // ein Beleg und muss lesbar bleiben, wenn die Verpackungs-
+            // einheit später geändert wird.
             $pdo->prepare(
                 'INSERT INTO inventur_position
-                    (inventur_id, artikel_id, inventar_nr, artikelname, lagerort, soll_menge)
+                    (inventur_id, artikel_id, inventar_nr, artikelname, lagerort,
+                     ve_inhalt, ve_einheit, gebinde_einheit, soll_menge, soll_lose)
                  SELECT ?, artikel_id, inventar_nr, artikelname,
-                        IFNULL(lagerort_text, "ohne Lagerort"), menge
+                        IFNULL(lagerort_text, "ohne Lagerort"),
+                        ve_inhalt, ve_einheit, gebinde_einheit, menge, lose
                    FROM v_artikel'
             )->execute([$neu]);
 
@@ -65,13 +70,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($uebernehmen) {
                 // Nur gezählte Positionen mit Abweichung anfassen.
+                // Bei Gebindeartikeln müssen beide Werte übernommen werden,
+                // sonst bliebe die Zahl der losen Stücke auf dem alten Stand.
                 $pdo->prepare(
                     'UPDATE artikel a
                        JOIN inventur_position p ON p.artikel_id = a.artikel_id
-                        SET a.menge = p.ist_menge
+                        SET a.menge = p.ist_menge,
+                            a.lose  = IFNULL(p.ist_lose, 0)
                       WHERE p.inventur_id = ?
                         AND p.ist_menge IS NOT NULL
-                        AND p.ist_menge <> p.soll_menge'
+                        AND (p.ist_menge <> p.soll_menge OR IFNULL(p.ist_lose,0) <> p.soll_lose)'
                 )->execute([$id]);
             }
 
@@ -113,9 +121,8 @@ if ($id !== null) {
     }
 
     $stmt = $pdo->prepare(
-        'SELECT *, (ist_menge - soll_menge) AS differenz
-         FROM inventur_position WHERE inventur_id = ?
-         ORDER BY (ist_menge IS NULL), ABS(IFNULL(ist_menge,0) - soll_menge) DESC, artikelname'
+        'SELECT * FROM v_inventur_position WHERE inventur_id = ?
+         ORDER BY (ist_menge IS NULL), ABS(IFNULL(differenz_gesamt,0)) DESC, artikelname'
     );
     $stmt->execute([$id]);
     $positionen = $stmt->fetchAll();
@@ -126,7 +133,9 @@ if ($id !== null) {
             continue;
         }
         $gezaehlt++;
-        $d = (int) $p['differenz'];
+        // In Einzelstücken vergleichen – nur so sind Gebinde- und
+        // Stückartikel in einer Zahl zusammenfassbar.
+        $d = (int) $p['differenz_gesamt'];
         if ($d !== 0) {
             $abweichend++;
             if ($d > 0) { $plus += $d; } else { $minus += abs($d); }
@@ -158,7 +167,7 @@ if ($id !== null) {
       <div class="kennzahl"><span class="kz-wert"><?= $gezaehlt ?></span><span class="kz-label">gezählt</span></div>
       <div class="kennzahl<?= $offen > 0 ? ' kennzahl--amber' : '' ?>"><span class="kz-wert"><?= $offen ?></span><span class="kz-label">offen</span></div>
       <div class="kennzahl<?= $abweichend > 0 ? ' kennzahl--rot' : '' ?>"><span class="kz-wert"><?= $abweichend ?></span><span class="kz-label">Abweichungen</span></div>
-      <div class="kennzahl"><span class="kz-wert">−<?= $minus ?> / +<?= $plus ?></span><span class="kz-label">Stück Differenz</span></div>
+      <div class="kennzahl"><span class="kz-wert">−<?= $minus ?> / +<?= $plus ?></span><span class="kz-label">Einzelstücke Differenz</span></div>
     </div>
 
     <?php if (!$inv['abgeschlossen_am'] && darf('admin')): ?>
@@ -190,15 +199,32 @@ if ($id !== null) {
       </thead>
       <tbody>
       <?php foreach ($positionen as $p):
-          $d = $p['ist_menge'] === null ? null : (int) $p['differenz'];
+          $d = $p['ist_menge'] === null ? null : (int) $p['differenz_gesamt'];
+          $ve = (int) ($p['ve_inhalt'] ?? 0);
+          $eE = $p['ve_einheit'] ?: 'Stück';
+          $eG = $p['gebinde_einheit'] ?: 'Gebinde';
       ?>
         <tr<?= $d !== null && $d !== 0 ? ' class="stufe-faellig"' : '' ?>>
           <td data-label="Nr."><span class="invnr"><?= h($p['inventar_nr'] ?? '') ?></span></td>
           <td data-label="Artikel"><span class="name"><?= h($p['artikelname']) ?></span></td>
           <td data-label="Lagerort"><span class="platz-pfad"><?= h($p['lagerort'] ?? '') ?></span></td>
-          <td class="zahl" data-label="Soll"><?= (int) $p['soll_menge'] ?></td>
+          <td class="zahl" data-label="Soll">
+            <?php if ($ve): ?>
+              <?= (int) $p['soll_menge'] ?><small class="je"><?= h(mehrzahl($eG)) ?></small>
+              <span class="notiz"><?= (int) $p['soll_gesamt'] ?> <?= h($eE) ?></span>
+            <?php else: ?>
+              <?= (int) $p['soll_menge'] ?>
+            <?php endif; ?>
+          </td>
           <td class="zahl" data-label="Ist">
-            <?= $p['ist_menge'] === null ? '<span class="notiz">offen</span>' : (int) $p['ist_menge'] ?>
+            <?php if ($p['ist_menge'] === null): ?>
+              <span class="notiz">offen</span>
+            <?php elseif ($ve): ?>
+              <?= (int) $p['ist_menge'] ?><small class="je"><?= h(mehrzahl($eG)) ?></small>
+              <span class="notiz"><?= (int) $p['ist_gesamt'] ?> <?= h($eE) ?></span>
+            <?php else: ?>
+              <?= (int) $p['ist_menge'] ?>
+            <?php endif; ?>
           </td>
           <td class="zahl" data-label="Differenz">
             <?php if ($d === null): ?>
@@ -207,6 +233,7 @@ if ($id !== null) {
               <span class="marke marke--gruen">ok</span>
             <?php else: ?>
               <span class="marke marke--rot"><?= $d > 0 ? '+' : '' ?><?= $d ?></span>
+              <?php if ($ve): ?><span class="notiz"><?= h($eE) ?></span><?php endif; ?>
             <?php endif; ?>
           </td>
           <td data-label="Bemerkung"><span class="notiz"><?= h($p['bemerkung'] ?? '') ?></span></td>
@@ -236,9 +263,9 @@ $inventuren = $pdo->query(
     'SELECT i.*,
             COUNT(p.artikel_id) AS positionen,
             SUM(p.ist_menge IS NOT NULL) AS gezaehlt,
-            SUM(p.ist_menge IS NOT NULL AND p.ist_menge <> p.soll_menge) AS abweichungen
+            SUM(p.ist_menge IS NOT NULL AND IFNULL(p.differenz_gesamt,0) <> 0) AS abweichungen
      FROM inventur i
-     LEFT JOIN inventur_position p ON p.inventur_id = i.inventur_id
+     LEFT JOIN v_inventur_position p ON p.inventur_id = i.inventur_id
      GROUP BY i.inventur_id
      ORDER BY i.begonnen_am DESC, i.inventur_id DESC'
 )->fetchAll();

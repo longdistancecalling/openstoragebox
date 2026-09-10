@@ -97,6 +97,7 @@ if (DateTimeImmutable::createFromFormat('Y-m-d', $bis)) {
 $where = $bedingungen ? 'WHERE ' . implode(' AND ', $bedingungen) : '';
 
 $sql = "SELECT e.*, a.artikelname, a.inventar_nr, a.ean,
+               a.ve_inhalt, a.ve_einheit, a.gebinde_einheit,
                a.kategorie_id, k.bezeichnung AS kategorie,
                b.anzeigename AS gebucht_von
         FROM v_bewegung e
@@ -286,6 +287,12 @@ require __DIR__ . '/inc/header.php';
         <span class="<?= $z['richtung'] === 'zugang' ? 'menge-plus' : 'menge-minus' ?>">
           <?= $z['richtung'] === 'zugang' ? '+' : '−' ?><?= (int) $z['menge'] ?>
         </span>
+        <?php if ($z['ve_inhalt'] && $z['einheit'] === 'gebinde'): ?>
+          <span class="notiz"><?= h(mehrzahl($z['gebinde_einheit'] ?: 'Gebinde')) ?>
+            = <?= (int) $z['menge'] * (int) $z['ve_inhalt'] ?> <?= h($z['ve_einheit'] ?: 'Stück') ?></span>
+        <?php elseif ($z['ve_inhalt']): ?>
+          <span class="notiz"><?= h($z['ve_einheit'] ?: 'Stück') ?></span>
+        <?php endif; ?>
       </td>
       <td data-label="Person / Bezug">
         <?= h($z['person'] ?? '') ?>

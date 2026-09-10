@@ -35,6 +35,10 @@ $daten = [
     'standort_frei'=> '',
     'kategorie_id' => '',
     'menge'        => '1',
+    've_inhalt'    => '',
+    've_einheit'   => '',
+    'gebinde_einheit' => '',
+    'lose'         => '0',
     'faellig_am'   => '',
     'faellig_typ'  => '',
     'notiz'        => '',
@@ -99,6 +103,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fehler[] = 'Der Bestand muss eine ganze Zahl ab 0 sein.';
     }
 
+    // Gebinde: entweder vollständig oder gar nicht.
+    if ($daten['ve_inhalt'] !== '') {
+        if (!ctype_digit($daten['ve_inhalt']) || (int) $daten['ve_inhalt'] < 1) {
+            $fehler[] = 'Der Gebindeinhalt muss mindestens 1 sein.';
+        }
+        if ($daten['ve_einheit'] === '') {
+            $fehler[] = 'Zum Gebinde fehlt die Einheit des Inhalts (z. B. Flaschen).';
+        }
+        if ($daten['gebinde_einheit'] === '') {
+            $fehler[] = 'Zum Gebinde fehlt die Bezeichnung (z. B. Kiste).';
+        }
+        if (!ctype_digit($daten['lose'])) {
+            $fehler[] = 'Die losen Einzelstücke müssen eine ganze Zahl ab 0 sein.';
+        } elseif ((int) $daten['ve_inhalt'] >= 1 && (int) $daten['lose'] >= (int) $daten['ve_inhalt']) {
+            $fehler[] = 'Lose Stücke müssen weniger sein als ein volles Gebinde – '
+                      . 'sonst gehören sie als weiteres Gebinde gezählt.';
+        }
+    } else {
+        $daten['lose'] = '0';
+        $daten['ve_einheit'] = '';
+        $daten['gebinde_einheit'] = '';
+    }
+
     // Der CHECK in der Datenbank verlangt beides oder nichts.
     if ($daten['faellig_am'] !== '' && $daten['faellig_typ'] === '') {
         $fehler[] = 'Zum Datum fehlt die Angabe, ob es ein Ablauf- oder ein Prüfdatum ist.';
@@ -138,6 +165,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $daten['standort_frei'] !== '' ? $daten['standort_frei']  : null,
             $daten['kategorie_id']  !== '' ? (int) $daten['kategorie_id'] : null,
             (int) $daten['menge'],
+            $daten['ve_inhalt'] !== '' ? (int) $daten['ve_inhalt'] : null,
+            $daten['ve_einheit'] !== '' ? $daten['ve_einheit'] : null,
+            $daten['gebinde_einheit'] !== '' ? $daten['gebinde_einheit'] : null,
+            (int) $daten['lose'],
             $daten['faellig_am']  !== '' ? $daten['faellig_am']  : null,
             $daten['faellig_typ'] !== '' ? $daten['faellig_typ'] : null,
             $daten['notiz'] !== '' ? $daten['notiz'] : null,
@@ -156,8 +187,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare(
                     'INSERT INTO artikel
                        (ean, artikelname, kiste_id, standort_frei, kategorie_id, menge,
+                        ve_inhalt, ve_einheit, gebinde_einheit, lose,
                         faellig_am, faellig_typ, notiz)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
                 );
                 $stmt->execute($werte);
                 $neueId = (int) $pdo->lastInsertId();
@@ -181,7 +213,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare(
                     'UPDATE artikel SET
                         ean = ?, artikelname = ?, kiste_id = ?, standort_frei = ?, kategorie_id = ?,
-                        menge = ?, faellig_am = ?, faellig_typ = ?, notiz = ?, inventar_nr = ?
+                        menge = ?, ve_inhalt = ?, ve_einheit = ?, gebinde_einheit = ?, lose = ?,
+                        faellig_am = ?, faellig_typ = ?, notiz = ?, inventar_nr = ?
                      WHERE artikel_id = ?'
                 );
                 $stmt->execute([...$werte, $nummer, $id]);
@@ -226,6 +259,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $id !== null) {
         'standort_frei'=> (string) ($vorhanden['standort_frei'] ?? ''),
         'kategorie_id' => (string) ($vorhanden['kategorie_id'] ?? ''),
         'menge'        => (string) $vorhanden['menge'],
+        've_inhalt'    => (string) ($vorhanden['ve_inhalt'] ?? ''),
+        've_einheit'   => (string) ($vorhanden['ve_einheit'] ?? ''),
+        'gebinde_einheit' => (string) ($vorhanden['gebinde_einheit'] ?? ''),
+        'lose'         => (string) ($vorhanden['lose'] ?? '0'),
         'faellig_am'   => (string) ($vorhanden['faellig_am'] ?? ''),
         'faellig_typ'  => (string) ($vorhanden['faellig_typ'] ?? ''),
         'notiz'        => (string) ($vorhanden['notiz'] ?? ''),
@@ -378,10 +415,51 @@ require __DIR__ . '/inc/header.php';
       </select>
     </div>
     <div class="zeile">
-      <label for="menge">Bestand</label>
+      <label for="menge">Bestand<span class="hinweis-inline" id="menge-einheit"></span></label>
       <input type="number" id="menge" name="menge" min="0" step="1" value="<?= h($daten['menge']) ?>">
     </div>
   </div>
+
+  <fieldset class="gebinde">
+    <legend>Verpackungseinheit</legend>
+    <p class="hinweis" style="margin-top:0">
+      Für Ware, die in Gebinden lagert – etwa 20 Flaschen je Kiste. Der Bestand oben
+      zählt dann volle Gebinde, angebrochene Stücke stehen separat.
+      Feld leer lassen, wenn der Artikel einzeln gezählt wird.
+    </p>
+    <div class="paar">
+      <div class="zeile">
+        <label for="ve_inhalt">Inhalt je Gebinde</label>
+        <input type="number" id="ve_inhalt" name="ve_inhalt" min="1" step="1"
+               value="<?= h($daten['ve_inhalt']) ?>" placeholder="20">
+      </div>
+      <div class="zeile">
+        <label for="ve_einheit">Einheit des Inhalts</label>
+        <input type="text" id="ve_einheit" name="ve_einheit" maxlength="30"
+               value="<?= h($daten['ve_einheit']) ?>" placeholder="Flaschen"
+               list="ve-vorschlaege">
+        <datalist id="ve-vorschlaege">
+          <option value="Flaschen"><option value="Stück"><option value="Beutel">
+          <option value="Packungen"><option value="Paar"><option value="Meter">
+        </datalist>
+      </div>
+      <div class="zeile">
+        <label for="gebinde_einheit">Gebinde heißt</label>
+        <input type="text" id="gebinde_einheit" name="gebinde_einheit" maxlength="30"
+               value="<?= h($daten['gebinde_einheit']) ?>" placeholder="Kiste"
+               list="geb-vorschlaege">
+        <datalist id="geb-vorschlaege">
+          <option value="Kiste"><option value="Karton"><option value="Palette">
+          <option value="Sack"><option value="Rolle"><option value="Packung">
+        </datalist>
+      </div>
+      <div class="zeile">
+        <label for="lose">Lose Einzelstücke</label>
+        <input type="number" id="lose" name="lose" min="0" step="1" value="<?= h($daten['lose']) ?>">
+      </div>
+    </div>
+    <p class="hinweis" id="gebinde-rechnung"></p>
+  </fieldset>
 
   <div class="paar">
     <div class="zeile">
@@ -453,6 +531,36 @@ require __DIR__ . '/inc/header.php';
 <?php endif; ?>
 
 <script>
+// Zeigt die Gebinderechnung live an, damit sofort sichtbar ist, was
+// eingetragene Zahlen bedeuten.
+(function () {
+  const inh = document.getElementById('ve_inhalt');
+  const eInh = document.getElementById('ve_einheit');
+  const eGeb = document.getElementById('gebinde_einheit');
+  const lose = document.getElementById('lose');
+  const menge = document.getElementById('menge');
+  const aus = document.getElementById('gebinde-rechnung');
+  const lbl = document.getElementById('menge-einheit');
+  if (!inh || !aus) return;
+  function rechnen() {
+    const ve = parseInt(inh.value, 10);
+    if (!ve || ve < 1) {
+      aus.textContent = '';
+      lbl.textContent = ' in Stück';
+      return;
+    }
+    const m = parseInt(menge.value, 10) || 0;
+    const l = parseInt(lose.value, 10) || 0;
+    const gEinheit = eGeb.value || 'Gebinde';
+    const iEinheit = eInh.value || 'Stück';
+    aus.textContent = `${m} × ${gEinheit} à ${ve} ${iEinheit}`
+      + (l ? ` + ${l} lose` : '') + ` = ${m * ve + l} ${iEinheit} gesamt`;
+    lbl.textContent = ` in ${gEinheit}`;
+  }
+  [inh, eInh, eGeb, lose, menge].forEach(e => e && e.addEventListener('input', rechnen));
+  rechnen();
+})();
+
 // Zusatzfelder an die gewählte Kategorie anpassen. Felder ohne
 // Kategoriebindung (data-kategorie="") gelten immer.
 (function () {
