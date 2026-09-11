@@ -232,6 +232,7 @@ ROADMAP.md                  offene Bausteine
 src/scan.php                Buchen per Barcode
 src/aushang.php             Lagerübersicht zum Aushängen
 src/regal.php               Regalschilder
+src/code.php                Klebeetiketten mit QR-Code
 src/schein.php              Entnahme- und Leihschein
 db/04_v4.sql                Migration auf v4 (EAN, Zugänge)
 db/03_v3.sql                Migration auf v3 (Benutzer)
@@ -247,6 +248,7 @@ backup.sh / restore.sh      Datenbanksicherung und Wiederherstellung
 | Artikelliste | Druck (A4) + CSV | alphabetisch, mit Nummer, Kiste und Lagerort |
 | Entnahmeschein | Druck (A5 quer) | Beleg je Buchung, bei Leihe mit Unterschriftsfeldern |
 | Blanko-Scheine | Druck (A5 quer) | leere Entnahme- und Einlagerungsscheine für den Vorrat |
+| Klebeetiketten | Druck (A4) | QR-Etiketten für Artikel und Kisten, drei Rasterformate |
 | Regalschilder | Druck (A5 quer) | ein Blatt je Regal, gegliedert nach Fach und Kiste |
 | Lagerübersicht | Druck (A4) | kompletter Bestand zum Aushängen, vier Gliederungen |
 | Kistenetiketten | Druck (A5 quer) | eine Seite je Kiste mit vollständigem Inhalt |
@@ -407,6 +409,30 @@ Nach dem Buchen einer Leihe springt die Anwendung direkt auf den Schein, damit
 er unterschrieben wird, solange der Entleiher noch danebensteht. Über
 *Leihscheine drucken* lassen sich alle offenen Leihen auf einmal ausgeben – etwa
 für eine Nachfassaktion, wenn Material zu lange draußen ist.
+
+Die **Klebeetiketten** (*Export → Klebeetiketten*) sind für alles gedacht, das
+keine Hersteller-EAN hat: Getränkekisten, Aggregate, Zelte. Jedes Etikett trägt
+einen QR-Code, Name, Lagerort und die Inventarnummer. Gescannt öffnet sich
+direkt die Buchung.
+
+| Format | Maße | je Bogen | wofür |
+|---|---|---|---|
+| Standard | 70 × 37 mm | 24 | Regelfall, randlos gerastert |
+| Groß | 105 × 48 mm | 12 | Geräte und Kisten, Code aus einem Meter lesbar |
+| Klein | 48,5 × 25,4 mm | 40 | Kleinteile, Text wird knapp |
+
+Alle drei entsprechen verbreiteten Bögen (Avery Zweckform 3474, 3425, 3667 und
+baugleiche), sind also nicht an einen Hersteller gebunden. Das Standardformat
+ist randlos gerastert – drei Spalten à 70 mm ergeben exakt die Blattbreite –
+und verzeiht dadurch kleine Druckversätze am ehesten.
+
+Zwei Dinge, die beim Drucken zählen: **Skalierung auf 100 Prozent** stellen,
+sonst verschiebt sich das Raster um Millimeter und keine Zeile trifft mehr. Und
+für Material, das nass oder schmutzig wird, lohnen wetterfeste Folienetiketten
+im selben Raster – Papier löst sich an einer Getränkekiste im Regen ab.
+
+„Felder freilassen" überspringt schon abgezogene Etiketten, damit angebrochene
+Bögen weiterverwendet werden können.
 
 Das **Regalschild** (*Export → Regalschilder*) druckt ein A4-Blatt je Regal,
 gegliedert nach Fächern und darin nach Kisten. Die Regalnummer steht in 46pt,

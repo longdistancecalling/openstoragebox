@@ -107,6 +107,7 @@ require __DIR__ . '/inc/header.php';
   </span>
   <span class="rechts">
     <a class="btn" href="gebinde.php">Gebinde</a>
+    <a class="btn" href="code.php">Etiketten</a>
     <a class="btn" href="export.php">Export</a>
     <?php if (darf('bearbeiter')): ?><a class="btn btn--primaer" href="artikel.php">Artikel anlegen</a><?php endif; ?>
   </span>

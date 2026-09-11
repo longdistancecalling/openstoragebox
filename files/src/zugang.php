@@ -203,6 +203,8 @@ require __DIR__ . '/inc/header.php';
       <?php foreach ($artikelListe as $a): ?>
         <option value="<?= (int) $a['artikel_id'] ?>"
           data-suchtext="<?= h(mb_strtolower($a['inventar_nr'] . ' ' . $a['artikelname'] . ' ' . ($a['kategorie'] ?? '') . ' ' . ($a['lagerort_text'] ?? ''))) ?>"
+          data-gebinde="<?= h((string) ($a['gebinde_einheit'] ?? '')) ?>"
+          data-einzeln="<?= h((string) ($a['ve_einheit'] ?? '')) ?>"
           <?= $artikelId === (int) $a['artikel_id'] ? ' selected' : '' ?>>
           <?= h($a['inventar_nr']) ?> — <?= h($a['artikelname']) ?>
           (<?= h(bestand_text($a)) ?><?= $a['lagerort_text'] ? ', ' . h($a['lagerort_text']) : '' ?>)
@@ -271,6 +273,35 @@ require __DIR__ . '/inc/header.php';
 </form>
 
 <script>
+/*
+ * Einheitenauswahl an den gewählten Artikel anpassen.
+ *
+ * Vorher richtete sich das Feld nur nach dem vorausgewählten Artikel und
+ * blieb versteckt, wenn man erst in der Liste einen Gebindeartikel
+ * anklickte – dann war nicht wählbar, ob Kisten oder Flaschen gebucht
+ * werden, und die Buchung landete stillschweigend in der falschen
+ * Einheit.
+ */
+(function () {
+  const sel  = document.getElementById('artikel_id');
+  const zeile = document.getElementById('feld-einheit');
+  const eSel = document.getElementById('einheit');
+  if (!sel || !zeile || !eSel) return;
+  function anpassen() {
+    const o = sel.selectedOptions[0];
+    const g = o ? (o.dataset.gebinde || '') : '';
+    const e = o ? (o.dataset.einzeln || '') : '';
+    const hat = g !== '' || e !== '';
+    zeile.hidden = !hat;
+    if (hat) {
+      eSel.options[0].textContent = g || 'Gebinde';
+      eSel.options[1].textContent = e || 'Einzelstücke';
+    }
+  }
+  sel.addEventListener('change', anpassen);
+  anpassen();
+})();
+
 (function () {
   const feld = document.getElementById('schnellfilter');
   if (!feld) return;

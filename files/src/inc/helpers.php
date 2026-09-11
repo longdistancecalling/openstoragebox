@@ -316,3 +316,114 @@ function qr_svg(string $art, string $kennung, int $px = 90): string
         return '';
     }
 }
+
+/* =====================================================================
+   Verpackungseinheiten
+   ===================================================================== */
+
+/**
+ * Bestand als lesbarer Text.
+ * Ohne Gebinde: "25 Stück".
+ * Mit Gebinde:  "8 Kisten + 7 Flaschen = 167 Flaschen".
+ */
+function bestand_text(array $a): string
+{
+    $menge = (int) $a['menge'];
+    if (empty($a['ve_inhalt'])) {
+        return $menge . ' Stück';
+    }
+
+    $gebinde = $a['gebinde_einheit'] ?: 'Gebinde';
+    $einzeln = $a['ve_einheit'] ?: 'Stück';
+    $lose    = (int) $a['lose'];
+
+    $text = $menge . ' ' . ($menge === 1 ? $gebinde : mehrzahl($gebinde));
+    if ($lose > 0) {
+        $text .= ' + ' . $lose . ' ' . $einzeln;
+    }
+    return $text . ' = ' . (int) $a['gesamt_einzeln'] . ' ' . $einzeln;
+}
+
+/**
+ * Grobe Mehrzahlbildung für die paar Gebindewörter, die vorkommen.
+ * Keine allgemeine Sprachlogik – nur so viel, dass "8 Kisten" statt
+ * "8 Kiste" dasteht.
+ */
+function mehrzahl(string $wort): string
+{
+    return match (mb_strtolower($wort)) {
+        'kiste'    => 'Kisten',
+        'karton'   => 'Kartons',
+        'palette'  => 'Paletten',
+        'packung'  => 'Packungen',
+        'sack'     => 'Säcke',
+        'rolle'    => 'Rollen',
+        'gebinde', 'paar', 'set' => $wort,
+        default    => $wort,
+    };
+}
+
+/**
+ * Bucht eine Bestandsänderung auf Gebinde und lose Stücke.
+ *
+ * Der interessante Fall ist die Entnahme einzelner Stücke aus einem
+ * vollen Gebinde: reichen die losen nicht, wird ein Gebinde
+ * aufgebrochen – genau wie im Regal, wo jemand eine Kiste öffnet.
+ *
+ * Gibt [neue_menge, neue_lose] zurück oder wirft bei zu wenig Bestand.
+ */
+function bestand_rechnen(array $a, int $anzahl, string $einheit, bool $zugang): array
+{
+    $menge = (int) $a['menge'];
+    $lose  = (int) $a['lose'];
+    $ve    = (int) ($a['ve_inhalt'] ?? 0);
+
+    // Ohne Gebinde ist alles eine einfache Addition.
+    if ($ve < 1) {
+        $neu = $zugang ? $menge + $anzahl : $menge - $anzahl;
+        if ($neu < 0) {
+            throw new RuntimeException("Es sind nur $menge Stück im Bestand, gebucht werden sollen $anzahl.");
+        }
+        return [$neu, 0];
+    }
+
+    if ($einheit === 'gebinde') {
+        $neu = $zugang ? $menge + $anzahl : $menge - $anzahl;
+        if ($neu < 0) {
+            $g = $a['gebinde_einheit'] ?: 'Gebinde';
+            throw new RuntimeException(
+                'Es sind nur ' . $menge . ' ' . ($menge === 1 ? $g : mehrzahl($g))
+                . " im Bestand, gebucht werden sollen $anzahl."
+            );
+        }
+        return [$neu, $lose];
+    }
+
+    // Einzelstücke
+    if ($zugang) {
+        $lose += $anzahl;
+        // Volle Gebinde daraus bilden, damit die Zählung sauber bleibt.
+        $menge += intdiv($lose, $ve);
+        $lose   = $lose % $ve;
+        return [$menge, $lose];
+    }
+
+    $gesamt = $menge * $ve + $lose;
+    if ($anzahl > $gesamt) {
+        $e = $a['ve_einheit'] ?: 'Stück';
+        throw new RuntimeException("Es sind nur $gesamt $e im Bestand, entnommen werden sollen $anzahl.");
+    }
+    $rest   = $gesamt - $anzahl;
+    return [intdiv($rest, $ve), $rest % $ve];
+}
+
+/** Klartext der Buchungseinheit für Protokoll und Schein. */
+function einheit_text(array $a, string $einheit, int $anzahl): string
+{
+    if (empty($a['ve_inhalt']) || $einheit === 'einzeln') {
+        return $anzahl . ' ' . ($a['ve_einheit'] ?: 'Stück');
+    }
+    $g = $a['gebinde_einheit'] ?: 'Gebinde';
+    return $anzahl . ' ' . ($anzahl === 1 ? $g : mehrzahl($g))
+         . ' (' . ($anzahl * (int) $a['ve_inhalt']) . ' ' . ($a['ve_einheit'] ?: 'Stück') . ')';
+}

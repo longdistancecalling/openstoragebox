@@ -239,6 +239,17 @@ require __DIR__ . '/inc/header.php';
   </section>
 
   <section class="kachel">
+    <h2>Klebeetiketten mit QR</h2>
+    <p>Selbstklebende Etiketten für Artikel und Kisten, je mit QR-Code.
+       Wird der Code gescannt, öffnet sich direkt die Buchung – gedacht für
+       Getränkekisten, Aggregate und alles, was keine Hersteller-EAN hat.</p>
+    <div class="kachel-knoepfe">
+      <a class="btn btn--primaer" href="code.php">Etiketten drucken</a>
+      <a class="btn" href="code.php?was=kisten">alle Kisten</a>
+    </div>
+  </section>
+
+  <section class="kachel">
     <h2>Regalschilder</h2>
     <p>Ein A4-Blatt je Regal, gegliedert nach Fächern und Kisten – für die
        Stirnseite des Regals. Wer davorsteht, sieht ohne Suchen, was in welchem

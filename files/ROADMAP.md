@@ -20,35 +20,15 @@ Jeder Punkt nennt, was zu tun ist und warum er an dieser Stelle steht.
 | v7 | Inventur zählt Gebinde und lose Stücke getrennt |
 
 Zuletzt ohne eigene Migration: Scan-Seite versteht die eigenen QR-Codes
-(`K:` und `A:`) und bucht Gebinde korrekt; Blanko-Scheine zum Ausdrucken.
+(`K:` und `A:`) und bucht Gebinde korrekt; Blanko-Scheine zum Ausdrucken;
+Klebeetiketten mit QR in drei Rasterformaten.
 
 Dazu quer über die Versionen: Regalschilder, Lagerübersicht zum Aushängen,
 Entnahme- und Leihscheine, QR-Code auf dem Kistenetikett, Backup und Restore.
 
 ---
 
-## 1. Eigene Codes für Artikel
-
-**Warum zuerst:** Die Scan-Seite versteht `A:`-Codes jetzt – es fehlt nur
-noch das Etikett zum Aufkleben. Damit ließen sich Gegenstände ohne
-Hersteller-EAN scannen: Aggregat, Zelt, Getränkekiste.
-
-**Zu tun:**
-- Neue Seite `code.php`: druckbare Bögen mit Klebeetiketten, je Etikett
-  QR-Code, Inventarnummer und Artikelname.
-- Auswahl: einzelner Artikel, eine Kategorie, alle ohne Code, oder eine
-  freie Auswahl.
-- Layout an gängige Etikettenbögen anlehnen – ein Raster aus gleich großen
-  Feldern auf A4, damit selbstklebende Bögen bedruckt werden können.
-- Auf dem Regalschild und dem Kistenetikett steht der QR bereits; für
-  einzelne Gegenstände (Aggregat, Zelt) braucht es das Artikeletikett.
-
-**Offene Frage:** Welches Etikettenformat verwendet der Kreisverband? Das
-Raster sollte dazu passen, sonst wird geklebt statt bedruckt.
-
----
-
-## 2. QR-Code auch auf Regalschild und Schein
+## 1. QR-Code auch auf Regalschild und Schein
 
 **Zu tun:**
 - Regalschild: QR mit `R:Lager|Regal`, führt auf eine Regalansicht.
@@ -59,7 +39,7 @@ Raster sollte dazu passen, sonst wird geklebt statt bedruckt.
 
 ---
 
-## 3. Kleinere offene Punkte
+## 2. Kleinere offene Punkte
 
 - **Etikett und Aushang mit Gebindeangabe:** zeigen aktuell die Menge, nicht
   die Gesamtzahl. Auf einem Aushang ist „8 Kisten = 167 Flaschen“ die
@@ -72,6 +52,9 @@ Raster sollte dazu passen, sonst wird geklebt statt bedruckt.
 - **Maske 6 im QR-Encoder:** ist ausgeschlossen, weil der Testscanner damit
   reproduzierbar scheiterte, obwohl Formel und Formatbits der Norm
   entsprechen. Ungeklärt, aber ohne praktische Folgen.
+- **Wetterfeste Etiketten:** Das Raster passt auch auf Folienbögen, aber
+  niemand hat das bisher gedruckt. Beim ersten Kauf einen Testbogen auf
+  Normalpapier ziehen und gegen den Folienbogen halten.
 - **HTTPS:** Ohne TLS gehen Passwörter im Klartext über die Leitung. Im
   Heimnetz hinter WireGuard vertretbar, für alles andere gehört Traefik mit
   Zertifikat davor.

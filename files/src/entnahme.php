@@ -241,6 +241,8 @@ require __DIR__ . '/inc/header.php';
       <?php foreach ($artikelListe as $a): ?>
         <option value="<?= (int) $a['artikel_id'] ?>"
           data-suchtext="<?= h(mb_strtolower($a['inventar_nr'] . ' ' . $a['artikelname'] . ' ' . ($a['kategorie'] ?? '') . ' ' . ($a['lagerort_text'] ?? ''))) ?>"
+          data-gebinde="<?= h((string) ($a['gebinde_einheit'] ?? '')) ?>"
+          data-einzeln="<?= h((string) ($a['ve_einheit'] ?? '')) ?>"
           <?= $artikelId === (int) $a['artikel_id'] ? ' selected' : '' ?>>
           <?= h($a['inventar_nr']) ?> — <?= h($a['artikelname']) ?>
           (<?= h(bestand_text($a)) ?><?= $a['lagerort_text'] ? ', ' . h($a['lagerort_text']) : '' ?>)

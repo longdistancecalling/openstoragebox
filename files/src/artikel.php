@@ -117,8 +117,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!ctype_digit($daten['lose'])) {
             $fehler[] = 'Die losen Einzelstücke müssen eine ganze Zahl ab 0 sein.';
         } elseif ((int) $daten['ve_inhalt'] >= 1 && (int) $daten['lose'] >= (int) $daten['ve_inhalt']) {
-            $fehler[] = 'Lose Stücke müssen weniger sein als ein volles Gebinde – '
-                      . 'sonst gehören sie als weiteres Gebinde gezählt.';
+            /*
+             * Früher stand hier ein Fehler. Das war zu streng: "ich habe
+             * 20 Flaschen" ist eine normale Eingabe, und ob daraus eine
+             * volle Kiste wird, kann die Anwendung selbst ausrechnen. Ein
+             * Formular, das gültige Absichten ablehnt statt sie zu
+             * verstehen, ist ein Hindernis.
+             */
+            $ve   = (int) $daten['ve_inhalt'];
+            $lose = (int) $daten['lose'];
+            $daten['menge'] = (string) ((int) $daten['menge'] + intdiv($lose, $ve));
+            $daten['lose']  = (string) ($lose % $ve);
+            $hinweisVE = 'Aus ' . $lose . ' losen Stücken wurden ' . intdiv($lose, $ve)
+                       . ' volle ' . mehrzahl($daten['gebinde_einheit'] ?: 'Gebinde')
+                       . ' gebildet, ' . ($lose % $ve) . ' bleiben lose.';
         }
     } else {
         $daten['lose'] = '0';
@@ -204,7 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 feldwerte_speichern($pdo, $neueId, $zuSpeichern);
 
                 $pdo->commit();
-                flash("Artikel $nummer angelegt.");
+                flash("Artikel $nummer angelegt." . (isset($hinweisVE) ? ' ' . $hinweisVE : ''));
             } else {
                 $nummer = $daten['inventar_nr'] !== ''
                         ? $daten['inventar_nr']
@@ -219,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 $stmt->execute([...$werte, $nummer, $id]);
                 feldwerte_speichern($pdo, $id, $zuSpeichern);
-                flash('Änderungen gespeichert.');
+                flash('Änderungen gespeichert.' . (isset($hinweisVE) ? ' ' . $hinweisVE : ''));
             }
             redirect('index.php');
         } catch (PDOException $e) {
