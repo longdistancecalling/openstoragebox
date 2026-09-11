@@ -2,8 +2,9 @@
 
 Stand: 10.09.2026 · aktuelle Version v7
 
-Die großen Bausteine sind abgearbeitet. Was bleibt, sind kleinere Punkte –
-keiner davon blockiert den Betrieb.
+Zwei größere offene Punkte (Chargen mit MHD, Rückläufer aus dem Einsatz),
+ansonsten Kleinigkeiten. Keiner blockiert den Betrieb, aber Punkt 2 führt
+heute zu falschen Verbrauchszahlen.
 
 ---
 
@@ -30,7 +31,89 @@ Entnahme- und Leihscheine, QR-Code auf dem Kistenetikett, Backup und Restore.
 
 ---
 
-## 1. Kleinere offene Punkte
+## 1. Gleiche Artikel mit unterschiedlichem MHD
+
+**Das Problem:** Ein Artikel hat genau ein Fälligkeitsdatum. Wer zwei
+Lieferungen Trinkwasser im Regal hat – eine mit MHD 01/2027, eine mit
+06/2027 – kann das heute nicht sauber abbilden. Betrifft vor allem
+Verpflegung, Sanitätsmaterial und Batterien, also genau das, was im
+Einsatz gebraucht wird.
+
+**Was heute geht:** Zwei Artikelzeilen mit gleichem Namen und gleicher EAN
+anlegen. Das funktioniert, weil die EAN bewusst nicht eindeutig ist, und
+der Lagerort trennt beide. Nachteile: Der Bestand steht an zwei Stellen,
+die Gesamtzahl muss jemand im Kopf addieren, und beim Scannen erscheinen
+beide Zeilen – man muss selbst wissen, welche die ältere ist.
+
+**Zwei Wege:**
+
+*a) Beim Workaround bleiben, ihn aber abfedern.* In der Artikelliste und
+beim Scannen Artikel mit gleichem Namen zusammenfassen und die Summe
+zeigen, das früheste MHD hervorheben. Kein Eingriff ins Datenmodell,
+eine Abfrage mehr und etwas Anzeigelogik. Löst das Problem nicht, macht
+es aber erträglich.
+
+*b) Chargen als eigene Ebene.* Neue Tabelle `charge` mit MHD, Menge,
+losen Stücken und Lagerort; der Artikel wird zur Stammdatenzeile ohne
+eigenen Bestand. Fachlich richtig und die Grundlage für FIFO – bei der
+Entnahme automatisch die älteste Charge zuerst, was bei Verpflegung
+genau das ist, was man will.
+
+Der Preis ist hoch: Bestand, Entnahme, Zugang, Scan, Inventur,
+Gebindelogik und alle Exporte rechnen heute mit `artikel.menge`. Jede
+dieser Stellen müsste auf Chargen umgestellt werden. Das ist kein
+kleiner Punkt, sondern eine Version für sich – vergleichbar mit den
+Verpackungseinheiten, eher größer.
+
+**Bevor das entschieden wird,** wäre eine Zahl aus dem Betrieb nützlich:
+Bei wie vielen Artikeln liegen tatsächlich mehrere MHD gleichzeitig im
+Regal? Sind es drei, reicht Weg a. Sind es dreißig und jemand sortiert
+regelmäßig aus, lohnt sich b. Diese Zahl lässt sich nach ein paar
+Monaten Betrieb ablesen, vorher wäre sie geraten.
+
+---
+
+## 2. Rückläufer aus dem Einsatz
+
+**Das Problem:** „Einsatz" ist als endgültige Entnahme modelliert. In der
+Praxis kommt aber Material zurück, das nicht gebraucht wurde – volle
+Kisten, unangebrochene Verpflegung. Die Aussage „endgültig – eine
+Rückgabe ist nicht vorgesehen" auf dem Entnahmeschein ist damit
+schlicht falsch.
+
+**Was heute geht:** Ein Zugang mit dem Grund „Rücklauf". Der Bestand
+stimmt danach wieder, aber die Verbindung zur ursprünglichen Entnahme
+fehlt. Niemand kann nachher sagen, dass von 20 ausgegebenen Kisten 7
+zurückkamen und 13 tatsächlich verbraucht wurden – für die Nachbereitung
+eines Einsatzes und die Nachbeschaffung ist genau das die interessante
+Zahl.
+
+**Die zweite Lücke, die dabei auffällt:** Auch bei Leihen ist die
+Rückgabe heute alles oder nichts. `entnahme.zurueck_am` ist ein einzelnes
+Datum – werden 10 Stück verliehen und kommen 7 zurück, lässt sich das
+nicht erfassen. Beide Fälle brauchen dieselbe Lösung.
+
+**Lösungsweg:** Eigene Tabelle `rueckgabe` mit `entnahme_id`, Menge,
+Einheit, Datum und Benutzer. Damit sind Teilrückgaben und mehrere
+Rückgaben zu einer Entnahme möglich; `zurueck_am` wird durch
+`SUM(rueckgabe.menge)` gegenüber `entnahme.menge` abgelöst. Der Grund
+„Einsatz" verliert seine Sonderstellung: rückgabefähig wären dann
+Einsatz **und** Verleih, endgültig blieben Verschleiß, Defekt und
+Abgelaufen.
+
+Zu ändern wären: Migration, `entnahmen.php` (Rückgabemaske statt
+Ein-Klick-Knopf), `schein.php` (Text und Unterschriftsblock auch beim
+Einsatzschein), `scan.php` und die Fälligkeits-/Bewegungsansichten.
+Überschaubarer als die Chargen oben, aber kein Nachmittag.
+
+**Sinnvolle Ergänzung dabei:** eine Einsatzauswertung über
+`entnahme.bezug` – was wurde bei „Hochwasser Eisenach" ausgegeben, was
+kam zurück, was ist verbraucht. Das Feld wird heute schon gefüllt, nur
+nicht ausgewertet.
+
+---
+
+## 3. Kleinere offene Punkte
 
 - **Kopfleiste umsortieren:** Entnahmeknopf nach links, Verwaltungsmenü nach
   rechts. Aktuell steht der Knopf ganz rechts und das Menü am Ende der
