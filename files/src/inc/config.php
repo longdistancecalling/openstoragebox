@@ -21,7 +21,15 @@ const APP_NAME = 'Lagerverwaltung';
  * Artikelliste, Zählliste. Steht hier zentral, damit sie sich an einer
  * Stelle ändern lässt.
  */
-const ORGANISATION = 'DRK KV Eisenach | EA 1';
+/*
+ * Die folgenden Werte stehen seit v8 in der Datenbank und werden weiter
+ * unten mit define() gesetzt – die Verwendung im übrigen Code bleibt
+ * unverändert (ORGANISATION, BASIS_URL, WARNUNG_TAGE).
+ *
+ * Warum define() statt const: const wird beim Übersetzen ausgewertet
+ * und kann keinen Wert aus einer Abfrage bekommen. define() läuft zur
+ * Laufzeit und tut genau das.
+ */
 
 /**
  * Adresse, unter der die Anwendung erreichbar ist – ohne Schrägstrich
@@ -32,7 +40,7 @@ const ORGANISATION = 'DRK KV Eisenach | EA 1';
  * funktioniert das Scannen weiterhin über die Scan-Seite, aber die
  * Kamera-App kann nichts damit anfangen.
  */
-const BASIS_URL = 'https://localhost:8080';
+/* wird unten aus der Datenbank gesetzt */
 
 $dsn = sprintf(
     'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
@@ -54,6 +62,34 @@ try {
     http_response_code(503);
     exit('Die Datenbank ist nicht erreichbar. Details stehen im Container-Log.');
 }
+
+/* -------------------------------------------------------------------
+   Einstellungen laden
+   ------------------------------------------------------------------- */
+
+/**
+ * Liest alle Einstellungen als Schlüssel-Wert-Feld.
+ *
+ * Die Tabelle kann fehlen, wenn die Migration noch nicht eingespielt
+ * ist – dann greifen die Standardwerte, und die Anwendung läuft
+ * weiter, statt mit einem Fehler stehenzubleiben.
+ */
+function einstellungen_laden(PDO $pdo): array
+{
+    try {
+        $zeilen = $pdo->query('SELECT schluessel, wert FROM einstellung')->fetchAll();
+        return array_column($zeilen, 'wert', 'schluessel');
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+$einstellungen = einstellungen_laden($pdo);
+
+define('ORGANISATION', $einstellungen['organisation'] ?? 'Lagerverwaltung');
+define('BASIS_URL',    $einstellungen['basis_url']    ?? '');
+// Ab wann eine Fälligkeit als "bald" gilt.
+define('WARNUNG_TAGE', max(1, (int) ($einstellungen['warnung_tage'] ?? 30)));
 
 /**
  * Sortierreihenfolge für Lagerplätze.

@@ -596,3 +596,8 @@ body.druck {
 .bl-zeile td:last-child { border-right: 0; }
 
 .schein--blanko .schein-unterschriften { padding-top: 4mm; }
+
+/* Auf dem Schein darf der QR kleiner sein als auf Kiste und Regal:
+   er wird aus der Hand gescannt, nicht aus zwei Metern. */
+.schein .etikett-qr svg { width: 17mm; height: 17mm; }
+.schein .etikett-qr { margin-left: 5mm; }

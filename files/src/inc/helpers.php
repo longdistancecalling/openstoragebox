@@ -82,8 +82,13 @@ function faellig_stufe(?int $tage): ?string
     if ($tage === null) {
         return null;
     }
-    if ($tage < 0)  return 'faellig';
-    if ($tage <= 30) return 'bald';
+    if ($tage < 0) {
+        return 'faellig';
+    }
+    // Vorwarnzeit ist einstellbar; ohne Einstellung 30 Tage.
+    if ($tage <= (defined('WARNUNG_TAGE') ? WARNUNG_TAGE : 30)) {
+        return 'bald';
+    }
     return 'ok';
 }
 
@@ -299,7 +304,13 @@ function feld_pruefen(array $feld, string $wert): ?string
  */
 function qr_inhalt(string $art, string $kennung): string
 {
-    $code = ($art === 'kiste' ? 'K:' : 'A:') . $kennung;
+    $praefix = match ($art) {
+        'kiste'  => 'K:',
+        'regal'  => 'R:',
+        'beleg'  => 'E:',
+        default  => 'A:',
+    };
+    $code = $praefix . $kennung;
     return BASIS_URL !== ''
         ? rtrim(BASIS_URL, '/') . '/scan.php?c=' . rawurlencode($code)
         : $code;

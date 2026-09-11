@@ -6,10 +6,12 @@ erfordere('bearbeiter');
 /*
  * Buchen per Scan.
  *
- * Erkannt werden drei Eingaben:
- *   K:K001      eigener Code einer Kiste  -> Inhaltsliste
- *   A:A-00042   eigener Code eines Artikels
- *   4006381…    EAN eines Artikels
+ * Erkannt werden:
+ *   K:K001         Kiste    -> Inhaltsliste mit Buchungsknöpfen
+ *   A:A-00042      Artikel  -> Buchungsansicht
+ *   R:Keller|R1    Regal    -> Kisten dieses Regals
+ *   E:E-00042      Beleg    -> die Buchung dazu, samt Rückgabe
+ *   4006381…       EAN eines Artikels
  *
  * Der eigene Code kommt entweder aus dem Eingabefeld (Handscanner) oder
  * als Parameter ?c=… aus einer URL – dann hat jemand den QR-Code mit
@@ -60,6 +62,12 @@ function code_deuten(string $roh): array
     }
     if (preg_match('/^A:(.+)$/i', $roh, $m)) {
         return ['art' => 'artikel', 'wert' => trim($m[1])];
+    }
+    if (preg_match('/^R:(.+)$/i', $roh, $m)) {
+        return ['art' => 'regal', 'wert' => trim($m[1])];
+    }
+    if (preg_match('/^E:(.+)$/i', $roh, $m)) {
+        return ['art' => 'beleg', 'wert' => trim($m[1])];
     }
 
     // Alles andere als EAN behandeln – nur Ziffern übrig lassen.
@@ -171,6 +179,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'buche
    =================================================================== */
 $treffer  = [];
 $kiste    = null;
+$regal    = null;
+$beleg    = null;
 $ohneCode = [];
 $eanUngueltig = false;
 
@@ -184,6 +194,39 @@ if ($code['art'] === 'kiste') {
         $stmt->execute([(int) $kiste['kiste_id']]);
         $treffer = $stmt->fetchAll();
     }
+
+} elseif ($code['art'] === 'regal') {
+    // Kennung ist "Lager|Regal" – der senkrechte Strich trennt beides.
+    [$lg, $rg] = array_pad(explode('|', $code['wert'], 2), 2, '');
+    $stmt = $pdo->prepare(
+        'SELECT k.*, COUNT(a.artikel_id) AS positionen,
+                COALESCE(SUM(a.menge * IFNULL(a.ve_inhalt,1) + a.lose), 0) AS stueck
+         FROM kiste k
+         LEFT JOIN artikel a ON a.kiste_id = k.kiste_id
+         WHERE k.lager = ? AND k.regal = ?
+         GROUP BY k.kiste_id
+         ORDER BY LENGTH(k.fach), k.fach, LENGTH(k.kiste_nr), k.kiste_nr'
+    );
+    $stmt->execute([$lg, $rg]);
+    $kisten = $stmt->fetchAll();
+    if ($kisten) {
+        $regal = ['lager' => $lg, 'regal' => $rg, 'kisten' => $kisten];
+    }
+
+} elseif ($code['art'] === 'beleg') {
+    // Belegnummer E-00042 -> die Entnahme-ID herausziehen.
+    $nr = (int) preg_replace('/\D+/', '', $code['wert']);
+    $stmt = $pdo->prepare(
+        'SELECT e.*, a.artikelname, a.inventar_nr, a.ve_inhalt, a.ve_einheit,
+                a.gebinde_einheit, v.lagerort_text, b.anzeigename AS gebucht_von
+         FROM entnahme e
+         JOIN artikel a   ON a.artikel_id = e.artikel_id
+         JOIN v_artikel v ON v.artikel_id = e.artikel_id
+         LEFT JOIN benutzer b ON b.benutzer_id = e.erfasst_von
+         WHERE e.entnahme_id = ?'
+    );
+    $stmt->execute([$nr]);
+    $beleg = $stmt->fetch() ?: null;
 
 } elseif ($code['art'] === 'artikel') {
     $stmt = $pdo->prepare('SELECT * FROM v_artikel WHERE inventar_nr = ?');
@@ -349,6 +392,102 @@ require __DIR__ . '/inc/header.php';
     <?php endif; ?>
   <?php endif; ?>
 
+<?php /* ---------- Regal ---------- */ ?>
+<?php elseif ($code['art'] === 'regal'): ?>
+
+  <?php if (!$regal): ?>
+    <p class="leer">
+      Es gibt kein Regal <strong><?= h(str_replace('|', ' / ', $code['wert'])) ?></strong>.
+    </p>
+  <?php else: ?>
+    <div class="scan-karte">
+      <div class="scan-kopf">
+        <div>
+          <span class="platz-frei">Regal</span>
+          <strong class="scan-name"><?= h($regal['lager'] . ' / ' . $regal['regal']) ?></strong>
+        </div>
+        <div class="scan-bestand">
+          <span class="scan-zahl"><?= count($regal['kisten']) ?></span>
+          <span class="scan-label">Kisten</span>
+        </div>
+      </div>
+      <p class="hinweis">
+        <a href="regal.php?lager=<?= urlencode($regal['lager']) ?>&amp;regal=<?= urlencode($regal['regal']) ?>">Regalschild drucken</a>
+      </p>
+    </div>
+
+    <table class="tabelle">
+      <thead><tr><th>Fach</th><th>Kiste</th><th>Notiz</th>
+        <th style="text-align:right">Positionen</th><th style="text-align:right">Stück</th><th></th></tr></thead>
+      <tbody>
+      <?php foreach ($regal['kisten'] as $k): ?>
+        <tr>
+          <td data-label="Fach"><span class="platz-pfad"><?= h($k['fach']) ?></span></td>
+          <td data-label="Kiste"><span class="platz-kiste"><?= h($k['kiste_nr']) ?></span></td>
+          <td data-label="Notiz"><span class="notiz"><?= h($k['notiz'] ?? '') ?></span></td>
+          <td class="zahl" data-label="Positionen"><?= (int) $k['positionen'] ?></td>
+          <td class="zahl" data-label="Stück"><?= (int) $k['stueck'] ?></td>
+          <td class="aktion" data-label="">
+            <a class="btn btn--klein btn--primaer" href="scan.php?c=<?= rawurlencode('K:' . $k['kiste_nr']) ?>">Öffnen</a>
+          </td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+  <?php endif; ?>
+
+<?php /* ---------- Beleg ---------- */ ?>
+<?php elseif ($code['art'] === 'beleg'): ?>
+
+  <?php if (!$beleg): ?>
+    <p class="leer">Es gibt keinen Beleg <strong><?= h($code['wert']) ?></strong>.</p>
+  <?php else: ?>
+    <div class="scan-karte">
+      <div class="scan-kopf">
+        <div>
+          <span class="invnr"><?= h('E-' . str_pad((string) $beleg['entnahme_id'], 5, '0', STR_PAD_LEFT)) ?></span>
+          <strong class="scan-name"><?= h($beleg['artikelname']) ?></strong>
+          <div class="notiz" style="margin-top:4px"><?= h($beleg['lagerort_text'] ?? '') ?></div>
+          <div style="margin-top:8px">
+            <span class="grund grund--<?= h($beleg['grund']) ?>"><?= h(grund_label($beleg['grund'])) ?></span>
+            <?php if ($beleg['grund'] === GRUND_LEIHE): ?>
+              <?php if ($beleg['zurueck_am']): ?>
+                <span class="marke marke--gruen">zurück <?= h(datum_de($beleg['zurueck_am'])) ?></span>
+              <?php else: ?>
+                <span class="marke marke--amber">noch offen</span>
+              <?php endif; ?>
+            <?php endif; ?>
+          </div>
+        </div>
+        <div class="scan-bestand">
+          <span class="scan-zahl"><?= (int) $beleg['menge'] ?></span>
+          <span class="scan-label"><?= h(einheit_text($beleg, (string) $beleg['einheit'], (int) $beleg['menge'])) ?></span>
+        </div>
+      </div>
+
+      <dl class="schein-daten" style="margin-top:12px">
+        <div><dt>Datum</dt><dd><?= h(datum_de($beleg['entnommen_am'])) ?></dd></div>
+        <div><dt>Person</dt><dd><?= h($beleg['person'] ?: '—') ?></dd></div>
+        <div><dt>Bezug</dt><dd><?= h($beleg['bezug'] ?: '—') ?></dd></div>
+        <div><dt>Gebucht von</dt><dd><?= h($beleg['gebucht_von'] ?: '—') ?></dd></div>
+      </dl>
+
+      <div class="knoepfe" style="margin-top:12px;border:0">
+        <a class="btn" href="schein.php?id=<?= (int) $beleg['entnahme_id'] ?>">Schein drucken</a>
+        <?php if ($beleg['grund'] === GRUND_LEIHE && !$beleg['zurueck_am'] && darf('bearbeiter')): ?>
+          <form method="post" action="entnahmen.php" style="display:inline"
+                onsubmit="return confirm('Rückgabe buchen? Der Bestand wird wieder erhöht.');">
+            <?= csrf_field() ?>
+            <input type="hidden" name="aktion" value="rueckgabe">
+            <input type="hidden" name="entnahme_id" value="<?= (int) $beleg['entnahme_id'] ?>">
+            <button class="btn btn--primaer" type="submit">Rückgabe buchen</button>
+          </form>
+        <?php endif; ?>
+        <a class="btn" href="scan.php?c=<?= rawurlencode('A:' . $beleg['inventar_nr']) ?>">Artikel buchen</a>
+      </div>
+    </div>
+  <?php endif; ?>
+
 <?php /* ---------- Artikel oder EAN ---------- */ ?>
 <?php elseif ($treffer): ?>
 
@@ -436,8 +575,9 @@ require __DIR__ . '/inc/header.php';
 <?php else: ?>
   <p class="leer">
     Code scannen oder eintippen. Ein USB-Handscanner funktioniert direkt – er verhält
-    sich wie eine Tastatur. Erkannt werden die eigenen QR-Codes von Kisten
-    (<code>K:K001</code>) und Artikeln (<code>A:A-00042</code>) sowie Hersteller-EANs.
+    sich wie eine Tastatur. Erkannt werden die eigenen QR-Codes von Kisten (<code>K:K001</code>),
+    Artikeln (<code>A:A-00042</code>), Regalen (<code>R:Keller|R1</code>) und
+    Belegen (<code>E:E-00042</code>) sowie Hersteller-EANs.
   </p>
 <?php endif; ?>
 

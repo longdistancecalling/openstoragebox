@@ -120,6 +120,10 @@ if (!$baum) {
       <span class="etikett-ort-label">Lager</span>
       <span class="etikett-ort-wert"><?= h($lager) ?></span>
     </div>
+    <div class="etikett-qr">
+      <?= qr_svg('regal', $lager . '|' . $regal, 84) ?>
+      <span class="qr-label">scannen für Übersicht</span>
+    </div>
   </header>
 
   <h2 class="etikett-titel">

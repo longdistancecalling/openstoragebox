@@ -232,6 +232,10 @@ function schein_nr(int $entnahmeId): string
       <span class="etikett-ort-wert"><?= h(schein_nr((int) $s['entnahme_id'])) ?></span>
       <span class="aushang-stand"><?= h(datum_de($s['entnommen_am'])) ?></span>
     </div>
+    <div class="etikett-qr">
+      <?= qr_svg('beleg', schein_nr((int) $s['entnahme_id']), 72) ?>
+      <span class="qr-label">Beleg im System</span>
+    </div>
   </header>
 
   <table class="etikett-tabelle schein-artikel">

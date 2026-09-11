@@ -1,4 +1,4 @@
-# Lagerverwaltung v7
+# Lagerverwaltung v8
 
 Artikelverwaltung mit Lagerplatz, Verpackungseinheiten, Barcode-Buchung,
 Bewegungsprotokoll, Inventur, Benutzerverwaltung und Datenimport/-export.
@@ -85,7 +85,7 @@ docker compose exec -T db mariadb -u root -p"$(grep DB_ROOT_PASS .env | cut -d= 
   lager < db/02_v2.sql
 ```
 
-Für die weiteren Versionen ebenso `db/03_v3.sql` bis `db/06_v6.sql`, der Reihe nach. Beide Skripte sind wiederholbar – ein zweiter
+Für die weiteren Versionen ebenso `db/03_v3.sql` bis `db/08_v8.sql`, der Reihe nach. Beide Skripte sind wiederholbar – ein zweiter
 Durchlauf richtet keinen Schaden an. Bei einer **Neuinstallation** werden alle
 Dateien im Init-Verzeichnis alphabetisch eingespielt, du musst nichts migrieren.
 
@@ -147,7 +147,56 @@ wirken sofort, ohne Rebuild.
 
 ---
 
-## 4. Sicherheit
+## 4. Einstellungen
+
+Unter *Einstellungen* (nur Administrator) stehen drei Werte, die vorher im
+Quelltext standen:
+
+| Einstellung | wirkt auf |
+|---|---|
+| Organisation | alle Ausdrucke und die Anmeldeseite |
+| Adresse der Anwendung | Inhalt der QR-Codes |
+| Vorwarnzeit für Fälligkeiten | ab wann ein Artikel als „bald fällig" gilt |
+
+Die **Adresse** ist die wirkungsvollste: Ist sie gesetzt, enthalten die QR-Codes
+eine vollständige URL statt nur der Kennung, und ein Scan mit der Handykamera
+öffnet direkt die Buchungsseite. Ohne sie funktioniert nur der Weg über die
+Scan-Seite.
+
+Die **Vorwarnzeit** lag fest bei 30 Tagen. Für Prüftermine, zu denen ein
+Fachbetrieb bestellt werden muss, sind 60 bis 90 Tage oft realistischer.
+
+Die Tabelle ist ein allgemeines Schlüssel-Wert-Verzeichnis. Neue Einstellungen
+brauchen deshalb keine Migration, nur einen Eintrag in der Liste am Anfang von
+`einstellungen.php`.
+
+---
+
+## 5. Sicherheit
+
+### Navigation
+
+Vorn steht, was im Lageralltag gebraucht wird: Artikel, Scannen, Bewegungen,
+Fälligkeiten, Kisten, Inventur, Export. Alles, was man selten und meist im
+Sitzen macht, liegt im Klappmenü **Verwaltung**: Kategorien, Daten, Felder,
+Benutzer, Einstellungen.
+
+Zwölf gleichrangige Punkte nebeneinander findet niemand mehr durch, und die
+täglich genutzten gehen darin unter. Das Menü füllt sich nach Rolle – ein Leser
+sieht dort nur *Daten* (für den Export), ein Bearbeiter zusätzlich
+*Kategorien*, ein Administrator alles.
+
+Öffnet man eine Verwaltungsseite, ist das Menü aufgeklappt und markiert, damit
+erkennbar bleibt, wo man gerade steht. Umgesetzt ist es mit dem
+`<details>`-Element: das funktioniert auch ohne JavaScript und ist mit der
+Tastatur bedienbar.
+
+### Der Einsatzknopf
+
+Oben rechts steht auf jeder Seite ein roter **Entnahme**-Knopf, erreichbar auch
+über Alt+E. Er sitzt bewusst außerhalb der Navigation und in einer Farbe, die
+sonst nirgends vorkommt: Im Einsatz zählt, dass jemand unter Zeitdruck den Weg
+zum Buchen findet, ohne die Leiste zu lesen. Leser sehen ihn nicht.
 
 ### Anmeldung und Rollen
 
@@ -193,7 +242,7 @@ Whitelist für den Sortierparameter, Post/Redirect/Get gegen doppeltes Absenden.
 
 ---
 
-## 5. Dateien
+## 6. Dateien
 
 ```
 docker-compose.yml          MariaDB + PHP/Apache + Adminer
@@ -233,6 +282,8 @@ src/scan.php                Buchen per Barcode
 src/aushang.php             Lagerübersicht zum Aushängen
 src/regal.php               Regalschilder
 src/code.php                Klebeetiketten mit QR-Code
+src/einstellungen.php       Organisation, Adresse, Vorwarnzeit
+db/08_v8.sql                Migration auf v8 (Einstellungen)
 src/schein.php              Entnahme- und Leihschein
 db/04_v4.sql                Migration auf v4 (EAN, Zugänge)
 db/03_v3.sql                Migration auf v3 (Benutzer)
@@ -241,7 +292,7 @@ backup.sh / restore.sh      Datenbanksicherung und Wiederherstellung
 
 ---
 
-## 6. Exporte
+## 7. Exporte
 
 | Export | Format | Zweck |
 |---|---|---|
@@ -275,7 +326,7 @@ alles in einer Spalte.
 
 ---
 
-## 7. Barcode und Bewegungen
+## 8. Barcode und Bewegungen
 
 ### Scannen
 
@@ -284,13 +335,27 @@ Tastatur – er tippt die Ziffern und schickt Enter hinterher. Deshalb genügt e
 Textfeld mit Autofokus; es braucht keine Scanner-Bibliothek und keine
 Kamerarechte. Am Handy tippt man die Nummer ein oder nutzt die normale Suche.
 
-Erkannt werden drei Eingaben: der eigene QR-Code einer Kiste (`K:K001`), der
-eines Artikels (`A:A-00042`) und die Hersteller-EAN. Wird der QR-Code mit der
+Erkannt werden fünf Eingaben:
+
+| Code | führt zu |
+|---|---|
+| `K:K001` | Kiste mit Inhaltsliste und Buchungsknöpfen |
+| `A:A-00042` | Artikel mit Bestand und Buchung |
+| `R:Keller\|R1` | alle Kisten eines Regals, zum Durchklicken |
+| `E:E-00042` | die Buchung zu einem Papierbeleg, bei Leihe mit Rückgabe |
+| `4006381333931` | Hersteller-EAN |
+
+Damit lässt sich eine Kette durchklicken: Regalschild scannen, Kiste antippen,
+Artikel buchen – ohne einmal zu tippen. Wird der QR-Code mit der
 Handykamera gescannt, ruft diese die Seite direkt über `?c=…` auf – auch eine
 komplett eingefügte URL wird verstanden.
 
 Bei einer Kiste erscheint der gesamte Inhalt mit Buchungsknöpfen je Position –
 man steht vor der Kiste, scannt einmal und bucht, was herausgeht.
+
+Der Beleg-Code ist der Weg vom Papier zurück ins System: Wer einen
+unterschriebenen Leihschein in der Hand hält, scannt ihn und bucht die Rückgabe,
+ohne die Buchung suchen zu müssen.
 
 Der Ablauf ist zweistufig: Scannen zeigt den Artikel mit Bestand, Lagerort und
 Fälligkeit. Gebucht wird erst mit dem zweiten Klick – ein versehentlicher Scan
@@ -446,7 +511,7 @@ mit jeder Buchung veraltet und Entnahmen trotzdem im System erfasst gehören.
 
 ---
 
-## 8. Suchen und Filtern
+## 9. Suchen und Filtern
 
 **Entnahme buchen** – über der Artikelauswahl steht ein Suchfeld. Es durchsucht
 Inventarnummer, Name, Kiste, Lagerort, Kategorie und Notiz und schränkt die
@@ -471,7 +536,7 @@ zusätzlich Kategorie und den buchenden Benutzer.
 
 ---
 
-## 9. Datenimport und -export
+## 10. Datenimport und -export
 
 Unter *Daten* gibt es drei Funktionen:
 
@@ -510,7 +575,7 @@ Fehler, wird nichts importiert – die Vorschau zeigt jede Zeile mit Problem.
 
 ---
 
-## 10. Zwei Details, die leicht Ärger machen
+## 11. Zwei Details, die leicht Ärger machen
 
 **Sortierung von Regalnummern.** Bei Textspalten sortiert `R10` vor `R2`, weil
 Zeichen für Zeichen verglichen wird. Die Abfragen sortieren deshalb über
@@ -546,7 +611,7 @@ war CASCADE dort ohnehin wirkungslos.
 
 ---
 
-## 11. Sicherung
+## 12. Sicherung
 
 Der Code liegt im Repository, die Bestandsdaten liegen im Docker-Volume.
 Ein `git clone` stellt also die Anwendung wieder her, aber keinen einzigen
@@ -615,7 +680,7 @@ dann, wenn kein Server mehr steht.
 
 ---
 
-## 12. Naheliegende Erweiterungen
+## 13. Naheliegende Erweiterungen
 
 - QR-Code auf dem Kistenetikett, der auf `index.php?q=K001` zeigt
 - Barcode-Etiketten für Artikel ohne Hersteller-EAN drucken

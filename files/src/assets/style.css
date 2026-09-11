@@ -920,3 +920,126 @@ small.je {
   text-transform: uppercase;
   color: var(--muted);
 }
+
+/* --- v8: Einsatzknopf -------------------------------------------------
+   Auf jeder Seite an derselben Stelle, in einer Farbe, die sonst
+   nirgends vorkommt. Im Einsatz soll niemand suchen müssen.
+   --------------------------------------------------------------------- */
+
+.einsatz {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 8px 16px 8px 12px;
+  border-radius: var(--r);
+  background: #d4342a;
+  color: #fff;
+  font: 600 14px/1 var(--sans);
+  letter-spacing: .02em;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .12) inset;
+}
+
+.einsatz:hover,
+.einsatz:focus-visible { background: #bc2b22; }
+
+.einsatz-zeichen {
+  font: 700 18px/1 var(--mono);
+  opacity: .9;
+}
+
+/* Die Navigation verliert ihr margin-left:auto, sobald der Knopf da ist –
+   sonst schieben beide gegeneinander. */
+.topbar:has(.einsatz) .nav { margin-left: 16px; }
+
+@media (max-width: 760px) {
+  .einsatz {
+    order: -1;
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+    padding: 12px;
+    font-size: 15px;
+  }
+  .topbar:has(.einsatz) .nav { margin-left: 0; }
+}
+
+/* --- v8: Verwaltungsmenü ----------------------------------------------
+   Klappmenü über <details>. Der Marker wird entfernt und durch ein
+   eigenes Dreieck ersetzt, weil der Standardmarker je nach Browser
+   unterschiedlich aussieht und die Ausrichtung stört.
+   --------------------------------------------------------------------- */
+
+.menue { position: relative; }
+
+.menue > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r);
+  color: rgba(255, 255, 255, .72);
+  font-size: 14px;
+  cursor: pointer;
+  list-style: none;
+  white-space: nowrap;
+}
+
+.menue > summary::-webkit-details-marker { display: none; }
+.menue > summary::marker { content: ''; }
+
+.menue > summary::after {
+  content: '▾';
+  font-size: 11px;
+  opacity: .7;
+}
+
+.menue > summary:hover { background: rgba(255, 255, 255, .1); color: #fff; }
+.menue[open] > summary { background: rgba(255, 255, 255, .16); color: #fff; }
+.menue.is-active > summary { background: rgba(255, 255, 255, .16); color: #fff; font-weight: 500; }
+
+.menue-liste {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  min-width: 190px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
+}
+
+.menue-liste a {
+  display: block;
+  padding: 8px 12px;
+  border-radius: var(--r);
+  color: var(--ink);
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.menue-liste a:hover { background: var(--line-2); }
+
+.menue-liste a.is-active {
+  background: var(--blau-weich);
+  color: var(--blau);
+  font-weight: 500;
+}
+
+/* Am Handy klappt das Menü in den Fluss statt darüber – ein
+   überlagerndes Feld auf schmalem Schirm verdeckt den halben Inhalt. */
+@media (max-width: 760px) {
+  .menue { width: 100%; }
+  .menue > summary { justify-content: space-between; }
+  .menue-liste {
+    position: static;
+    margin-top: 6px;
+    box-shadow: none;
+    min-width: 0;
+  }
+}
