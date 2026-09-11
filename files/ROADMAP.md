@@ -3,8 +3,8 @@
 Stand: 10.09.2026 · aktuelle Version v7
 
 Zwei größere offene Punkte (Chargen mit MHD, Rückläufer aus dem Einsatz),
-ein mittlerer (Sollbestand), ansonsten Kleinigkeiten. Keiner blockiert den
-Betrieb, aber Punkt 2 führt heute zu falschen Verbrauchszahlen.
+ansonsten Kleinigkeiten. Keiner blockiert den Betrieb, aber Punkt 2 führt
+heute zu falschen Verbrauchszahlen.
 
 ---
 
@@ -20,6 +20,7 @@ Betrieb, aber Punkt 2 führt heute zu falschen Verbrauchszahlen.
 | v6 | Verpackungseinheiten mit Gebinde- und Einzelzählung |
 | v7 | Inventur zählt Gebinde und lose Stücke getrennt |
 | v8 | Einstellungen in der Datenbank, Einsatzknopf |
+| v9 | Sollbestand je Artikel, Seite „Handlungsbedarf" |
 
 Zuletzt ohne eigene Migration: Scan-Seite versteht die eigenen QR-Codes
 (`K:` und `A:`) und bucht Gebinde korrekt; Blanko-Scheine zum Ausdrucken;
@@ -113,37 +114,7 @@ nicht ausgewertet.
 
 ---
 
-## 3. Sollbestand je Artikel
-
-**Der Zweck:** Für Material, das immer vorrätig sein muss – Verpflegung,
-Verbandzeug, Batterien – hinterlegen, wie viel mindestens dasein soll.
-Fällt der Bestand darunter, erscheint eine Warnung. Das ist das
-Gegenstück zu den Fälligkeiten: dort wird Material zu alt, hier wird es
-zu wenig.
-
-**Umfang:** klein genug für einen Durchgang.
-
-- Spalte `artikel.soll_bestand INT NULL` – NULL heißt: keine Überwachung.
-  Nur wenige Artikel brauchen das, es soll kein Pflichtfeld werden.
-- Im Artikelformular ein Feld neben dem Bestand.
-- In der Artikelliste eine Markierung, wenn `gesamt_einzeln <
-  soll_bestand`, mit der Fehlmenge dabei.
-- Filter „unter Sollbestand" in der Artikelliste und eine Kennzahl im
-  Kopf, wie bei den Fälligkeiten.
-- Sinnvoll: eine gemeinsame Seite „Handlungsbedarf" mit überfälligen
-  Prüfungen, bald ablaufenden Artikeln und Unterdeckung – das sind die
-  drei Fragen, die jemand vor einer Beschaffung stellt.
-
-**Eine Entscheidung vorab:** Bei Gebinden wird der Sollbestand in
-Einzelstücken geführt, nicht in Gebinden. Grund: Er wird gegen
-`gesamt_einzeln` verglichen, und „mindestens 200 Flaschen" ist eine
-Aussage, die unabhängig davon gilt, ob sie in 10er- oder 24er-Kisten
-kommen. Im Formular sollte danebenstehen, wie viele Gebinde das
-ungefähr sind.
-
----
-
-## 4. Kleinere offene Punkte
+## 3. Kleinere offene Punkte
 
 - **Kopfleiste umsortieren:** Entnahmeknopf nach links, Verwaltungsmenü nach
   rechts. Aktuell steht der Knopf ganz rechts und das Menü am Ende der

@@ -39,6 +39,7 @@ $daten = [
     've_einheit'   => '',
     'gebinde_einheit' => '',
     'lose'         => '0',
+    'soll_bestand' => '',
     'faellig_am'   => '',
     'faellig_typ'  => '',
     'notiz'        => '',
@@ -101,6 +102,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!ctype_digit($daten['menge'])) {
         $fehler[] = 'Der Bestand muss eine ganze Zahl ab 0 sein.';
+    }
+    if ($daten['soll_bestand'] !== '' && !ctype_digit($daten['soll_bestand'])) {
+        $fehler[] = 'Der Sollbestand muss eine ganze Zahl ab 0 sein oder leer bleiben.';
     }
 
     // Gebinde: entweder vollständig oder gar nicht.
@@ -181,6 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $daten['ve_einheit'] !== '' ? $daten['ve_einheit'] : null,
             $daten['gebinde_einheit'] !== '' ? $daten['gebinde_einheit'] : null,
             (int) $daten['lose'],
+            $daten['soll_bestand'] !== '' ? (int) $daten['soll_bestand'] : null,
             $daten['faellig_am']  !== '' ? $daten['faellig_am']  : null,
             $daten['faellig_typ'] !== '' ? $daten['faellig_typ'] : null,
             $daten['notiz'] !== '' ? $daten['notiz'] : null,
@@ -199,9 +204,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare(
                     'INSERT INTO artikel
                        (ean, artikelname, kiste_id, standort_frei, kategorie_id, menge,
-                        ve_inhalt, ve_einheit, gebinde_einheit, lose,
+                        ve_inhalt, ve_einheit, gebinde_einheit, lose, soll_bestand,
                         faellig_am, faellig_typ, notiz)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
                 );
                 $stmt->execute($werte);
                 $neueId = (int) $pdo->lastInsertId();
@@ -226,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'UPDATE artikel SET
                         ean = ?, artikelname = ?, kiste_id = ?, standort_frei = ?, kategorie_id = ?,
                         menge = ?, ve_inhalt = ?, ve_einheit = ?, gebinde_einheit = ?, lose = ?,
-                        faellig_am = ?, faellig_typ = ?, notiz = ?, inventar_nr = ?
+                        soll_bestand = ?, faellig_am = ?, faellig_typ = ?, notiz = ?, inventar_nr = ?
                      WHERE artikel_id = ?'
                 );
                 $stmt->execute([...$werte, $nummer, $id]);
@@ -275,6 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $id !== null) {
         've_einheit'   => (string) ($vorhanden['ve_einheit'] ?? ''),
         'gebinde_einheit' => (string) ($vorhanden['gebinde_einheit'] ?? ''),
         'lose'         => (string) ($vorhanden['lose'] ?? '0'),
+        'soll_bestand' => (string) ($vorhanden['soll_bestand'] ?? ''),
         'faellig_am'   => (string) ($vorhanden['faellig_am'] ?? ''),
         'faellig_typ'  => (string) ($vorhanden['faellig_typ'] ?? ''),
         'notiz'        => (string) ($vorhanden['notiz'] ?? ''),
@@ -430,6 +436,21 @@ require __DIR__ . '/inc/header.php';
       <label for="menge">Bestand<span class="hinweis-inline" id="menge-einheit"></span></label>
       <input type="number" id="menge" name="menge" min="0" step="1" value="<?= h($daten['menge']) ?>">
     </div>
+  </div>
+
+  <div class="zeile">
+    <label for="soll_bestand">
+      Sollbestand <span class="hinweis-inline">optional, in Einzelstücken</span>
+    </label>
+    <input type="number" id="soll_bestand" name="soll_bestand" min="0" step="1"
+           value="<?= h($daten['soll_bestand']) ?>" style="max-width:180px"
+           placeholder="leer = keine Überwachung">
+    <p class="hinweis" id="soll-hinweis">
+      Mindestmenge, die immer vorrätig sein soll. Fällt der Bestand darunter,
+      erscheint der Artikel unter <a href="bedarf.php">Bedarf</a>.
+      Leer lassen, wenn der Artikel nicht überwacht werden muss – für
+      Kabelbinder und Isolierband ergibt eine Zahl selten Sinn.
+    </p>
   </div>
 
   <fieldset class="gebinde">

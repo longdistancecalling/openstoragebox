@@ -1,4 +1,4 @@
-# Lagerverwaltung v8
+# Lagerverwaltung v9
 
 Artikelverwaltung mit Lagerplatz, Verpackungseinheiten, Barcode-Buchung,
 Bewegungsprotokoll, Inventur, Benutzerverwaltung und Datenimport/-export.
@@ -85,7 +85,7 @@ docker compose exec -T db mariadb -u root -p"$(grep DB_ROOT_PASS .env | cut -d= 
   lager < db/02_v2.sql
 ```
 
-Für die weiteren Versionen ebenso `db/03_v3.sql` bis `db/08_v8.sql`, der Reihe nach. Beide Skripte sind wiederholbar – ein zweiter
+Für die weiteren Versionen ebenso `db/03_v3.sql` bis `db/09_v9.sql`, der Reihe nach. Beide Skripte sind wiederholbar – ein zweiter
 Durchlauf richtet keinen Schaden an. Bei einer **Neuinstallation** werden alle
 Dateien im Init-Verzeichnis alphabetisch eingespielt, du musst nichts migrieren.
 
@@ -174,10 +174,34 @@ brauchen deshalb keine Migration, nur einen Eintrag in der Liste am Anfang von
 
 ## 5. Sicherheit
 
+### Handlungsbedarf
+
+Die Seite *Bedarf* fasst die drei Fragen zusammen, die jemand vor einer
+Beschaffung stellt: Was ist überfällig, was fehlt, was steht demnächst an.
+Einzeln verteilt müsste man drei Seiten abklappern und die Antworten selbst
+zusammensetzen.
+
+Der **Sollbestand** ist dabei das Gegenstück zu den Fälligkeiten: dort wird
+Material zu alt, hier wird es zu wenig. Er ist optional – leer heißt keine
+Überwachung, denn für Kabelbinder eine Mindestmenge zu erfinden hilft
+niemandem.
+
+Gezählt wird in **Einzelstücken**, auch bei Gebinden: „mindestens 240
+Flaschen" gilt unabhängig davon, ob sie in 10er- oder 24er-Kisten kommen. Die
+Bedarfsseite rechnet die Fehlmenge trotzdem in Gebinde um – „4 Kisten
+nachbestellen" ist die Angabe, mit der man beim Händler anruft.
+
+Die Unterdeckung ist nach dem **Anteil** sortiert, der fehlt, nicht nach der
+absoluten Menge: Ein Artikel, von dem nur ein Fünftel da ist, drängt mehr als
+einer, bei dem zehn von tausend Stück fehlen.
+
+In der Artikelliste gibt es dazu den Filter *Sollbestand* und eine Markierung
+an betroffenen Zeilen.
+
 ### Navigation
 
 Vorn steht, was im Lageralltag gebraucht wird: Artikel, Scannen, Bewegungen,
-Fälligkeiten, Kisten, Inventur, Export. Alles, was man selten und meist im
+Bedarf, Kisten, Inventur, Export. Alles, was man selten und meist im
 Sitzen macht, liegt im Klappmenü **Verwaltung**: Kategorien, Daten, Felder,
 Benutzer, Einstellungen.
 
@@ -283,6 +307,8 @@ src/aushang.php             Lagerübersicht zum Aushängen
 src/regal.php               Regalschilder
 src/code.php                Klebeetiketten mit QR-Code
 src/einstellungen.php       Organisation, Adresse, Vorwarnzeit
+src/bedarf.php              Handlungsbedarf: überfällig, unter Soll, bald fällig
+db/09_v9.sql                Migration auf v9 (Sollbestand)
 db/08_v8.sql                Migration auf v8 (Einstellungen)
 src/schein.php              Entnahme- und Leihschein
 db/04_v4.sql                Migration auf v4 (EAN, Zugänge)

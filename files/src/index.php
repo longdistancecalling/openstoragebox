@@ -34,6 +34,7 @@ if (!isset($sortierungen[$sort])) {
 $suche = trim((string) ($_GET['q'] ?? ''));
 $katId = (string) ($_GET['kat'] ?? '');
 $ort   = (string) ($_GET['ort'] ?? '');   // '', 'kiste', 'frei', 'ohne'
+$soll  = (string) ($_GET['soll'] ?? '');  // '', 'unter', 'ueberwacht'
 
 /* -------------------------------------------------------------------
    Abfrage zusammenbauen – Werte immer als Parameter, nie als String.
@@ -66,6 +67,12 @@ $bedingungen[] = match ($ort) {
     default => '1=1',
 };
 
+if ($soll === 'unter') {
+    $bedingungen[] = 'unter_soll = 1';
+} elseif ($soll === 'ueberwacht') {
+    $bedingungen[] = 'soll_bestand IS NOT NULL';
+}
+
 $where = 'WHERE ' . implode(' AND ', $bedingungen);
 $sql   = "SELECT * FROM v_artikel $where ORDER BY {$sortierungen[$sort]}";
 
@@ -78,6 +85,7 @@ $kategorien = $pdo->query('SELECT kategorie_id, bezeichnung FROM kategorie ORDER
 $summe       = array_sum(array_column($artikel, 'menge'));
 $summeGesamt = array_sum(array_column($artikel, 'gesamt_einzeln'));
 $mitGebinde  = count(array_filter($artikel, fn($a) => (int) $a['hat_gebinde'] === 1));
+$unterSoll   = count(array_filter($artikel, fn($a) => (int) $a['unter_soll'] === 1));
 $verliehen = array_sum(array_column($artikel, 'verliehen_offen'));
 
 /** Erzeugt einen sortierbaren Spaltenkopf mit Richtungswechsel. */
@@ -103,6 +111,7 @@ require __DIR__ . '/inc/header.php';
   <span class="anzahl">
     <?= count($artikel) ?> Positionen · <?= (int) $summeGesamt ?> Einzelstücke<?php
     if ($mitGebinde > 0) { echo ' · ' . $mitGebinde . ' in Gebinden'; }
+    if ($unterSoll > 0) { echo ' · ' . $unterSoll . ' unter Soll'; }
     if ($verliehen > 0) { echo ' · ' . (int) $verliehen . ' verliehen'; } ?>
   </span>
   <span class="rechts">
@@ -141,6 +150,14 @@ require __DIR__ . '/inc/header.php';
     </select>
   </div>
   <div class="feld">
+    <label for="soll">Sollbestand</label>
+    <select id="soll" name="soll">
+      <option value="">alle</option>
+      <option value="unter"      <?= $soll === 'unter'      ? 'selected' : '' ?>>unter Soll</option>
+      <option value="ueberwacht" <?= $soll === 'ueberwacht' ? 'selected' : '' ?>>überwacht</option>
+    </select>
+  </div>
+  <div class="feld">
     <label for="sort">Sortierung</label>
     <select id="sort" name="sort">
       <option value="name"     <?= str_starts_with($sort, 'name')     ? 'selected' : '' ?>>Name</option>
@@ -151,7 +168,7 @@ require __DIR__ . '/inc/header.php';
     </select>
   </div>
   <button class="btn" type="submit">Anzeigen</button>
-  <?php if ($suche !== '' || $katId !== '' || $ort !== ''): ?>
+  <?php if ($suche !== '' || $katId !== '' || $ort !== '' || $soll !== ''): ?>
     <a class="btn" href="index.php">Filter zurücksetzen</a>
   <?php endif; ?>
 </form>
@@ -205,6 +222,9 @@ require __DIR__ . '/inc/header.php';
             if ((int) $a['lose'] > 0) { echo ', davon ' . (int) $a['lose'] . ' lose'; } ?></span>
         <?php else: ?>
           <?= (int) $a['menge'] ?>
+        <?php endif; ?>
+        <?php if ((int) $a['unter_soll'] === 1): ?>
+          <span class="fehlt"><?= (int) $a['fehlmenge'] ?> unter Soll</span>
         <?php endif; ?>
         <?php if ($leihe > 0): ?>
           <span class="leihe"><?= $leihe ?> verliehen</span>

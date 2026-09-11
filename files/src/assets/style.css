@@ -1043,3 +1043,12 @@ small.je {
     min-width: 0;
   }
 }
+
+/* --- v9: Sollbestand --------------------------------------------------- */
+
+.fehlt {
+  display: block;
+  font: 500 12px/1.3 var(--sans);
+  color: var(--rot);
+  white-space: nowrap;
+}
