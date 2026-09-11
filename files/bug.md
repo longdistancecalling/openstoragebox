@@ -1,6 +1,8 @@
-- artikel welche als gebinde angelegt nicht bearbeiten bearbeitbar; 
-- Artikel übersicht zeigt nicht alle Artikel, 
-- es kann nicht mehr manuell gebucht werden
+- artikel welche als gebinde angelegt nicht bearbeiten bearbeitbar -erledigt 
+- Artikel übersicht zeigt nicht alle Artikel -erledigt
+- es kann nicht mehr manuell gebucht werden - erledigt
 
+Für Roadmap
 - Blanko Scheine mit Option Leihe
-- Lager und Regale als Lagerort ohne Kiste
+- Lager und Regale als Lagerort ohne Kiste 
+- nach anlegen Option "danach weiteren Artikel anlegen"
