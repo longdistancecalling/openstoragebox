@@ -6,7 +6,13 @@ erfordere('bearbeiter');
 $id     = isset($_GET['id']) && ctype_digit((string) $_GET['id']) ? (int) $_GET['id'] : null;
 $fehler = [];
 
-$daten = ['kiste_nr' => '', 'lager' => '', 'regal' => '', 'fach' => '', 'notiz' => ''];
+$daten = [
+    'kiste_nr' => '',
+    'lager' => (string) ($_GET['v_lager'] ?? ''),
+    'regal' => (string) ($_GET['v_regal'] ?? ''),
+    'fach'  => '',
+    'notiz' => '',
+];
 
 /* ===================================================================
    POST
@@ -59,6 +65,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare('INSERT INTO kiste (kiste_nr, lager, regal, fach, notiz) VALUES (?,?,?,?,?)')
                     ->execute($werte);
                 flash('Kiste angelegt.');
+                if (($_POST['weiter'] ?? '') === '1') {
+                    // Lager und Regal weitergeben, Fach und Nummer leer.
+                    $vor = http_build_query(array_filter([
+                        'weiter'  => '1',
+                        'v_lager' => $daten['lager'],
+                        'v_regal' => $daten['regal'],
+                    ], fn($x) => $x !== ''));
+                    redirect('kiste.php?' . $vor);
+                }
             } else {
                 $pdo->prepare('UPDATE kiste SET kiste_nr=?, lager=?, regal=?, fach=?, notiz=? WHERE kiste_id=?')
                     ->execute([...$werte, $id]);
@@ -153,7 +168,11 @@ require __DIR__ . '/inc/header.php';
   </div>
 
   <div class="knoepfe">
-    <button class="btn btn--primaer" type="submit">Speichern</button>
+    <button class="btn btn--primaer" type="submit" name="weiter" value="0">Speichern</button>
+    <?php if ($id === null): ?>
+      <button class="btn" type="submit" name="weiter" value="1"
+              title="Speichern und gleich die nächste Kiste anlegen">Speichern &amp; weiter</button>
+    <?php endif; ?>
     <a class="btn" href="kisten.php">Abbrechen</a>
   </div>
 </form>

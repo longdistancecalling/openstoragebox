@@ -277,6 +277,7 @@ require __DIR__ . '/inc/header.php';
        Zettel als gar keine Spur.</p>
     <div class="kachel-knoepfe">
       <a class="btn btn--primaer" href="schein.php?blanko=entnahme">Entnahme</a>
+      <a class="btn" href="schein.php?blanko=leihe">Leihe</a>
       <a class="btn" href="schein.php?blanko=zugang">Einlagerung</a>
     </div>
   </section>

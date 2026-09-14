@@ -198,6 +198,14 @@ einer, bei dem zehn von tausend Stück fehlen.
 In der Artikelliste gibt es dazu den Filter *Sollbestand* und eine Markierung
 an betroffenen Zeilen.
 
+### Erfassung am Stück
+
+Beim Anlegen eines Artikels oder einer Kiste gibt es neben *Speichern* die
+Schaltfläche **Speichern & weiter**: Sie sichert und zeigt sofort ein leeres
+Formular für den nächsten Eintrag. Lagerort und Kategorie (bei der Kiste: Lager
+und Regal) der letzten Eingabe bleiben als Vorschlag stehen, weil man bei der
+Ersterfassung meist eine Kiste oder ein Regal am Stück befüllt.
+
 ### Navigation
 
 Vorn steht, was im Lageralltag gebraucht wird: Artikel, Scannen, Bewegungen,
@@ -324,7 +332,7 @@ backup.sh / restore.sh      Datenbanksicherung und Wiederherstellung
 |---|---|---|
 | Artikelliste | Druck (A4) + CSV | alphabetisch, mit Nummer, Kiste und Lagerort |
 | Entnahmeschein | Druck (A5 quer) | Beleg je Buchung, bei Leihe mit Unterschriftsfeldern |
-| Blanko-Scheine | Druck (A5 quer) | leere Entnahme- und Einlagerungsscheine für den Vorrat |
+| Blanko-Scheine | Druck (A5 quer) | leere Entnahme-, Leih- und Einlagerungsscheine für den Vorrat |
 | Klebeetiketten | Druck (A4) | QR-Etiketten für Artikel und Kisten, drei Rasterformate |
 | Regalschilder | Druck (A5 quer) | ein Blatt je Regal, gegliedert nach Fach und Kiste |
 | Lagerübersicht | Druck (A4) | kompletter Bestand zum Aushängen, vier Gliederungen |

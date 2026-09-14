@@ -29,11 +29,12 @@ $daten = [
     'inventar_nr'  => '',
     // Vorbelegung aus dem Scan: ?ean=… kommt von einer unbekannten EAN.
     'ean'          => ean_saeubern((string) ($_GET['ean'] ?? '')),
+    // Vorschläge aus "Speichern und weiter" der vorigen Eingabe.
+    'ortart'       => in_array($_GET['v_ortart'] ?? '', ['kiste','frei','ohne'], true) ? $_GET['v_ortart'] : 'kiste',
+    'kiste_id'     => (string) ($_GET['v_kiste'] ?? ''),
+    'standort_frei'=> (string) ($_GET['v_standort'] ?? ''),
+    'kategorie_id' => (string) ($_GET['v_kategorie'] ?? ''),
     'artikelname'  => '',
-    'ortart'       => 'kiste',   // 'kiste' | 'frei' | 'ohne'
-    'kiste_id'     => '',
-    'standort_frei'=> '',
-    'kategorie_id' => '',
     'menge'        => '1',
     've_inhalt'    => '',
     've_einheit'   => '',
@@ -237,6 +238,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([...$werte, $nummer, $id]);
                 feldwerte_speichern($pdo, $id, $zuSpeichern);
                 flash('Änderungen gespeichert.' . (isset($hinweisVE) ? ' ' . $hinweisVE : ''));
+            }
+            // "Speichern und weiter": nur beim Neuanlegen sinnvoll. Lagerort
+            // und Kategorie der letzten Eingabe werden als Vorschlag
+            // mitgegeben – bei der Ersterfassung füllt man meist eine Kiste
+            // am Stück, da bleibt beides gleich.
+            if ($id === null && ($_POST['weiter'] ?? '') === '1') {
+                $vor = http_build_query(array_filter([
+                    'weiter'       => '1',
+                    'v_ortart'     => $daten['ortart'],
+                    'v_kiste'      => $daten['kiste_id'],
+                    'v_standort'   => $daten['standort_frei'],
+                    'v_kategorie'  => $daten['kategorie_id'],
+                ], fn($x) => $x !== '' && $x !== null));
+                redirect('artikel.php?' . $vor);
             }
             redirect('index.php');
         } catch (PDOException $e) {
@@ -542,7 +557,11 @@ require __DIR__ . '/inc/header.php';
   <?php endif; ?>
 
   <div class="knoepfe">
-    <button class="btn btn--primaer" type="submit">Speichern</button>
+    <button class="btn btn--primaer" type="submit" name="weiter" value="0">Speichern</button>
+    <?php if ($id === null): ?>
+      <button class="btn" type="submit" name="weiter" value="1"
+              title="Speichern und gleich den nächsten Artikel anlegen">Speichern &amp; weiter</button>
+    <?php endif; ?>
     <a class="btn" href="index.php">Abbrechen</a>
     <?php if ($id !== null): ?>
       <a class="btn weg" href="zugang.php?artikel=<?= $id ?>">Zugang buchen</a>

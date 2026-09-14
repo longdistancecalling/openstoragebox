@@ -25,7 +25,8 @@ heute zu falschen Verbrauchszahlen.
 Zuletzt ohne eigene Migration: Scan-Seite versteht die eigenen QR-Codes
 (`K:` und `A:`) und bucht Gebinde korrekt; Blanko-Scheine zum Ausdrucken;
 Klebeetiketten mit QR in drei Rasterformaten; QR auch auf Regalschild und
-Entnahmeschein, Scan-Seite versteht `R:` (Regal) und `E:` (Beleg).
+Entnahmeschein, Scan-Seite versteht `R:` (Regal) und `E:` (Beleg);
+Blanko-Leihschein; „Speichern & weiter“ beim Artikelanlegen.
 
 Dazu quer über die Versionen: Regalschilder, Lagerübersicht zum Aushängen,
 Entnahme- und Leihscheine, QR-Code auf dem Kistenetikett, Backup und Restore.
@@ -115,6 +116,20 @@ nicht ausgewertet.
 ---
 
 ## 3. Kleinere offene Punkte
+
+- **Lager und Regale eigenständig anlegen:** Heute entstehen Lager, Regal
+  und Fach nur als Nebenprodukt beim Anlegen einer Kiste – es gibt keine
+  Stelle, an der man die Struktur des Lagers vorab aufbaut. Zwei Folgen:
+  Ein Regal ohne Kisten existiert nicht (taucht auf keinem Regalschild auf),
+  und ein Tippfehler im Lagernamen erzeugt stillschweigend ein zweites
+  „Kelller".
+
+  Lösungsweg: eine schlanke Verwaltung für Lagerorte – Lager und Regale als
+  eigene Liste, aus der die Kiste dann auswählt statt frei zu tippen. Das
+  verhindert Dubletten und erlaubt leere Regale. Berührt das Datenmodell
+  (bisher stehen `lager`/`regal`/`fach` als Text in der Kiste), daher kein
+  ganz kleiner Punkt – eher eine eigene kleine Version. Die freien
+  Standorte (`standort_frei`) blieben davon unberührt.
 
 - **Kopfleiste umsortieren:** Entnahmeknopf nach links, Verwaltungsmenü nach
   rechts. Aktuell steht der Knopf ganz rechts und das Menü am Ende der

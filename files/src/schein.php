@@ -27,7 +27,7 @@ $offen = ($_GET['offen'] ?? '') === '1';
    nachgebucht. Besser ein Papierzettel als gar keine Spur.
    =================================================================== */
 $blanko = (string) ($_GET['blanko'] ?? '');
-if (!in_array($blanko, ['entnahme', 'zugang'], true)) {
+if (!in_array($blanko, ['entnahme', 'zugang', 'leihe'], true)) {
     $blanko = '';
 }
 
@@ -36,14 +36,20 @@ if ($blanko !== '') {
     $anzahl = max(1, min(20, $anzahl));
     $zeilen = (int) ($_GET['zeilen'] ?? 6);
     $zeilen = max(3, min(12, $zeilen));
+    // Drei Scheinarten: Entnahme (endgültig), Einlagerung, Leihe.
+    // Entnahme und Leihe sind Abgänge und teilen den Aufbau der Tabelle;
+    // die Leihe bekommt zusätzlich einen Rückgabe-Unterschriftsblock.
     $istEntnahme = $blanko === 'entnahme';
+    $istLeihe    = $blanko === 'leihe';
+    $istAbgang   = $istEntnahme || $istLeihe;
+    $bTitel = ['entnahme' => 'Entnahmeschein', 'zugang' => 'Einlagerungsschein', 'leihe' => 'Leihschein'][$blanko];
     ?>
     <!DOCTYPE html>
     <html lang="de">
     <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Blanko-<?= $istEntnahme ? 'Entnahmeschein' : 'Einlagerungsschein' ?></title>
+    <title>Blanko-<?= h($bTitel) ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/style.css">
@@ -70,9 +76,11 @@ if ($blanko !== '') {
           <?php endforeach; ?>
         </select>
       </form>
-      <span class="hinweis">
-        <a href="schein.php?blanko=<?= $istEntnahme ? 'zugang' : 'entnahme' ?>">
-          zu Blanko-<?= $istEntnahme ? 'Einlagerungsscheinen' : 'Entnahmescheinen' ?> wechseln</a>
+      <span class="hinweis">Andere Vorlage:
+        <?php foreach (['entnahme' => 'Entnahme', 'leihe' => 'Leihe', 'zugang' => 'Einlagerung'] as $k => $l):
+            if ($k === $blanko) continue; ?>
+          <a href="schein.php?blanko=<?= h($k) ?>&amp;anzahl=<?= $anzahl ?>&amp;zeilen=<?= $zeilen ?>"><?= h($l) ?></a>
+        <?php endforeach; ?>
       </span>
     </div>
 
@@ -82,7 +90,7 @@ if ($blanko !== '') {
       <header class="etikett-kopf">
         <div>
           <div class="etikett-org"><?= h(ORGANISATION) ?></div>
-          <div class="etikett-nr"><?= $istEntnahme ? 'Entnahme' : 'Einlagerung' ?></div>
+          <div class="etikett-nr"><?= $istEntnahme ? 'Entnahme' : ($istLeihe ? 'Leihe' : 'Einlagerung') ?></div>
         </div>
         <div class="etikett-ort">
           <span class="etikett-ort-label">Datum</span>
@@ -91,9 +99,9 @@ if ($blanko !== '') {
       </header>
 
       <div class="bl-kopfzeile">
-        <div><span class="bl-label"><?= $istEntnahme ? 'Entnommen von' : 'Angenommen von' ?></span>
+        <div><span class="bl-label"><?= $istLeihe ? 'Entliehen an' : ($istEntnahme ? 'Entnommen von' : 'Angenommen von') ?></span>
              <span class="bl-feld"></span></div>
-        <div><span class="bl-label"><?= $istEntnahme ? 'Einsatz / Zweck' : 'Lieferant / Spender' ?></span>
+        <div><span class="bl-label"><?= $istLeihe ? 'Verwendung' : ($istEntnahme ? 'Einsatz / Zweck' : 'Lieferant / Spender') ?></span>
              <span class="bl-feld"></span></div>
       </div>
 
@@ -103,32 +111,54 @@ if ($blanko !== '') {
             <th class="bl-th-menge">Menge</th>
             <th>Artikel</th>
             <th class="bl-th-ort">Kiste / Ort</th>
-            <?php if ($istEntnahme): ?><th class="bl-th-grund">Grund</th><?php endif; ?>
+            <?php if ($istAbgang && !$istLeihe): ?><th class="bl-th-grund">Grund</th><?php endif; ?>
           </tr>
         </thead>
         <tbody>
         <?php for ($i = 0; $i < $zeilen; $i++): ?>
-          <tr class="bl-zeile"><td></td><td></td><td></td><?php if ($istEntnahme): ?><td></td><?php endif; ?></tr>
+          <tr class="bl-zeile"><td></td><td></td><td></td><?php if ($istAbgang && !$istLeihe): ?><td></td><?php endif; ?></tr>
         <?php endfor; ?>
         </tbody>
       </table>
 
-      <div class="schein-unterschriften">
-        <div class="us-block">
-          <div class="us-titel"><?= $istEntnahme ? 'Empfang bestätigt' : 'Eingelagert' ?></div>
-          <div class="us-zeile">
-            <span class="us-linie"></span>
-            <span class="us-label">Unterschrift</span>
+      <?php if ($istLeihe): ?>
+        <p class="schein-text">
+          Das Material bleibt Eigentum von <?= h(ORGANISATION) ?>. Der Entleiher bestätigt
+          den Empfang in ordnungsgemäßem Zustand und haftet für Verlust oder Beschädigung.
+          Die Rückgabe erfolgt vollständig und gereinigt.
+        </p>
+        <div class="schein-unterschriften">
+          <div class="us-block">
+            <div class="us-titel">Übergabe</div>
+            <div class="us-zeile"><span class="us-linie"></span><span class="us-label">Datum</span></div>
+            <div class="us-zeile"><span class="us-linie"></span><span class="us-label">Unterschrift Entleiher</span></div>
+            <div class="us-zeile"><span class="us-linie"></span><span class="us-label">Unterschrift Ausgabe</span></div>
+          </div>
+          <div class="us-block">
+            <div class="us-titel">Rückgabe</div>
+            <div class="us-zeile"><span class="us-linie"></span><span class="us-label">Datum</span></div>
+            <div class="us-zeile"><span class="us-linie"></span><span class="us-label">Unterschrift Entleiher</span></div>
+            <div class="us-zeile"><span class="us-linie"></span><span class="us-label">Unterschrift Rücknahme</span></div>
           </div>
         </div>
-        <div class="us-block">
-          <div class="us-titel">Ins System eingetragen</div>
-          <div class="us-zeile">
-            <span class="us-linie"></span>
-            <span class="us-label">Datum und Kürzel</span>
+      <?php else: ?>
+        <div class="schein-unterschriften">
+          <div class="us-block">
+            <div class="us-titel"><?= $istEntnahme ? 'Empfang bestätigt' : 'Eingelagert' ?></div>
+            <div class="us-zeile">
+              <span class="us-linie"></span>
+              <span class="us-label">Unterschrift</span>
+            </div>
+          </div>
+          <div class="us-block">
+            <div class="us-titel">Ins System eingetragen</div>
+            <div class="us-zeile">
+              <span class="us-linie"></span>
+              <span class="us-label">Datum und Kürzel</span>
+            </div>
           </div>
         </div>
-      </div>
+      <?php endif; ?>
 
       <footer class="etikett-fuss">
         <span><?= h(ORGANISATION) ?></span>
