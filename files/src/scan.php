@@ -33,49 +33,6 @@ $letzte = null;
    Eingabe einlesen und deuten
    =================================================================== */
 
-/**
- * Zerlegt eine Eingabe in Art und Kennung.
- * Versteht auch eine vollständige URL, falls jemand den gescannten
- * Text aus der Kamera-App einfügt.
- *
- * @return array{art:string, wert:string}  art: kiste|artikel|ean|leer
- */
-function code_deuten(string $roh): array
-{
-    $roh = trim($roh);
-    if ($roh === '') {
-        return ['art' => 'leer', 'wert' => ''];
-    }
-
-    // Vollständige URL: den Parameter c herausziehen.
-    if (preg_match('#^https?://#i', $roh)) {
-        $teile = parse_url($roh);
-        parse_str($teile['query'] ?? '', $q);
-        $roh = trim((string) ($q['c'] ?? ''));
-        if ($roh === '') {
-            return ['art' => 'leer', 'wert' => ''];
-        }
-    }
-
-    if (preg_match('/^K:(.+)$/i', $roh, $m)) {
-        return ['art' => 'kiste', 'wert' => trim($m[1])];
-    }
-    if (preg_match('/^A:(.+)$/i', $roh, $m)) {
-        return ['art' => 'artikel', 'wert' => trim($m[1])];
-    }
-    if (preg_match('/^R:(.+)$/i', $roh, $m)) {
-        return ['art' => 'regal', 'wert' => trim($m[1])];
-    }
-    if (preg_match('/^E:(.+)$/i', $roh, $m)) {
-        return ['art' => 'beleg', 'wert' => trim($m[1])];
-    }
-
-    // Alles andere als EAN behandeln – nur Ziffern übrig lassen.
-    $ziffern = ean_saeubern($roh);
-    return $ziffern !== ''
-        ? ['art' => 'ean', 'wert' => $ziffern]
-        : ['art' => 'leer', 'wert' => ''];
-}
 
 $eingabe = (string) ($_POST['code'] ?? $_GET['c'] ?? $_GET['ean'] ?? '');
 $code    = code_deuten($eingabe);
@@ -314,6 +271,7 @@ require __DIR__ . '/inc/header.php';
 <div class="kopf">
   <h1>Scannen</h1>
   <span class="anzahl">gebucht als <?= h($ich['anzeigename']) ?></span>
+  <span class="rechts"><a class="btn" href="touch.php">Terminal-Ansicht</a></span>
 </div>
 
 <?php if ($letzte): ?>

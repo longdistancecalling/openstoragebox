@@ -438,3 +438,54 @@ function einheit_text(array $a, string $einheit, int $anzahl): string
     return $anzahl . ' ' . ($anzahl === 1 ? $g : mehrzahl($g))
          . ' (' . ($anzahl * (int) $a['ve_inhalt']) . ' ' . ($a['ve_einheit'] ?: 'Stück') . ')';
 }
+
+
+/* =====================================================================
+   Scan-Codes
+   ===================================================================== */
+
+/**
+ * Zerlegt eine gescannte oder getippte Eingabe in Art und Kennung.
+ *
+ * Versteht die eigenen QR-Codes (K:/A:/R:/E:), eine Hersteller-EAN und
+ * eine vollständige URL – Letzteres, falls jemand den gescannten Text
+ * aus einer Handy-Kamera-App einfügt.
+ *
+ * @return array{art:string, wert:string}  art: kiste|artikel|regal|beleg|ean|leer
+ */
+function code_deuten(string $roh): array
+{
+    $roh = trim($roh);
+    if ($roh === '') {
+        return ['art' => 'leer', 'wert' => ''];
+    }
+
+    // Vollständige URL: den Parameter c herausziehen.
+    if (preg_match('#^https?://#i', $roh)) {
+        $teile = parse_url($roh);
+        parse_str($teile['query'] ?? '', $q);
+        $roh = trim((string) ($q['c'] ?? ''));
+        if ($roh === '') {
+            return ['art' => 'leer', 'wert' => ''];
+        }
+    }
+
+    if (preg_match('/^K:(.+)$/i', $roh, $m)) {
+        return ['art' => 'kiste', 'wert' => trim($m[1])];
+    }
+    if (preg_match('/^A:(.+)$/i', $roh, $m)) {
+        return ['art' => 'artikel', 'wert' => trim($m[1])];
+    }
+    if (preg_match('/^R:(.+)$/i', $roh, $m)) {
+        return ['art' => 'regal', 'wert' => trim($m[1])];
+    }
+    if (preg_match('/^E:(.+)$/i', $roh, $m)) {
+        return ['art' => 'beleg', 'wert' => trim($m[1])];
+    }
+
+    // Alles andere als EAN behandeln – nur Ziffern übrig lassen.
+    $ziffern = ean_saeubern($roh);
+    return $ziffern !== ''
+        ? ['art' => 'ean', 'wert' => $ziffern]
+        : ['art' => 'leer', 'wert' => ''];
+}
