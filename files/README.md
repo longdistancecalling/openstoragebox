@@ -1,9 +1,13 @@
-# Lagerverwaltung v9
+# OpenStorageBox
 
 Artikelverwaltung mit Lagerplatz, Verpackungseinheiten, Barcode-Buchung,
 Bewegungsprotokoll, Inventur, Benutzerverwaltung und Datenimport/-export.
 
 Offene Punkte stehen in ROADMAP.md.
+
+**OpenStorageBox** ist der Produktname der Anwendung. Der Name der
+betreibenden Organisation (erscheint auf Ausdrucken) wird bei der
+Ersteinrichtung festgelegt und ist später unter *Einstellungen* änderbar.
 PHP 8.3 + MariaDB 11, als Docker-Compose-Stack.
 
 ---

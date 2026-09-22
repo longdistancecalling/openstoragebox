@@ -1,4 +1,4 @@
-# Lagerverwaltung – Handbuch für die Administration
+# OpenStorageBox – Handbuch für die Administration
 
 DRK KV Eisenach · Stand Version 9
 
@@ -88,9 +88,13 @@ nichts migrieren.
 ### Ersten Administrator anlegen
 
 Die Anwendung im Browser öffnen. Da noch kein Benutzer existiert, erscheint
-die **Ersteinrichtung**: hier den ersten Administrator anlegen. Danach ist
-dieser Weg geschlossen. **Es gibt bewusst kein Standardpasswort**, das
-jemand zu ändern vergessen könnte.
+die **Ersteinrichtung**: hier den **Namen der Organisation** und den ersten
+Administrator anlegen. Danach ist dieser Weg geschlossen. **Es gibt bewusst
+kein Standardpasswort**, das jemand zu ändern vergessen könnte.
+
+Der Produktname *OpenStorageBox* ist fest; die Organisation (DRK KV Eisenach
+o. Ä.) benennt den Betreiber und erscheint auf allen Ausdrucken. Sie lässt
+sich später unter *Einstellungen* ändern.
 
 ### Grundeinstellungen
 

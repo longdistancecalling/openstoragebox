@@ -34,6 +34,6 @@ CREATE TABLE IF NOT EXISTS einstellung (
 -- Startwerte. INSERT IGNORE, damit ein zweiter Durchlauf bereits
 -- geänderte Werte nicht wieder überschreibt.
 INSERT IGNORE INTO einstellung (schluessel, wert) VALUES
-    ('organisation',  'DRK KV Eisenach'),
+    ('organisation',  'OpenStorageBox'),   -- wird bei der Ersteinrichtung überschrieben
     ('basis_url',     ''),
     ('warnung_tage',  '30');

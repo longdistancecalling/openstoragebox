@@ -14,7 +14,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-const APP_NAME = 'Lagerverwaltung';
+const APP_NAME = 'OpenStorageBox';
 
 /**
  * Trägerorganisation. Erscheint auf allen Ausdrucken – Etiketten,
@@ -86,7 +86,7 @@ function einstellungen_laden(PDO $pdo): array
 
 $einstellungen = einstellungen_laden($pdo);
 
-define('ORGANISATION', $einstellungen['organisation'] ?? 'Lagerverwaltung');
+define('ORGANISATION', $einstellungen['organisation'] ?? APP_NAME);
 define('BASIS_URL',    $einstellungen['basis_url']    ?? '');
 // Ab wann eine Fälligkeit als "bald" gilt.
 define('WARNUNG_TAGE', max(1, (int) ($einstellungen['warnung_tage'] ?? 30)));
