@@ -270,3 +270,32 @@
   .t-btn { font-size: 20px; padding: 20px; }
   .t-einheit { font-size: 16px; padding: 0 12px; }
 }
+
+/* --- Eingabebereich: Scan oben, Textsuche darunter ------------------- */
+
+.t-eingabe { margin-bottom: 22px; }
+
+.t-suche { display: flex; gap: 12px; margin-top: 12px; }
+
+.t-suche input {
+  flex: 1 1 auto;
+  font: 400 22px/1 var(--t-sans);
+  padding: 16px 20px;
+  border: 2px solid var(--t-linie);
+  border-radius: 12px;
+  background: #fff;
+  min-height: 60px;
+}
+
+.t-suche input:focus { outline: none; border-color: var(--t-blau); }
+
+.t-suche-btn {
+  flex: 0 0 auto;
+  font: 500 18px/1 var(--t-sans);
+  padding: 0 24px;
+  border: 2px solid var(--t-linie);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--t-ink);
+  min-height: 60px;
+}

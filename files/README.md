@@ -311,6 +311,8 @@ db/06_v6.sql                Migration auf v6 (Verpackungseinheiten)
 db/07_v7.sql                Migration auf v7 (Inventur mit Gebinden)
 ROADMAP.md                  offene Bausteine
 src/scan.php                Buchen per Barcode
+src/touch.php               Touch-Terminal fürs Lager-Tablet
+src/assets/touch.css        Stylesheet des Terminals
 src/aushang.php             Lagerübersicht zum Aushängen
 src/regal.php               Regalschilder
 src/code.php                Klebeetiketten mit QR-Code
@@ -361,6 +363,34 @@ alles in einer Spalte.
 ---
 
 ## 8. Barcode und Bewegungen
+
+### Touch-Terminal
+
+Für ein Tablet an der Lagerwand gibt es unter `touch.php` eine reduzierte
+Oberfläche: großes Scanfeld mit Dauerfokus, fingergerechte Knöpfe ab 64 px,
+keine Navigation. Der Ablauf ist auf das Nötigste eingedampft – scannen,
+Menge mit Plus/Minus einstellen, mit einem breiten roten oder grünen Knopf
+entnehmen oder einbuchen. Nach der Buchung erscheint eine große Quittung mit
+dem neuen Bestand.
+
+Neben dem Scanfeld gibt es ein zweites für die **Namenssuche** – Artikel
+ohne Barcode fallen so nicht durchs Raster. Der Scanner tippt weiter ins
+obere Feld, die Suche braucht die Tastatur; beide stören sich nicht.
+
+Das Terminal bucht nur die beiden Fälle, die im Lager unter Zeitdruck
+vorkommen: Entnahme als *Einsatz*, Zugang als *Rücklauf*. Alles Weitere –
+Leihen, andere Gründe, Notizen – läuft über die normale Oberfläche. Es setzt
+auf dieselbe Buchungslogik wie die reguläre Scan-Seite auf, ist also kein
+zweiter Code, sondern nur eine andere Ansicht.
+
+Gebucht wird per Barcode-Scan **oder** über ein Textsuchfeld darunter – so
+sind auch Artikel ohne eigenen Code erreichbar. Das Terminal steht in der
+Hauptnavigation.
+
+Gedacht ist es für den angemeldeten Betrieb: Wer das Tablet fest einloggt,
+hat den bequemen Kiosk-Effekt, und trotzdem steht bei jeder Buchung ein
+nachvollziehbarer Name im Protokoll. Ein USB-Handscanner genügt – er tippt
+wie eine Tastatur ins fokussierte Feld.
 
 ### Scannen
 

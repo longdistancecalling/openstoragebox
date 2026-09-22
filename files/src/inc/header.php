@@ -16,6 +16,7 @@ $aktiv = $aktiv ?? '';
 $nav = [
     'index'     => ['Artikel',      'index.php'],
     'scan'      => ['Scannen',      'scan.php'],
+    'touch'     => ['Terminal',     'touch.php'],
     'entnahmen' => ['Bewegungen',   'entnahmen.php'],
     'bedarf'    => ['Bedarf',       'bedarf.php'],
     'kisten'    => ['Kisten',       'kisten.php'],

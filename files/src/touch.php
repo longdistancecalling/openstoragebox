@@ -99,10 +99,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'buche
 /* ===================================================================
    Artikel zum Code suchen
    =================================================================== */
-$eingabe = trim((string) ($_POST['code'] ?? $_GET['c'] ?? ''));
+$eingabe = trim((string) ($_POST['code'] ?? $_GET['c'] ?? $_GET['q'] ?? ''));
 $code    = $eingabe !== '' ? code_deuten($eingabe) : ['art' => 'leer', 'wert' => ''];
 $treffer = [];
 $kiste   = null;
+
+// Kommt die Eingabe aus dem Suchfeld (q) statt vom Scanner (c), immer als
+// Text suchen – auch wenn sie zufällig wie eine Kennung aussieht.
+$istSuche = isset($_GET['q']) && trim((string) $_GET['q']) !== '';
+if ($istSuche) {
+    $code = ['art' => 'suche', 'wert' => $eingabe];
+}
 
 if ($code['art'] === 'kiste') {
     $stmt = $pdo->prepare('SELECT * FROM kiste WHERE kiste_nr = ?');
@@ -120,6 +127,19 @@ if ($code['art'] === 'kiste') {
 } elseif ($code['art'] === 'ean') {
     $stmt = $pdo->prepare('SELECT * FROM v_artikel WHERE ean = ? ORDER BY ' . ORDER_LAGERORT);
     $stmt->execute([$code['wert']]);
+    $treffer = $stmt->fetchAll();
+
+} elseif ($code['art'] === 'suche') {
+    // Volltextsuche über Name, Nummer, EAN, Kiste, Lagerort und Kategorie.
+    // Ein Platzhalter, deshalb die Spalten zusammengefasst.
+    $stmt = $pdo->prepare(
+        "SELECT * FROM v_artikel
+          WHERE CONCAT_WS(' ', inventar_nr, IFNULL(ean,''), artikelname,
+                          IFNULL(kiste_nr,''), IFNULL(lagerort_text,''),
+                          IFNULL(kategorie,'')) LIKE ?
+          ORDER BY artikelname LIMIT 30"
+    );
+    $stmt->execute(['%' . $eingabe . '%']);
     $treffer = $stmt->fetchAll();
 }
 
@@ -217,11 +237,18 @@ function terminal_artikel(array $a, bool $kompakt = false): void
     <div class="t-fehler"><?= h($fehler) ?></div>
   <?php endif; ?>
 
-  <form method="get" action="touch.php" class="t-scan">
-    <input type="text" name="c" id="t-scan-feld" value="" autofocus autocomplete="off"
-           placeholder="Barcode scannen …">
-    <button type="submit" class="t-scan-btn">Suchen</button>
-  </form>
+  <div class="t-eingabe">
+    <form method="get" action="touch.php" class="t-scan">
+      <input type="text" name="c" id="t-scan-feld" value="" autofocus autocomplete="off"
+             inputmode="none" placeholder="Barcode scannen …">
+      <button type="submit" class="t-scan-btn">Los</button>
+    </form>
+    <form method="get" action="touch.php" class="t-suche">
+      <input type="text" name="q" id="t-suche-feld" value="<?= $istSuche ? h($eingabe) : '' ?>"
+             autocomplete="off" placeholder="oder Namen eingeben …">
+      <button type="submit" class="t-suche-btn">Suchen</button>
+    </form>
+  </div>
 
   <?php if ($aktiv_artikel): ?>
     <?php terminal_artikel($aktiv_artikel); ?>
@@ -239,14 +266,19 @@ function terminal_artikel(array $a, bool $kompakt = false): void
     <?php endif; ?>
 
   <?php elseif (count($treffer) > 1): ?>
-    <p class="t-hinweis"><?= count($treffer) ?> Artikel gefunden – bitte auswählen:</p>
+    <p class="t-hinweis">
+      <?= count($treffer) ?> Artikel<?= $code['art'] === 'suche' ? ' zu „' . h($eingabe) . '“' : '' ?>
+      – bitte auswählen:
+    </p>
     <?php foreach ($treffer as $a) { terminal_artikel($a, true); } ?>
 
   <?php elseif ($eingabe !== ''): ?>
     <div class="t-nichts">
       <div class="t-nichts-zeichen">?</div>
       <div>Kein Artikel zu <strong><?= h($eingabe) ?></strong> gefunden.</div>
-      <div class="t-nichts-sub">Nochmal scannen oder in der Vollansicht anlegen.</div>
+      <div class="t-nichts-sub">
+        <?= $code['art'] === 'suche' ? 'Anderen Suchbegriff versuchen' : 'Nochmal scannen oder unten nach dem Namen suchen' ?>.
+      </div>
     </div>
 
   <?php else: ?>
@@ -254,8 +286,8 @@ function terminal_artikel(array $a, bool $kompakt = false): void
       <div class="t-start-zeichen">⤒</div>
       <div class="t-start-text">Barcode scannen, um zu buchen</div>
       <div class="t-start-sub">
-        Kiste, Artikel oder Herstellercode. Gebucht wird auf
-        <strong><?= h($ich['anzeigename']) ?></strong>.
+        Kiste, Artikel oder Herstellercode – oder unten den Namen eingeben.
+        Gebucht wird auf <strong><?= h($ich['anzeigename']) ?></strong>.
       </div>
     </div>
   <?php endif; ?>
@@ -272,10 +304,14 @@ function terminal_artikel(array $a, bool $kompakt = false): void
   const fokus = () => { feld.focus(); };
   fokus();
   document.addEventListener('click', e => {
-    // Nicht stören, wenn gerade ein Knopf oder Mengenfeld benutzt wird.
-    if (e.target.closest('button, input[type=number], select')) return;
+    // Nicht stören bei Knopf, Menge, Auswahl – oder dem Suchfeld, das
+    // eine echte Tastatur braucht.
+    if (e.target.closest('button, input[type=number], select, #t-suche-feld, .t-suche')) return;
     setTimeout(fokus, 50);
   });
+  // Wer ins Suchfeld tippt, soll dort bleiben – Scanfeld gibt den Fokus ab.
+  const suche = document.getElementById('t-suche-feld');
+  if (suche) suche.addEventListener('focus', () => { feld.blur(); });
 
   // Plus/Minus an den Mengenfeldern.
   document.querySelectorAll('.t-step').forEach(b => {
