@@ -18,12 +18,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /* ---- Ersten Administrator anlegen ------------------------------ */
     if ($aktion === 'einrichten' && $ersteinrichtung) {
+        $org   = trim((string) ($_POST['organisation'] ?? ''));
         $name  = trim((string) ($_POST['benutzername'] ?? ''));
         $anz   = trim((string) ($_POST['anzeigename'] ?? ''));
         $pw    = (string) ($_POST['passwort'] ?? '');
         $pw2   = (string) ($_POST['passwort2'] ?? '');
 
-        if ($name === '' || !preg_match('/^[a-z0-9._-]{3,40}$/i', $name)) {
+        if ($org === '') {
+            $fehler = 'Bitte den Namen der Organisation eingeben.';
+        } elseif (mb_strlen($org) > 80) {
+            $fehler = 'Der Name der Organisation ist zu lang (höchstens 80 Zeichen).';
+        } elseif ($name === '' || !preg_match('/^[a-z0-9._-]{3,40}$/i', $name)) {
             $fehler = 'Benutzername: 3 bis 40 Zeichen, nur Buchstaben, Ziffern, Punkt, Minus, Unterstrich.';
         } elseif ($anz === '') {
             $fehler = 'Bitte einen Anzeigenamen eingeben.';
@@ -32,12 +37,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($fehler === null) {
+            // Beides in einer Transaktion: entweder die Anwendung ist
+            // vollständig eingerichtet oder gar nicht.
+            $pdo->beginTransaction();
             $pdo->prepare(
                 'INSERT INTO benutzer (benutzername, anzeigename, passwort_hash, rolle) VALUES (?, ?, ?, "admin")'
             )->execute([$name, $anz, password_hash($pw, PASSWORD_DEFAULT)]);
+            $neu = (int) $pdo->lastInsertId();
+
+            // Organisationsname in die Einstellungen. Die Tabelle bringt
+            // per Migration einen Startwert mit – hier wird er überschrieben.
+            $pdo->prepare(
+                'INSERT INTO einstellung (schluessel, wert, geaendert_von) VALUES ("organisation", ?, ?)
+                 ON DUPLICATE KEY UPDATE wert = VALUES(wert), geaendert_von = VALUES(geaendert_von)'
+            )->execute([$org, $neu]);
+            $pdo->commit();
 
             login($name, $pw);
-            flash("Willkommen, $anz. Du bist der erste Administrator.");
+            flash("Willkommen, $anz. $org ist eingerichtet, du bist der erste Administrator.");
             redirect('index.php');
         }
     }
@@ -74,10 +91,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <main class="login">
   <div class="login-kopf">
-    <span class="brand-mark">LV</span>
+    <span class="brand-mark">OSB</span>
     <div>
-      <div class="login-org"><?= h(ORGANISATION) ?></div>
       <div class="login-app"><?= h(APP_NAME) ?></div>
+      <?php if (ORGANISATION !== '' && ORGANISATION !== APP_NAME): ?>
+        <div class="login-org"><?= h(ORGANISATION) ?></div>
+      <?php endif; ?>
     </div>
   </div>
 
@@ -95,8 +114,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <?= csrf_field() ?>
       <input type="hidden" name="aktion" value="einrichten">
       <div class="zeile">
+        <label for="organisation">Organisation</label>
+        <input type="text" id="organisation" name="organisation" maxlength="80" required autofocus
+               value="<?= h($_POST['organisation'] ?? '') ?>" placeholder="z. B. DRK KV Eisenach">
+        <p class="hinweis">Erscheint auf allen Ausdrucken und in der Kopfzeile. Später unter Einstellungen änderbar.</p>
+      </div>
+      <div class="zeile">
         <label for="anzeigename">Anzeigename</label>
-        <input type="text" id="anzeigename" name="anzeigename" maxlength="80" required autofocus
+        <input type="text" id="anzeigename" name="anzeigename" maxlength="80" required
                value="<?= h($_POST['anzeigename'] ?? '') ?>" placeholder="Marcel">
       </div>
       <div class="zeile">

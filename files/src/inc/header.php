@@ -56,8 +56,13 @@ $ich = benutzer();
 
 <header class="topbar">
   <a class="brand" href="index.php">
-    <span class="brand-mark">LV</span>
-    <span class="brand-text"><?= h(APP_NAME) ?></span>
+    <span class="brand-mark">OSB</span>
+    <span class="brand-text">
+      <span class="brand-app"><?= h(APP_NAME) ?></span>
+      <?php if (ORGANISATION !== '' && ORGANISATION !== APP_NAME): ?>
+        <span class="brand-org"><?= h(ORGANISATION) ?></span>
+      <?php endif; ?>
+    </span>
   </a>
   <nav class="nav">
     <?php foreach ($nav as $key => [$label, $href]): ?>

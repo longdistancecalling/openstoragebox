@@ -60,14 +60,21 @@ a { color: var(--blau); }
 }
 
 .brand-mark {
-  font: 600 13px/1 var(--mono);
+  font: 600 12px/1 var(--mono);
   letter-spacing: .12em;
   padding: 6px 7px;
   border: 1.5px solid rgba(255, 255, 255, .55);
   border-radius: var(--r);
 }
 
-.brand-text { font-weight: 600; letter-spacing: -.01em; }
+.brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+.brand-app { font-weight: 600; letter-spacing: -.01em; }
+.brand-org {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, .62);
+  letter-spacing: .01em;
+}
 
 .nav { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
 
