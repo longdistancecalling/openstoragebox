@@ -33,7 +33,7 @@ if (!isset($sortierungen[$sort])) {
 
 $suche = trim((string) ($_GET['q'] ?? ''));
 $katId = (string) ($_GET['kat'] ?? '');
-$ort   = (string) ($_GET['ort'] ?? '');   // '', 'kiste', 'frei', 'ohne'
+$ort   = (string) ($_GET['ort'] ?? '');   // '', 'kiste', 'fach', 'frei', 'ohne'
 $soll  = (string) ($_GET['soll'] ?? '');  // '', 'unter', 'ueberwacht'
 
 /* -------------------------------------------------------------------
@@ -62,8 +62,9 @@ if ($katId !== '' && ctype_digit($katId)) {
 
 $bedingungen[] = match ($ort) {
     'kiste' => 'kiste_id IS NOT NULL',
+    'fach'  => 'artikel_fach_id IS NOT NULL',
     'frei'  => 'standort_frei IS NOT NULL',
-    'ohne'  => 'kiste_id IS NULL AND standort_frei IS NULL',
+    'ohne'  => 'kiste_id IS NULL AND artikel_fach_id IS NULL AND standort_frei IS NULL',
     default => '1=1',
 };
 
@@ -145,6 +146,7 @@ require __DIR__ . '/inc/header.php';
     <select id="ort" name="ort">
       <option value="">alle</option>
       <option value="kiste" <?= $ort === 'kiste' ? 'selected' : '' ?>>in Kisten</option>
+      <option value="fach"  <?= $ort === 'fach'  ? 'selected' : '' ?>>direkt im Fach</option>
       <option value="frei"  <?= $ort === 'frei'  ? 'selected' : '' ?>>freier Standort</option>
       <option value="ohne"  <?= $ort === 'ohne'  ? 'selected' : '' ?>>ohne Lagerort</option>
     </select>

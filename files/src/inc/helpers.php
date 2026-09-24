@@ -113,6 +113,16 @@ function lagerort(array $row): string
              . '</span></span>';
     }
 
+    // Direkt in einem Fach abgelegt (keine Kiste): es gibt keinen
+    // Kistenaufkleber, aber Lager/Regal/Fach zeigen den Platz genau an.
+    if (!empty($row['fach'])) {
+        return '<span class="platz">'
+             . '<span class="platz-frei">im Fach</span>'
+             . '<span class="platz-pfad">'
+             . h($row['lager']) . '<i>/</i>' . h($row['regal']) . '<i>/</i>' . h($row['fach'])
+             . '</span></span>';
+    }
+
     if (!empty($row['standort_frei'])) {
         return '<span class="platz">'
              . '<span class="platz-frei">ohne Kiste</span>'
