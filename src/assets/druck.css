@@ -1,0 +1,603 @@
+/* =====================================================================
+   Druckansichten
+   Etiketten in A5, Listen in A4. Der Browser druckt direkt oder
+   speichert als PDF – dafür braucht es keine PDF-Bibliothek im Container.
+   ===================================================================== */
+
+body.druck {
+  background: #fff;
+  color: #000;
+  margin: 0;
+  padding: 16px;
+}
+
+.steuerung {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 18px;
+}
+
+/* ---------------------------------------------------------------------
+   Kistenetikett – eine A5-Seite quer je Kiste (210 × 148 mm)
+   Die Bildschirmvorschau bildet dieses Seitenverhältnis nach.
+   --------------------------------------------------------------------- */
+
+.etikett {
+  width: 210mm;
+  min-height: 148mm;
+  margin: 0 auto 10mm;
+  padding: 8mm 10mm 6mm;
+  border: 1px solid var(--line);
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.etikett-kopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8mm;
+  padding-bottom: 2.5mm;
+  border-bottom: 2px solid #000;
+}
+
+/* Trägerorganisation als Eyebrow über der Kistennummer. Klein, aber
+   auf jedem Etikett – bei Material im Einsatz ist die Eigentumsangabe
+   das, was zählt, wenn die Kiste woanders wieder auftaucht. */
+.etikett-org {
+  font: 600 8.5pt/1 var(--sans);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #444;
+  margin-bottom: 2mm;
+}
+
+/* Die Kistennummer muss aus drei Metern lesbar sein – im Querformat
+   steht dafür Breite zur Verfügung, aber weniger Höhe. Etwas kleiner
+   als im Hochformat, dafür sitzt der Lagerort auf derselben Zeile. */
+.etikett-nr {
+  font: 700 30pt/0.9 var(--mono);
+  letter-spacing: -.02em;
+}
+
+.etikett-ort { text-align: right; }
+
+.etikett-ort-label {
+  display: inline;
+  font: 500 7pt/1 var(--sans);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #555;
+  margin-right: 3mm;
+}
+
+.etikett-ort-wert { font: 600 15pt/1.1 var(--mono); }
+.etikett-ort-wert i { font-style: normal; color: #999; padding: 0 1mm; }
+
+.etikett-notiz {
+  margin: 2.5mm 0 0;
+  padding: 1.5mm 3mm;
+  background: #f2f2f2;
+  font: 400 9pt/1.3 var(--sans);
+}
+
+.etikett-titel {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 4mm 0 1.5mm;
+  font: 600 9pt/1 var(--sans);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.etikett-titel span {
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #666;
+}
+
+.etikett-tabelle { width: 100%; border-collapse: collapse; }
+
+/* Wiederholter Kistenkopf auf Folgeseiten. */
+.etikett-wdh th {
+  padding: 1.5mm 1mm 2mm;
+  border-bottom: 1.5px solid #000;
+  text-align: left;
+}
+
+.wdh-nr {
+  font: 700 11pt/1 var(--mono);
+  letter-spacing: .04em;
+}
+
+.wdh-ort {
+  font: 400 9pt/1 var(--mono);
+  color: #666;
+  margin-left: 4mm;
+}
+
+.etikett-tabelle td {
+  padding: 1.6mm 1mm;
+  border-bottom: 1px solid #ddd;
+  font: 400 10pt/1.25 var(--sans);
+  vertical-align: top;
+}
+
+.e-menge {
+  width: 14mm;
+  font: 600 10pt/1.25 var(--mono);
+  text-align: right;
+  padding-right: 3mm !important;
+}
+
+.e-nr {
+  width: 22mm;
+  font: 400 8pt/1.25 var(--mono);
+  color: #777;
+  text-align: right;
+}
+
+.e-datum {
+  display: block;
+  font: 400 8pt/1.2 var(--sans);
+  color: #666;
+}
+
+.etikett-leer {
+  padding: 8mm 0;
+  text-align: center;
+  color: #888;
+  font: 400 10pt/1 var(--sans);
+}
+
+.etikett-fuss {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 3mm;
+  border-top: 1px solid #ccc;
+  font: 400 7.5pt/1 var(--sans);
+  color: #777;
+}
+
+/* ---------------------------------------------------------------------
+   Listen (Artikelliste, Zählliste)
+   --------------------------------------------------------------------- */
+
+.druck-kopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 3mm;
+  margin-bottom: 4mm;
+  border-bottom: 2px solid #000;
+}
+
+.druck-org {
+  font: 600 8pt/1 var(--sans);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #555;
+  margin-bottom: 1.5mm;
+}
+
+.druck-kopf h1 { margin: 0; font: 600 15pt/1.1 var(--sans); }
+.druck-kopf span { font: 400 9pt/1 var(--sans); color: #555; }
+
+.druck-gruppe {
+  margin: 6mm 0 1.5mm;
+  padding-bottom: 1mm;
+  border-bottom: 1px solid #999;
+  font: 600 10pt/1 var(--sans);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  break-after: avoid;
+}
+
+.druck-tabelle { width: 100%; border-collapse: collapse; }
+
+.druck-tabelle th {
+  text-align: left;
+  padding: 1.5mm 2mm;
+  border-bottom: 1px solid #000;
+  font: 600 8pt/1 var(--sans);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.druck-tabelle td {
+  padding: 1.4mm 2mm;
+  border-bottom: 1px solid #ddd;
+  font: 400 9.5pt/1.2 var(--sans);
+}
+
+.druck-tabelle .r { text-align: right; }
+.druck-tabelle .mono { font-family: var(--mono); font-size: 9pt; }
+
+/* Leerfelder zum handschriftlichen Eintragen beim Rundgang. */
+.zaehlfeld { width: 20mm; border-left: 1px solid #999 !important; }
+.bemerkfeld { width: 45mm; border-left: 1px solid #999 !important; }
+
+/* ---------------------------------------------------------------------
+   Druckregeln
+   --------------------------------------------------------------------- */
+
+@media print {
+  .nur-bildschirm { display: none !important; }
+
+  body.druck { padding: 0; }
+
+  /*
+   * Kein height: 100% und kein Flex im Druck. Beides zwingt den Block
+   * auf Seitenhöhe, und alles darüber hinaus fällt aus dem Layout.
+   * Im normalen Blockfluss läuft eine volle Kiste sauber auf die
+   * nächste Seite über.
+   */
+  .etikett {
+    display: block;
+    width: auto;
+    min-height: 0;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    break-after: page;
+  }
+
+  .etikett:last-child { break-after: auto; }
+
+  /* Kistenkopf und Spaltenköpfe auf jeder Folgeseite wiederholen. */
+  .etikett-tabelle thead,
+  .druck-tabelle thead { display: table-header-group; }
+
+  .etikett-tabelle tr,
+  .druck-tabelle tr { break-inside: avoid; }
+
+  /* Der große Kopf soll nicht allein am Seitenende stehen. */
+  .etikett-kopf, .etikett-titel { break-after: avoid; }
+
+  .etikett-fuss { margin-top: 4mm; }
+}
+
+/* Standard für Listen. Die Etikettenseite setzt A5 per eigenem
+   <style>-Block, weil @page sich nicht über eine Body-Klasse
+   umschalten lässt – die Regel gilt immer für das ganze Dokument. */
+@page { size: A4 portrait; margin: 12mm; }
+
+/* =====================================================================
+   Lagerübersicht zum Aushängen
+
+   Erbt Kopf, Typografie und Fuß vom Kistenetikett (.etikett-kopf,
+   .etikett-org, .etikett-nr, .etikett-fuss). Hier stehen nur die
+   Abweichungen, die das A4-Blatt und der zweispaltige Satz brauchen.
+   ===================================================================== */
+
+.steuerung-form { display: flex; align-items: center; gap: 10px; }
+.steuerung-form select { width: auto; }
+
+/* Auf A4 darf die Hauptzeile etwas kleiner sein als auf dem A5-Etikett:
+   sie steht am Eingang, nicht am Regal. */
+.aushang-kopf .etikett-nr {
+  font-family: var(--sans);
+  font-size: 22pt;
+  letter-spacing: -.015em;
+}
+
+.aushang-kopf .etikett-ort-wert { font-size: 11pt; }
+
+.aushang-stand {
+  display: block;
+  margin-top: 1.5mm;
+  font: 400 8pt/1.3 var(--sans);
+  color: #666;
+}
+
+.aushang-hinweis { margin: 3mm 0 4mm; font-size: 8.5pt; }
+
+.aushang-spalten { column-count: 2; column-gap: 8mm; column-rule: 0.5pt solid #ccc; }
+
+.aushang-gruppe { break-inside: avoid-column; margin-bottom: 4mm; }
+
+/* Gruppenüberschrift in derselben Sprache wie die Fachzeile des
+   Regalschilds: gesperrt, versal, kräftige Unterlinie. */
+.aushang-titel {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 3mm;
+  margin: 0 0 1mm;
+  padding-bottom: 0.8mm;
+  border-bottom: 1.2px solid #000;
+  font: 600 8.5pt/1.2 var(--sans);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.aushang-titel span {
+  font: 400 7.5pt/1 var(--mono);
+  letter-spacing: 0;
+  text-transform: none;
+  color: #888;
+}
+
+.aushang-gruppe table { width: 100%; border-collapse: collapse; }
+
+.aushang-gruppe td {
+  padding: 0.7mm 0;
+  border-bottom: 0.4pt solid #e2e2e0;
+  font: 400 8.5pt/1.3 var(--sans);
+  vertical-align: top;
+}
+
+/* Etwas schmaler als auf dem Etikett, weil zwei Spalten nebeneinander stehen. */
+.aushang-gruppe .e-menge { width: 9mm; font-size: 8.5pt; padding-right: 2mm !important; }
+.aushang-gruppe .e-nr    { width: 13mm; font-size: 7.5pt; }
+.aushang-gruppe .e-datum { font-size: 7.5pt; }
+
+.e-warn { font-weight: 600; color: #000; }
+
+.aushang-fuss { margin-top: 5mm; }
+
+.aushang-gruppe--flach { break-inside: auto; margin-bottom: 0; }
+
+@media print {
+  body.druck--aushang { padding: 0; }
+  .aushang-gruppe { break-inside: avoid-column; }
+  .aushang-kopf { break-after: avoid; }
+}
+
+/* =====================================================================
+   Regalschild
+   Nutzt bewusst dieselben Bausteine wie das Kistenetikett (.etikett,
+   .etikett-kopf, .etikett-tabelle). Hier stehen nur die beiden
+   Zwischenzeilen, die es beim Kistenetikett nicht gibt.
+   ===================================================================== */
+
+/* Fach: kräftige Zwischenüberschrift, gliedert das Blatt. */
+.fachzeile td {
+  padding: 2.5mm 1mm 1mm !important;
+  border-bottom: 1px solid #000 !important;
+  font: 600 9pt/1 var(--sans);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.etikett-tabelle tbody tr:first-child .fachzeile td,
+.fachzeile:first-child td { padding-top: 1mm !important; }
+
+/* Kiste: eine Stufe darunter, mit demselben Nummern-Chip wie sonst. */
+.kistenzeile td {
+  padding: 1.5mm 1mm 0.8mm !important;
+  border-bottom: 0.5pt solid #bbb !important;
+  vertical-align: baseline;
+}
+
+.kistenzeile-nr {
+  font: 700 9.5pt/1.2 var(--mono);
+  letter-spacing: .04em;
+}
+
+.kistenzeile-notiz {
+  margin-left: 3mm;
+  font: 400 7.5pt/1.2 var(--sans);
+  color: #666;
+}
+
+.kistenzeile-zahl {
+  float: right;
+  font: 400 7.5pt/1.2 var(--sans);
+  color: #888;
+}
+
+/* Artikelzeilen unter einer Kiste leicht einrücken, damit die
+   Hierarchie ohne zusätzliche Linien lesbar bleibt. */
+.kistenzeile ~ tr .e-menge { padding-left: 4mm !important; }
+
+
+/* =====================================================================
+   Entnahmeschein / Leihschein
+   Erbt Blattformat, Kopf und Fuß vom Kistenetikett. Ergänzt werden nur
+   der Datenblock und die Unterschriftsfelder.
+   ===================================================================== */
+
+.schein { display: flex; flex-direction: column; }
+
+.schein-artikel { margin-top: 2mm; }
+.schein-artikel .e-name strong { font-size: 11pt; }
+
+/* Zweispaltige Definitionsliste – auf A5 quer ist Breite vorhanden. */
+.schein-daten {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1mm 8mm;
+  margin: 2.5mm 0 0;
+}
+
+.schein-daten div {
+  display: flex;
+  align-items: baseline;
+  gap: 2mm;
+  border-bottom: 0.4pt solid #ddd;
+  padding-bottom: 0.5mm;
+}
+
+.schein-daten dt {
+  min-width: 26mm;
+  font: 500 7.5pt/1.3 var(--sans);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #666;
+}
+
+.schein-daten dd { margin: 0; font: 400 9.5pt/1.3 var(--sans); }
+
+.schein-notiz {
+  margin: 2.5mm 0 0;
+  padding: 1.5mm 2.5mm;
+  background: #f2f2f2;
+  font: 400 8.5pt/1.3 var(--sans);
+}
+
+.schein-text {
+  margin: 2mm 0 0;
+  font: 400 7.5pt/1.35 var(--sans);
+  color: #444;
+}
+
+/* Unterschriften ans Blattende: der Rest darüber darf wachsen. */
+.schein-unterschriften {
+  display: flex;
+  gap: 8mm;
+  margin-top: auto;
+  padding-top: 3mm;
+  /* Nicht zerreißen: ein halber Unterschriftsblock auf Seite 2 wäre
+     als Beleg wertlos. */
+  break-inside: avoid;
+}
+
+.us-block { flex: 1 1 0; }
+.us-block--breit { flex: 0 1 60%; }
+
+.us-titel {
+  display: flex;
+  align-items: baseline;
+  gap: 3mm;
+  margin-bottom: 2mm;
+  padding-bottom: 0.6mm;
+  border-bottom: 1.2px solid #000;
+  font: 600 8pt/1.2 var(--sans);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.us-erledigt {
+  margin-left: auto;
+  font: 400 7pt/1.2 var(--sans);
+  letter-spacing: 0;
+  text-transform: none;
+  color: #666;
+}
+
+.us-zeile { margin-bottom: 3mm; }
+
+/* Die Linie steht über dem Label – so unterschreibt man darauf, nicht
+   darunter. Mindesthöhe, damit auch bei vorgedrucktem Datum Platz bleibt. */
+.us-linie {
+  display: block;
+  min-height: 5mm;
+  padding-bottom: 0.3mm;
+  border-bottom: 0.8pt solid #000;
+  font: 400 9pt/5mm var(--sans);
+}
+
+.us-label {
+  display: block;
+  margin-top: 0.8mm;
+  font: 400 7pt/1.2 var(--sans);
+  color: #666;
+}
+
+@media print {
+  .schein { break-after: page; }
+  .schein:last-child { break-after: auto; }
+}
+
+/* Zusatzangaben auf Etikett und Schein: kleiner als der Artikelname,
+   aber lesbar – oft steht dort die Größe oder Leistung, nach der
+   jemand am Regal sucht. */
+.e-zusatz {
+  display: block;
+  font: 400 7.5pt/1.2 var(--sans);
+  color: #555;
+}
+
+/* QR-Code auf dem Etikett: klein genug, um den Kopf nicht zu
+   dominieren, groß genug fürs Handy aus 20 cm Abstand. */
+.etikett-qr { text-align: center; margin-left: 6mm; }
+.etikett-qr svg { display: block; width: 22mm; height: 22mm; }
+
+.qr-label {
+  display: block;
+  margin-top: 1mm;
+  font: 400 6.5pt/1.2 var(--sans);
+  letter-spacing: .04em;
+  color: #777;
+}
+
+/* Verpackungseinheit auf der Zählliste: wer im Lager steht, muss ohne
+   Nachdenken wissen, was in ein Gebinde gehört. */
+.z-ve {
+  display: block;
+  font: 400 7.5pt/1.2 var(--sans);
+  color: #666;
+}
+
+/* =====================================================================
+   Blanko-Scheine
+   Dieselbe Bildsprache wie die gefüllten Scheine, aber mit Linien
+   statt Werten. Die Felder sind bewusst hoch genug für Handschrift –
+   eine 4 mm hohe Zeile schreibt niemand aus.
+   ===================================================================== */
+
+.bl-feld {
+  display: inline-block;
+  min-width: 45mm;
+  min-height: 5mm;
+  border-bottom: 0.8pt solid #000;
+}
+
+.bl-feld--kurz { min-width: 32mm; }
+
+.bl-kopfzeile {
+  display: flex;
+  gap: 8mm;
+  margin: 4mm 0 3mm;
+}
+
+.bl-kopfzeile > div { flex: 1 1 0; }
+
+.bl-label {
+  display: block;
+  margin-bottom: 1mm;
+  font: 500 7pt/1.2 var(--sans);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #666;
+}
+
+.bl-kopfzeile .bl-feld { display: block; min-width: 0; width: 100%; }
+
+.bl-tabelle th {
+  padding: 1.2mm 1mm !important;
+  border-bottom: 1.2px solid #000 !important;
+  font: 600 7.5pt/1 var(--sans);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.bl-th-menge { width: 18mm; }
+.bl-th-ort   { width: 32mm; }
+.bl-th-grund { width: 30mm; }
+
+/* Schreibhöhe: 7 mm reicht für eine Zeile Handschrift. */
+.bl-zeile td {
+  height: 7mm;
+  border-bottom: 0.5pt solid #999 !important;
+  border-right: 0.5pt solid #ddd;
+}
+
+.bl-zeile td:last-child { border-right: 0; }
+
+.schein--blanko .schein-unterschriften { padding-top: 4mm; }
+
+/* Auf dem Schein darf der QR kleiner sein als auf Kiste und Regal:
+   er wird aus der Hand gescannt, nicht aus zwei Metern. */
+.schein .etikett-qr svg { width: 17mm; height: 17mm; }
+.schein .etikett-qr { margin-left: 5mm; }
