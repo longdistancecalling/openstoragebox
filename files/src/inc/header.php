@@ -76,7 +76,7 @@ $ich = benutzer();
         ARIA-Bastelei. Das Skript unten schließt es nur bei Klick
         daneben.
       -->
-      <details class="menue<?= $inVerwaltung ? ' is-active' : '' ?>"<?= $inVerwaltung ? ' open' : '' ?>>
+      <details class="menue<?= $inVerwaltung ? ' is-active' : '' ?>">
         <summary>Verwaltung</summary>
         <div class="menue-liste">
           <?php foreach ($verwaltung as $key => [$label, $href]): ?>

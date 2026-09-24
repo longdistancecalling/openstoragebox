@@ -1161,3 +1161,45 @@ a.orte-eintrag:hover { border-color: var(--blau); background: var(--blau-weich);
 @media (max-width: 700px) {
   .orte-spalten { grid-template-columns: 1fr; }
 }
+
+/* Zeile mit Aktionen: Name/Link links, Umbenennen + Löschen rechts. */
+.orte-zeile { display: flex; align-items: stretch; gap: 6px; }
+.orte-zeile .orte-eintrag { flex: 1; min-width: 0; }
+
+.orte-meta { font-size: 12px; color: var(--muted); flex: none; margin-left: auto; padding-right: 2px; }
+.orte-eintrag.is-active .orte-meta { color: var(--blau); }
+
+.orte-aktionen { display: flex; gap: 4px; flex: none; }
+.orte-aktionen form { margin: 0; display: inline-flex; }
+
+.orte-akt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+}
+.orte-akt:hover { border-color: var(--blau); color: var(--blau); background: var(--blau-weich); }
+.orte-akt--del:hover { border-color: var(--rot); color: var(--rot); background: var(--rot-weich); }
+.orte-akt[disabled] { opacity: .4; cursor: not-allowed; }
+.orte-akt[disabled]:hover { border-color: var(--line); color: var(--muted); background: var(--surface); }
+
+/* Inline-Umbenennen: Eingabefeld nimmt die Breite, Knöpfe daneben. */
+.orte-edit { display: flex; gap: 6px; align-items: center; }
+.orte-edit input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--blau);
+  border-radius: var(--r);
+  font: inherit;
+}
+.orte-edit .btn--klein { flex: none; }
