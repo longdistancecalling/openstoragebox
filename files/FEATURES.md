@@ -1,4 +1,4 @@
-# Lagerverwaltung – Funktionsübersicht
+# OpenStorageBox – Funktionsübersicht
 
 Version 9 · Stand 10.09.2026 · DRK KV Eisenach
 
@@ -10,10 +10,13 @@ Abhängigkeiten.
 ## Bestand
 
 - **Artikel** mit Name, Inventarnummer, EAN, Kategorie, Notiz
-- **Lagerorte**: Kiste (Lager / Regal / Fach) oder freier Standort für
-  alles, was in keine Kiste passt – Zelte, Aggregate, Paletten
-- **Kisten** sind systemweit eindeutig; Umlagern ist ein Vorgang, alle
-  Artikel darin wandern mit
+- **Lagerorte** als feste Hierarchie **Lager → Regal → Fach**, unter
+  „Verwaltung → Lagerorte" gepflegt. Ein Artikel liegt wahlweise in einer
+  Kiste, direkt in einem Fach, an einem freien Standort (Zelte, Aggregate,
+  Paletten) oder noch nirgends
+- **Kisten** stehen in einem Fach und sind systemweit eindeutig; Umlagern
+  ist ein Vorgang, alle Artikel darin wandern mit. Ein Regal umbenennen
+  ändert den Ort überall automatisch mit
 - **Verpackungseinheiten**: 8 Kisten à 20 Flaschen + 7 lose = 167
   Flaschen. Bei Einzelentnahme wird automatisch ein Gebinde
   aufgebrochen, bei Zugang wieder zusammengesetzt
@@ -41,8 +44,9 @@ Abhängigkeiten.
 
 ## Scannen
 
-Ein USB-Handscanner reicht – keine Bibliothek, keine Kamerarechte.
-Erkannt werden:
+Ein USB-Handscanner reicht – keine Bibliothek, keine Kamerarechte. Für ein
+Tablet an der Wand gibt es zusätzlich ein **Touch-Terminal** mit großen
+Knöpfen und reduziertem Ablauf. Erkannt werden:
 
 | Code | führt zu |
 |---|---|

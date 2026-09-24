@@ -489,3 +489,98 @@ function code_deuten(string $roh): array
         ? ['art' => 'ean', 'wert' => $ziffern]
         : ['art' => 'leer', 'wert' => ''];
 }
+
+
+/* =====================================================================
+   Lagerort-Auswahl (v10)
+   ===================================================================== */
+
+/**
+ * Lädt alle Fächer als flache Liste mit vollem Pfad, für Auswahlfelder.
+ * Nach Lager, Regal, Fach sortiert, damit das Dropdown der Struktur folgt.
+ */
+function faecher_liste(PDO $pdo): array
+{
+    return $pdo->query(
+        'SELECT fach_id, lager, regal, fach, pfad
+         FROM v_fach
+         ORDER BY s_lager, lager, s_regal, LENGTH(regal), regal, s_fach, LENGTH(fach), fach'
+    )->fetchAll();
+}
+
+/**
+ * Ein <select> für die Fachauswahl, gruppiert nach Lager und Regal.
+ * $aktuell ist die vorgewählte fach_id (oder '').
+ */
+function fach_auswahl(array $faecher, string $name, string $aktuell, bool $pflicht = false): string
+{
+    $html = '<select name="' . h($name) . '" id="' . h($name) . '"' . ($pflicht ? ' required' : '') . '>';
+    if (!$pflicht) {
+        $html .= '<option value="">– kein Fach –</option>';
+    }
+    $lager = null; $regal = null; $offen = false;
+    foreach ($faecher as $f) {
+        $lr = $f['lager'] . ' / ' . $f['regal'];
+        if ($lr !== ($lager . ' / ' . $regal)) {
+            if ($offen) { $html .= '</optgroup>'; }
+            $html .= '<optgroup label="' . h($lr) . '">';
+            $offen = true;
+            $lager = $f['lager']; $regal = $f['regal'];
+        }
+        $sel = $aktuell === (string) $f['fach_id'] ? ' selected' : '';
+        $html .= '<option value="' . (int) $f['fach_id'] . '"' . $sel . '>' . h($f['fach']) . '</option>';
+    }
+    if ($offen) { $html .= '</optgroup>'; }
+    $html .= '</select>';
+    return $html;
+}
+
+/**
+ * Findet die fach_id zu einer Lager/Regal/Fach-Kombination und legt
+ * fehlende Ebenen dabei an. Für den CSV-Import gedacht, wo Orte als
+ * Text kommen. Gibt null zurück, wenn nicht alle drei Angaben da sind.
+ *
+ * $zwischen puffert schon aufgelöste Kombinationen innerhalb eines
+ * Importlaufs, damit dieselbe Kombination nicht mehrfach gesucht wird.
+ */
+function fach_id_aufloesen(PDO $pdo, string $lager, string $regal, string $fach, array &$zwischen): ?int
+{
+    $lager = trim($lager); $regal = trim($regal); $fach = trim($fach);
+    if ($lager === '' || $regal === '' || $fach === '') {
+        return null;
+    }
+    $schluessel = $lager . '|' . $regal . '|' . $fach;
+    if (isset($zwischen[$schluessel])) {
+        return $zwischen[$schluessel];
+    }
+
+    // Lager
+    $stmt = $pdo->prepare('SELECT lager_id FROM lager WHERE name = ?');
+    $stmt->execute([$lager]);
+    $lagerId = $stmt->fetchColumn();
+    if ($lagerId === false) {
+        $pdo->prepare('INSERT INTO lager (name) VALUES (?)')->execute([$lager]);
+        $lagerId = (int) $pdo->lastInsertId();
+    }
+
+    // Regal
+    $stmt = $pdo->prepare('SELECT regal_id FROM regal WHERE lager_id = ? AND name = ?');
+    $stmt->execute([$lagerId, $regal]);
+    $regalId = $stmt->fetchColumn();
+    if ($regalId === false) {
+        $pdo->prepare('INSERT INTO regal (lager_id, name) VALUES (?, ?)')->execute([$lagerId, $regal]);
+        $regalId = (int) $pdo->lastInsertId();
+    }
+
+    // Fach
+    $stmt = $pdo->prepare('SELECT fach_id FROM fach WHERE regal_id = ? AND name = ?');
+    $stmt->execute([$regalId, $fach]);
+    $fachId = $stmt->fetchColumn();
+    if ($fachId === false) {
+        $pdo->prepare('INSERT INTO fach (regal_id, name) VALUES (?, ?)')->execute([$regalId, $fach]);
+        $fachId = (int) $pdo->lastInsertId();
+    }
+
+    $zwischen[$schluessel] = (int) $fachId;
+    return (int) $fachId;
+}

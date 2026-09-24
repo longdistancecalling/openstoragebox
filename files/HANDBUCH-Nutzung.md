@@ -1,4 +1,4 @@
-# Lagerverwaltung – Handbuch für die tägliche Nutzung
+# OpenStorageBox – Handbuch für die tägliche Nutzung
 
 DRK KV Eisenach · Stand Version 9
 
@@ -150,8 +150,11 @@ ist optional:
 
 - **Inventarnummer** – leer lassen vergibt automatisch eine (A-00042).
 - **EAN** – der Hersteller-Barcode, ermöglicht das Scannen.
-- **Lagerort** – eine Kiste, ein freier Standort (für Zelte, Aggregate) oder
-  noch keiner.
+- **Lagerort** – vier Möglichkeiten: in einer **Kiste**, **direkt in einem
+  Fach** (ohne Kiste), an einem **freien Standort** (für Zelte, Aggregate,
+  Paletten) oder **noch keiner**. Kisten und Fächer stammen aus der
+  Lagerort-Verwaltung (siehe unten); fehlt das passende, legt eine
+  Bearbeiterin oder ein Admin es dort an.
 - **Verpackungseinheit** – für Ware in Gebinden, siehe nächster Abschnitt.
 - **Sollbestand** – Mindestmenge; fällt der Bestand darunter, erscheint der
   Artikel unter *Bedarf*. Leer lassen, wenn nicht überwacht werden soll.
@@ -164,7 +167,31 @@ letzten Eingabe stehen bleiben.
 
 ---
 
-## 8. Verpackungseinheiten verstehen
+## 8. Lagerorte aufbauen
+
+Bevor Kisten und Artikel einen Platz bekommen, wird die Struktur des Lagers
+angelegt: **Lager → Regal → Fach**. Das macht eine Bearbeiterin oder ein
+Admin einmalig unter **Verwaltung → Lagerorte**.
+
+Die Seite hat drei Spalten nebeneinander. Links wählt man ein Lager, dann
+erscheinen in der Mitte dessen Regale, rechts die Fächer des gewählten
+Regals. Am Fuß jeder Spalte legt ein kleines Feld einen neuen Eintrag an –
+erst das Lager (z. B. „Keller"), dann darin ein Regal (z. B. „R1"), dann
+darin ein Fach (z. B. „F1"). Bei jedem Fach steht, wie viele Kisten und
+Artikel darin liegen.
+
+Ein Lager, Regal oder Fach lässt sich jederzeit **umbenennen** – der neue
+Name erscheint sofort überall, auch an allen Kisten und Artikeln, die darin
+liegen. **Löschen** kann nur ein Admin, und nur solange nichts mehr darin
+steht; sonst kommt ein Hinweis, erst umzuräumen.
+
+Kisten und Artikel wählen ihr Fach danach aus einer Liste aus, statt es
+abzutippen. Das verhindert Tippfehler wie ein zweites „Kelller" und erlaubt
+leere Regale, die trotzdem schon ein Regalschild bekommen können.
+
+---
+
+## 9. Verpackungseinheiten verstehen
 
 Getränke, Verbandmaterial und Ähnliches kommen in Gebinden. Das System
 zählt sie so, wie sie im Regal stehen:
@@ -185,7 +212,7 @@ Gebinde und wie viele Einzelstücke insgesamt da sind.
 
 ---
 
-## 9. Inventur
+## 10. Inventur
 
 *(Zählen: Bearbeiter · Abschließen: Administrator)*
 
@@ -205,7 +232,7 @@ Wichtig beim Zählen: Ein **leeres Feld** heißt „noch nicht gezählt". Für
 
 ---
 
-## 10. Was ist zu tun? – die Seite Bedarf
+## 11. Was ist zu tun? – die Seite Bedarf
 
 **Bedarf** beantwortet die drei Fragen vor einer Beschaffung auf einen Blick:
 
@@ -218,7 +245,7 @@ Von hier lässt sich direkt einbuchen oder der Artikel bearbeiten.
 
 ---
 
-## 11. Drucken
+## 12. Drucken
 
 Unter **Export** liegen alle Ausdrucke:
 
@@ -235,7 +262,7 @@ Normalpapier testen und gegen den Etikettenbogen halten.
 
 ---
 
-## 12. QR-Codes im Einsatz
+## 13. QR-Codes im Einsatz
 
 Auf Kisten, Regalen und Etiketten sind QR-Codes. Mit dem Handy scannen
 (normale Kamera-App genügt, wenn die Adresse eingerichtet ist) öffnet sich
@@ -249,7 +276,7 @@ So kann man am Regal stehen, scannen und buchen, ohne zu tippen.
 
 ---
 
-## 13. Häufige Fragen
+## 14. Häufige Fragen
 
 **Ich habe mich verbucht.** Einfach die Gegenbuchung machen: falsch
 entnommen → einbuchen, falsch eingebucht → entnehmen. Das Protokoll zeigt

@@ -28,8 +28,9 @@ einziges UPDATE, alle Artikel wandern mit.
 
 | Entscheidung | Grund |
 |---|---|
-| `kiste_id` ist NULL-fähig, dazu `standort_frei` | Zelte, Feldbetten und Aggregate passen in keine Kiste |
-| `CHECK chk_lagerort` | verhindert Kiste **und** freien Standort gleichzeitig – ein Artikel steht an genau einem Ort |
+| `kiste_id`, `fach_id`, `standort_frei` – alle NULL-fähig | Ein Artikel liegt in einer Kiste, direkt in einem Fach, an einem freien Standort (Zelte, Aggregate) oder noch nirgends |
+| Ein-Ort-Regel in `artikel.php` statt DB-`CHECK` | Genau einer der drei Orte ist gesetzt. MariaDB lehnt einen nachträglich per `ALTER` ergänzten `CHECK` mit Spaltenbezug ab, deshalb prüft die Anwendung |
+| Lagerorte als Tabellen `lager`/`regal`/`fach` | Feste Hierarchie Lager→Regal→Fach. Vorher klebten die Namen als Text an der Kiste – jetzt eigene Struktur, auf die Kiste **und** Artikel zeigen. Umbenennen wirkt überall |
 | `inventar_nr` getrennt von `artikel_id` | die Datenbank-ID ist ein technisches Detail, die Inventarnummer klebt am Material und darf eigenen Konventionen folgen |
 | `entnahme.zurueck_am` nur bei `verliehen` | per CHECK erzwungen: die vier anderen Gründe sind endgültig |
 | Snapshot-Spalten in `inventur_position` | eine abgeschlossene Inventur ist ein Beleg und muss lesbar bleiben, auch wenn Artikel später umbenannt werden |
@@ -89,7 +90,7 @@ docker compose exec -T db mariadb -u root -p"$(grep DB_ROOT_PASS .env | cut -d= 
   lager < db/02_v2.sql
 ```
 
-Für die weiteren Versionen ebenso `db/03_v3.sql` bis `db/09_v9.sql`, der Reihe nach. Beide Skripte sind wiederholbar – ein zweiter
+Für die weiteren Versionen ebenso `db/03_v3.sql` bis `db/10_v10.sql`, der Reihe nach. Beide Skripte sind wiederholbar – ein zweiter
 Durchlauf richtet keinen Schaden an. Bei einer **Neuinstallation** werden alle
 Dateien im Init-Verzeichnis alphabetisch eingespielt, du musst nichts migrieren.
 
@@ -285,6 +286,7 @@ docker-compose.yml          MariaDB + PHP/Apache + Adminer
 docker/php/Dockerfile       php:8.3-apache mit pdo_mysql
 db/01_schema.sql            Grundschema (v1)
 db/02_v2.sql                Migration auf v2, wiederholbar
+db/10_v10.sql               Migration auf v10: Lagerort-Hierarchie
 src/inc/config.php          PDO-Verbindung, Sortierkonstanten, Entnahmegründe
 src/inc/helpers.php         Escaping, CSRF, Flash, Lagerort-Chip, CSV-Ausgabe
 src/inc/auth.php            Anmeldung, Rollen, Brute-Force-Sperre
@@ -297,7 +299,8 @@ src/artikel.php             Artikel anlegen, bearbeiten, löschen
 src/entnahme.php            Entnahme buchen
 src/entnahmen.php           Protokoll, offene Leihen, Rückgabe
 src/kisten.php              Kistenübersicht mit Belegung
-src/kiste.php               Kiste anlegen, bearbeiten, löschen
+src/kiste.php               Kiste anlegen, bearbeiten, löschen (Fach-Auswahl)
+src/orte.php                Lagerorte verwalten: Lager, Regale, Fächer
 src/kategorien.php          Kategorien verwalten
 src/faellig.php             Fälligkeiten nach Zeitraum und Art
 src/export.php              Exportzentrale, CSV und Druckliste

@@ -27,6 +27,7 @@ $nav = [
 // Verwaltung – je nach Rolle unterschiedlich gefüllt.
 $verwaltung = [];
 if (darf('bearbeiter')) {
+    $verwaltung['orte']       = ['Lagerorte',  'orte.php'];
     $verwaltung['kategorien'] = ['Kategorien', 'kategorien.php'];
 }
 $verwaltung['daten'] = ['Daten', 'daten.php'];   // Export darf jeder

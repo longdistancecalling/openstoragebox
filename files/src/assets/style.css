@@ -1059,3 +1059,80 @@ small.je {
   color: var(--rot);
   white-space: nowrap;
 }
+
+/* =====================================================================
+   Lagerorte-Verwaltung (orte.php)
+   Drei Spalten nebeneinander: Lager | Regale | Fächer.
+   ===================================================================== */
+.orte-spalten {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.orte-spalte {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 14px;
+}
+.orte-spalte h2 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.orte-spalte--leer { background: var(--line-2); }
+
+.orte-liste { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+
+.orte-eintrag {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--paper);
+  text-decoration: none;
+  color: var(--ink);
+  font-size: 14px;
+}
+a.orte-eintrag:hover { border-color: var(--blau); background: var(--blau-weich); }
+.orte-eintrag.is-active {
+  border-color: var(--blau);
+  background: var(--blau-weich);
+  font-weight: 600;
+}
+.orte-eintrag--fach { cursor: default; }
+.orte-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.orte-pfeil { color: var(--muted); flex: none; }
+
+.orte-belegt { font-size: 12px; color: var(--muted); flex: none; }
+.orte-belegt--frei { font-style: italic; }
+
+.orte-leer, .orte-hinweis { color: var(--muted); font-size: 13px; margin: 4px 0 12px; }
+.orte-hinweis { font-style: italic; }
+
+.orte-neu {
+  display: flex;
+  gap: 6px;
+  border-top: 1px solid var(--line-2);
+  padding-top: 12px;
+}
+.orte-neu input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  font: inherit;
+}
+.orte-neu .btn { flex: none; padding: 8px 14px; }
+
+.orte-loeschen { margin-top: 10px; }
+
+@media (max-width: 700px) {
+  .orte-spalten { grid-template-columns: 1fr; }
+}

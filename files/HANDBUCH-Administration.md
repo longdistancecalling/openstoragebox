@@ -29,7 +29,7 @@ einem Docker-Volume, getrennt vom Code.
 ```
 docker-compose.yml     der Stack
 .env                   Zugangsdaten – NICHT im Repository
-db/                    Schema und Migrationen (01_… bis 09_…)
+db/                    Schema und Migrationen (01_… bis 10_…)
 docker/php/            das PHP-Image
 src/                   die Anwendung
   inc/                 gemeinsame Bausteine (config, auth, helpers …)
@@ -82,7 +82,7 @@ docker compose ps
 
 Beide Container müssen laufen, `lager-db` auf `healthy`. Beim allerersten
 Start mit leerem Volume spielt MariaDB automatisch **alle** SQL-Dateien aus
-`db/` der Reihe nach ein – von `01_schema.sql` bis `09_v9.sql`. Man muss
+`db/` der Reihe nach ein – von `01_schema.sql` bis `10_v10.sql`. Man muss
 nichts migrieren.
 
 ### Ersten Administrator anlegen
@@ -142,6 +142,15 @@ Get-Content db\NN_vN.sql -Raw | docker compose exec -T db mariadb -u root -p"$pa
 
 Alle Migrationen sind **wiederholbar** – ein versehentlicher zweiter
 Durchlauf schadet nicht.
+
+> **Vorsicht bei `10_v10.sql`.** Diese Migration ist die einzige, die
+> **bestehende Daten umschreibt**: Sie überführt die bisher an der Kiste
+> klebenden Textfelder Lager/Regal/Fach in eine eigene Ort-Hierarchie und
+> entfernt danach die alten Spalten. Vor dem Einspielen unbedingt ein
+> Backup ziehen (`./backup.sh`). Sie ist so gebaut, dass ein zweiter
+> Durchlauf nichts mehr anfasst – der Umbau läuft nur, solange die alten
+> Spalten noch da sind. Nach der Migration werden Lagerorte unter
+> *Verwaltung → Lagerorte* gepflegt.
 
 ### Kontrolle nach dem Update
 

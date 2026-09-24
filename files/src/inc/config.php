@@ -97,7 +97,15 @@ define('WARNUNG_TAGE', max(1, (int) ($einstellungen['warnung_tage'] ?? 30)));
  * LENGTH() vor dem Wert sortiert "R2" vor "R10" – bei reiner
  * Textsortierung käme "R10" vor "R2", weil "1" < "2".
  */
-const ORDER_LAGERPLATZ = 'lager, LENGTH(regal), regal, LENGTH(fach), fach, LENGTH(kiste_nr), kiste_nr';
+// Seit v10 kommt der Ort aus der Hierarchie. Die Views liefern
+// Sortierschlüssel (s_lager/s_regal/s_fach) plus die Namen; danach wird
+// sortiert, sodass "Fach 2" vor "Fach 10" steht.
+const ORDER_LAGERPLATZ = 's_lager, lager, s_regal, LENGTH(regal), regal, s_fach, LENGTH(fach), fach, LENGTH(kiste_nr), kiste_nr';
+// Dieselbe Sortierung, aber mit Tabellenalias k. – für Abfragen, die
+// v_kiste als k joinen (kisten.php, export.php). Wird gebraucht, weil
+// die Spaltennamen zusammengesetzt sind (s_lager) und ein naives
+// str_replace('lager','k.lager') sonst auch in s_lager hineingreift.
+const ORDER_LAGERPLATZ_K = 'k.s_lager, k.lager, k.s_regal, LENGTH(k.regal), k.regal, k.s_fach, LENGTH(k.fach), k.fach, LENGTH(k.kiste_nr), k.kiste_nr';
 
 /** Dasselbe für die Artikelliste: freie Standorte hinter die Kisten. */
 const ORDER_LAGERORT = 'ohne_kiste, ' . ORDER_LAGERPLATZ . ', standort_frei';
