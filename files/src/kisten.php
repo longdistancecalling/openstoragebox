@@ -6,7 +6,7 @@ $suche = trim((string) ($_GET['q'] ?? ''));
 
 $sql = 'SELECT k.*, COUNT(a.artikel_id) AS anzahl_artikel,
                COALESCE(SUM(a.menge), 0) AS summe_menge
-        FROM kiste k
+        FROM v_kiste k
         LEFT JOIN artikel a ON a.kiste_id = k.kiste_id';
 $werte = [];
 
@@ -16,11 +16,7 @@ if ($suche !== '') {
     $werte[':q'] = '%' . $suche . '%';
 }
 
-$sql .= ' GROUP BY k.kiste_id ORDER BY ' . str_replace(
-    ['lager', 'regal', 'fach', 'kiste_nr'],
-    ['k.lager', 'k.regal', 'k.fach', 'k.kiste_nr'],
-    ORDER_LAGERPLATZ
-);
+$sql .= ' GROUP BY k.kiste_id ORDER BY ' . ORDER_LAGERPLATZ_K;
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($werte);

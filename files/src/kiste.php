@@ -8,39 +8,27 @@ $fehler = [];
 
 $daten = [
     'kiste_nr' => '',
-    'lager' => (string) ($_GET['v_lager'] ?? ''),
-    'regal' => (string) ($_GET['v_regal'] ?? ''),
-    'fach'  => '',
-    'notiz' => '',
+    'fach_id'  => (string) ($_GET['v_fach'] ?? ''),
+    'notiz'    => '',
 ];
 
-/* ===================================================================
-   POST
-   =================================================================== */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $aktion = (string) ($_POST['aktion'] ?? '');
 
-    /* ---- Löschen -------------------------------------------------- */
     if ($aktion === 'loeschen' && $id !== null) {
         erfordere('admin');
         $stmt = $pdo->prepare('SELECT COUNT(*) FROM artikel WHERE kiste_id = ?');
         $stmt->execute([$id]);
-        $belegt = (int) $stmt->fetchColumn();
-
-        if ($belegt > 0) {
-            // Die Fremdschlüsselregel ON DELETE RESTRICT würde das ohnehin
-            // verhindern. Hier kommt nur die verständliche Erklärung dazu.
-            flash("Die Kiste enthält noch $belegt Artikel. Erst leeren oder umlagern, dann löschen.", 'fehler');
+        if ((int) $stmt->fetchColumn() > 0) {
+            flash('Diese Kiste enthält noch Artikel und kann nicht gelöscht werden.', 'fehler');
             redirect('kiste.php?id=' . $id);
         }
-
         $pdo->prepare('DELETE FROM kiste WHERE kiste_id = ?')->execute([$id]);
         flash('Kiste gelöscht.');
         redirect('kisten.php');
     }
 
-    /* ---- Speichern ------------------------------------------------ */
     foreach (array_keys($daten) as $feld) {
         $daten[$feld] = trim((string) ($_POST[$feld] ?? ''));
     }
@@ -48,43 +36,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($daten['kiste_nr'] === '') {
         $fehler[] = 'Die Kistennummer fehlt.';
     }
-    foreach (['lager' => 'Lager', 'regal' => 'Regal', 'fach' => 'Fach'] as $feld => $label) {
-        if ($daten[$feld] === '') {
-            $fehler[] = "Die Angabe „$label" . '“ fehlt.';
-        }
+    if ($daten['fach_id'] === '' || !ctype_digit($daten['fach_id'])) {
+        $fehler[] = 'Bitte ein Fach wählen. Fehlt das passende, lege es unter Lagerorte an.';
     }
 
     if (!$fehler) {
-        $werte = [
-            $daten['kiste_nr'], $daten['lager'], $daten['regal'], $daten['fach'],
-            $daten['notiz'] !== '' ? $daten['notiz'] : null,
-        ];
-
+        $fachId = (int) $daten['fach_id'];
+        $notiz  = $daten['notiz'] !== '' ? $daten['notiz'] : null;
         try {
             if ($id === null) {
-                $pdo->prepare('INSERT INTO kiste (kiste_nr, lager, regal, fach, notiz) VALUES (?,?,?,?,?)')
-                    ->execute($werte);
+                $pdo->prepare('INSERT INTO kiste (kiste_nr, fach_id, notiz) VALUES (?,?,?)')
+                    ->execute([$daten['kiste_nr'], $fachId, $notiz]);
                 flash('Kiste angelegt.');
                 if (($_POST['weiter'] ?? '') === '1') {
-                    // Lager und Regal weitergeben, Fach und Nummer leer.
-                    $vor = http_build_query(array_filter([
-                        'weiter'  => '1',
-                        'v_lager' => $daten['lager'],
-                        'v_regal' => $daten['regal'],
-                    ], fn($x) => $x !== ''));
-                    redirect('kiste.php?' . $vor);
+                    redirect('kiste.php?v_fach=' . $fachId);
                 }
             } else {
-                $pdo->prepare('UPDATE kiste SET kiste_nr=?, lager=?, regal=?, fach=?, notiz=? WHERE kiste_id=?')
-                    ->execute([...$werte, $id]);
+                $pdo->prepare('UPDATE kiste SET kiste_nr=?, fach_id=?, notiz=? WHERE kiste_id=?')
+                    ->execute([$daten['kiste_nr'], $fachId, $notiz, $id]);
                 flash('Kiste gespeichert. Alle Artikel darin liegen jetzt am neuen Platz.');
             }
             redirect('kisten.php');
         } catch (PDOException $e) {
-            // 1062 = Verstoß gegen einen UNIQUE-Index, hier uq_kiste_nr.
             if ((int) ($e->errorInfo[1] ?? 0) === 1062) {
-                $fehler[] = 'Die Kistennummer „' . $daten['kiste_nr'] . '“ ist bereits vergeben. '
-                          . 'Jede Nummer darf im Lager nur einmal vorkommen.';
+                $fehler[] = 'Die Kistennummer "' . $daten['kiste_nr'] . '" ist schon vergeben.';
             } else {
                 error_log('Kiste speichern: ' . $e->getMessage());
                 $fehler[] = 'Die Kiste konnte nicht gespeichert werden.';
@@ -93,30 +68,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-/* ===================================================================
-   GET
-   =================================================================== */
 $belegt = 0;
 if ($id !== null) {
     $stmt = $pdo->prepare('SELECT * FROM kiste WHERE kiste_id = ?');
     $stmt->execute([$id]);
     $vorhanden = $stmt->fetch();
-
     if (!$vorhanden) {
         flash('Diese Kiste existiert nicht (mehr).', 'fehler');
         redirect('kisten.php');
     }
-
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-        foreach (array_keys($daten) as $feld) {
-            $daten[$feld] = (string) ($vorhanden[$feld] ?? '');
-        }
+        $daten['kiste_nr'] = (string) $vorhanden['kiste_nr'];
+        $daten['fach_id']  = (string) ($vorhanden['fach_id'] ?? '');
+        $daten['notiz']    = (string) ($vorhanden['notiz'] ?? '');
     }
-
     $stmt = $pdo->prepare('SELECT COUNT(*) FROM artikel WHERE kiste_id = ?');
     $stmt->execute([$id]);
     $belegt = (int) $stmt->fetchColumn();
 }
+
+$faecher = faecher_liste($pdo);
 
 $titel = $id === null ? 'Kiste anlegen' : 'Kiste bearbeiten';
 $aktiv = 'kisten';
@@ -136,6 +107,14 @@ require __DIR__ . '/inc/header.php';
   </ul>
 <?php endif; ?>
 
+<?php if (!$faecher): ?>
+  <p class="leer">
+    Es gibt noch keine Fächer. Lege zuerst unter
+    <a href="orte.php">Lagerorte</a> ein Lager mit Regal und Fach an -
+    dann kann eine Kiste dort einsortiert werden.
+  </p>
+<?php else: ?>
+
 <form class="form" method="post" action="kiste.php<?= $id !== null ? '?id=' . $id : '' ?>">
   <?= csrf_field() ?>
   <input type="hidden" name="aktion" value="speichern">
@@ -147,23 +126,17 @@ require __DIR__ . '/inc/header.php';
     <p class="hinweis">Systemweit eindeutig. Dieselbe Nummer kann kein zweites Mal vergeben werden.</p>
   </div>
 
-  <div class="paar">
-    <div class="zeile">
-      <label for="lager">Lager</label>
-      <input type="text" id="lager" name="lager" maxlength="30" required value="<?= h($daten['lager']) ?>">
-    </div>
-    <div class="zeile">
-      <label for="regal">Regal</label>
-      <input type="text" id="regal" name="regal" maxlength="30" required value="<?= h($daten['regal']) ?>">
-    </div>
-    <div class="zeile">
-      <label for="fach">Fach</label>
-      <input type="text" id="fach" name="fach" maxlength="30" required value="<?= h($daten['fach']) ?>">
-    </div>
+  <div class="zeile">
+    <label for="fach_id">Fach</label>
+    <?= fach_auswahl($faecher, 'fach_id', $daten['fach_id'], true) ?>
+    <p class="hinweis">
+      Der Platz der Kiste im Lager. Fehlt ein Fach, lege es unter
+      <a href="orte.php">Lagerorte</a> an.
+    </p>
   </div>
 
   <div class="zeile">
-    <label for="notiz">Notiz</label>
+    <label for="notiz">Notiz <span class="hinweis-inline">optional</span></label>
     <input type="text" id="notiz" name="notiz" maxlength="255" value="<?= h($daten['notiz']) ?>">
   </div>
 
@@ -178,20 +151,18 @@ require __DIR__ . '/inc/header.php';
 </form>
 
 <?php if ($id !== null && darf('admin')): ?>
-  <form class="form" method="post" action="kiste.php?id=<?= $id ?>" style="margin-top:16px"
+  <form method="post" action="kiste.php?id=<?= $id ?>" class="loesch-form"
         onsubmit="return confirm('Diese Kiste wirklich löschen?');">
     <?= csrf_field() ?>
     <input type="hidden" name="aktion" value="loeschen">
-    <button class="btn btn--gefahr" type="submit"<?= $belegt > 0 ? ' disabled title="Kiste ist nicht leer"' : '' ?>>
+    <button class="btn btn--gefahr" type="submit" <?= $belegt > 0 ? 'disabled' : '' ?>>
       Kiste löschen
     </button>
     <?php if ($belegt > 0): ?>
-      <p class="hinweis" style="margin:8px 0 0">
-        Zum Löschen muss die Kiste leer sein.
-        <a href="index.php?q=<?= urlencode($daten['kiste_nr']) ?>">Inhalt anzeigen</a>
-      </p>
+      <span class="hinweis-inline">Erst die <?= $belegt ?> Artikel umräumen.</span>
     <?php endif; ?>
   </form>
 <?php endif; ?>
 
+<?php endif; ?>
 <?php require __DIR__ . '/inc/footer.php'; ?>
