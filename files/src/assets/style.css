@@ -933,44 +933,69 @@ small.je {
    nirgends vorkommt. Im Einsatz soll niemand suchen müssen.
    --------------------------------------------------------------------- */
 
-.einsatz {
+/* Terminal und Entnahme stehen als Paar rechts in der Leiste. Der
+   Container trägt das margin-left:auto, das die beiden gemeinsam nach
+   rechts schiebt – die Knöpfe selbst haben keins mehr, sonst rissen sie
+   auseinander. */
+.kopf-aktionen {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   margin-left: auto;
-  padding: 8px 16px 8px 12px;
+}
+
+/* Gemeinsame Form beider Knöpfe: gleiche Größe, damit sie als Paar
+   zusammengehören. Sie unterscheiden sich nur in der Farbe. */
+.terminal-knopf,
+.einsatz {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px 9px 14px;
   border-radius: var(--r);
-  background: #d4342a;
   color: #fff;
-  font: 600 14px/1 var(--sans);
+  font: 600 15px/1 var(--sans);
   letter-spacing: .02em;
   text-decoration: none;
   white-space: nowrap;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, .12) inset;
 }
 
+/* Terminal: das ruhige Blau des Hauses – öffnet die Buchungsstation. */
+.terminal-knopf { background: var(--blau); }
+.terminal-knopf:hover,
+.terminal-knopf:focus-visible { background: #0f4676; }
+
+/* Entnahme: Signalrot, kommt sonst nirgends vor. */
+.einsatz { background: #d4342a; }
 .einsatz:hover,
 .einsatz:focus-visible { background: #bc2b22; }
 
+.terminal-zeichen,
 .einsatz-zeichen {
   font: 700 18px/1 var(--mono);
   opacity: .9;
 }
 
-/* Die Navigation verliert ihr margin-left:auto, sobald der Knopf da ist –
-   sonst schieben beide gegeneinander. */
-.topbar:has(.einsatz) .nav { margin-left: 16px; }
+/* Die Navigation verliert ihr margin-left:auto, sobald das Knopfpaar da
+   ist – sonst schieben beide gegeneinander. */
+.topbar:has(.kopf-aktionen) .nav { margin-left: 16px; }
 
 @media (max-width: 760px) {
-  .einsatz {
+  /* Auf schmalen Geräten rückt das Paar nach oben und füllt die Breite,
+     die beiden Knöpfe teilen sich die Zeile. */
+  .kopf-aktionen {
     order: -1;
     width: 100%;
-    justify-content: center;
     margin-left: 0;
-    padding: 12px;
-    font-size: 15px;
   }
-  .topbar:has(.einsatz) .nav { margin-left: 0; }
+  .terminal-knopf,
+  .einsatz {
+    flex: 1;
+    justify-content: center;
+    padding: 12px;
+  }
+  .topbar:has(.kopf-aktionen) .nav { margin-left: 0; }
 }
 
 /* --- v8: Verwaltungsmenü ----------------------------------------------

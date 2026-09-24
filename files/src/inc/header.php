@@ -16,7 +16,6 @@ $aktiv = $aktiv ?? '';
 $nav = [
     'index'     => ['Artikel',      'index.php'],
     'scan'      => ['Scannen',      'scan.php'],
-    'touch'     => ['Terminal',     'touch.php'],
     'entnahmen' => ['Bewegungen',   'entnahmen.php'],
     'bedarf'    => ['Bedarf',       'bedarf.php'],
     'kisten'    => ['Kisten',       'kisten.php'],
@@ -89,15 +88,23 @@ $ich = benutzer();
   </nav>
   <?php if (darf('bearbeiter')): ?>
     <!--
-      Der Einsatzknopf sitzt bewusst außerhalb der Navigation und in
-      Signalfarbe: im Einsatz zählt, dass jemand mit nassen Händen und
+      Terminal und Entnahme stehen als Paar rechts in der Leiste, in
+      Signalfarben: im Einsatz zählt, dass jemand mit nassen Händen und
       unter Zeitdruck den Weg zum Buchen findet, ohne die Leiste zu
-      lesen. Er ist auf jeder Seite an derselben Stelle.
+      lesen. Beide Knöpfe sind auf jeder Seite an derselben Stelle.
+      Terminal (blau) öffnet die Buchungsstation fürs Lager-Tablet,
+      Entnahme (rot) das normale Entnahmeformular.
     -->
-    <a class="einsatz" href="entnahme.php" accesskey="e" title="Entnahme buchen (Alt+E)">
-      <span class="einsatz-zeichen" aria-hidden="true">−</span>
-      <span class="einsatz-text">Entnahme</span>
-    </a>
+    <div class="kopf-aktionen">
+      <a class="terminal-knopf" href="touch.php" title="Buchungsterminal öffnen">
+        <span class="terminal-zeichen" aria-hidden="true">▭</span>
+        <span class="terminal-text">Terminal</span>
+      </a>
+      <a class="einsatz" href="entnahme.php" accesskey="e" title="Entnahme buchen (Alt+E)">
+        <span class="einsatz-zeichen" aria-hidden="true">−</span>
+        <span class="einsatz-text">Entnahme</span>
+      </a>
+    </div>
   <?php endif; ?>
   <?php if ($ich): ?>
   <div class="wer">
