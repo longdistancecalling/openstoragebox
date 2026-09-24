@@ -17,11 +17,11 @@ require __DIR__ . '/inc/config.php';
 $id = isset($_GET['id']) && ctype_digit((string) $_GET['id']) ? (int) $_GET['id'] : null;
 
 if ($id !== null) {
-    $stmt = $pdo->prepare('SELECT * FROM kiste WHERE kiste_id = ?');
+    $stmt = $pdo->prepare('SELECT * FROM v_kiste WHERE kiste_id = ?');
     $stmt->execute([$id]);
     $kisten = array_filter([$stmt->fetch()]);
 } else {
-    $kisten = $pdo->query('SELECT * FROM kiste ORDER BY ' . ORDER_LAGERPLATZ)->fetchAll();
+    $kisten = $pdo->query('SELECT * FROM v_kiste ORDER BY ' . ORDER_LAGERPLATZ)->fetchAll();
 }
 
 if (!$kisten) {
