@@ -30,8 +30,9 @@ $daten = [
     // Vorbelegung aus dem Scan: ?ean=… kommt von einer unbekannten EAN.
     'ean'          => ean_saeubern((string) ($_GET['ean'] ?? '')),
     // Vorschläge aus "Speichern und weiter" der vorigen Eingabe.
-    'ortart'       => in_array($_GET['v_ortart'] ?? '', ['kiste','frei','ohne'], true) ? $_GET['v_ortart'] : 'kiste',
+    'ortart'       => in_array($_GET['v_ortart'] ?? '', ['kiste','fach','frei','ohne'], true) ? $_GET['v_ortart'] : 'kiste',
     'kiste_id'     => (string) ($_GET['v_kiste'] ?? ''),
+    'fach_id'      => (string) ($_GET['v_fach'] ?? ''),
     'standort_frei'=> (string) ($_GET['v_standort'] ?? ''),
     'kategorie_id' => (string) ($_GET['v_kategorie'] ?? ''),
     'artikelname'  => '',
@@ -83,21 +84,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Lagerort: genau eine der drei Varianten.
-    if (!in_array($daten['ortart'], ['kiste', 'frei', 'ohne'], true)) {
+    if (!in_array($daten['ortart'], ['kiste', 'fach', 'frei', 'ohne'], true)) {
         $daten['ortart'] = 'kiste';
     }
     if ($daten['ortart'] === 'kiste') {
         if ($daten['kiste_id'] === '' || !ctype_digit($daten['kiste_id'])) {
-            $fehler[] = 'Bitte eine Kiste auswählen oder auf einen freien Standort umstellen.';
+            $fehler[] = 'Bitte eine Kiste auswählen oder den Ort umstellen.';
         }
+        $daten['fach_id'] = '';
+        $daten['standort_frei'] = '';
+    } elseif ($daten['ortart'] === 'fach') {
+        if ($daten['fach_id'] === '' || !ctype_digit($daten['fach_id'])) {
+            $fehler[] = 'Bitte ein Fach auswählen.';
+        }
+        $daten['kiste_id'] = '';
         $daten['standort_frei'] = '';
     } elseif ($daten['ortart'] === 'frei') {
         if ($daten['standort_frei'] === '') {
             $fehler[] = 'Bitte den freien Standort eintragen.';
         }
         $daten['kiste_id'] = '';
+        $daten['fach_id']  = '';
     } else {
         $daten['kiste_id']      = '';
+        $daten['fach_id']       = '';
         $daten['standort_frei'] = '';
     }
 
@@ -179,6 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $daten['ean'] !== '' ? $daten['ean'] : null,
             $daten['artikelname'],
             $daten['kiste_id']      !== '' ? (int) $daten['kiste_id'] : null,
+            $daten['fach_id']       !== '' ? (int) $daten['fach_id']  : null,
             $daten['standort_frei'] !== '' ? $daten['standort_frei']  : null,
             $daten['kategorie_id']  !== '' ? (int) $daten['kategorie_id'] : null,
             (int) $daten['menge'],
@@ -204,10 +215,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $stmt = $pdo->prepare(
                     'INSERT INTO artikel
-                       (ean, artikelname, kiste_id, standort_frei, kategorie_id, menge,
+                       (ean, artikelname, kiste_id, fach_id, standort_frei, kategorie_id, menge,
                         ve_inhalt, ve_einheit, gebinde_einheit, lose, soll_bestand,
                         faellig_am, faellig_typ, notiz)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
                 );
                 $stmt->execute($werte);
                 $neueId = (int) $pdo->lastInsertId();
@@ -230,7 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $stmt = $pdo->prepare(
                     'UPDATE artikel SET
-                        ean = ?, artikelname = ?, kiste_id = ?, standort_frei = ?, kategorie_id = ?,
+                        ean = ?, artikelname = ?, kiste_id = ?, fach_id = ?, standort_frei = ?, kategorie_id = ?,
                         menge = ?, ve_inhalt = ?, ve_einheit = ?, gebinde_einheit = ?, lose = ?,
                         soll_bestand = ?, faellig_am = ?, faellig_typ = ?, notiz = ?, inventar_nr = ?
                      WHERE artikel_id = ?'
@@ -248,6 +259,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'weiter'       => '1',
                     'v_ortart'     => $daten['ortart'],
                     'v_kiste'      => $daten['kiste_id'],
+                    'v_fach'       => $daten['fach_id'],
                     'v_standort'   => $daten['standort_frei'],
                     'v_kategorie'  => $daten['kategorie_id'],
                 ], fn($x) => $x !== '' && $x !== null));
@@ -286,8 +298,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $id !== null) {
         'ean'          => (string) ($vorhanden['ean'] ?? ''),
         'artikelname'  => (string) $vorhanden['artikelname'],
         'ortart'       => $vorhanden['kiste_id'] !== null ? 'kiste'
-                        : ($vorhanden['standort_frei'] !== null ? 'frei' : 'ohne'),
+                        : ($vorhanden['fach_id'] !== null ? 'fach'
+                        : ($vorhanden['standort_frei'] !== null ? 'frei' : 'ohne')),
         'kiste_id'     => (string) ($vorhanden['kiste_id'] ?? ''),
+        'fach_id'      => (string) ($vorhanden['fach_id'] ?? ''),
         'standort_frei'=> (string) ($vorhanden['standort_frei'] ?? ''),
         'kategorie_id' => (string) ($vorhanden['kategorie_id'] ?? ''),
         'menge'        => (string) $vorhanden['menge'],
@@ -302,7 +316,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $id !== null) {
     ];
 }
 
-$kisten = $pdo->query('SELECT kiste_id, kiste_nr, lager, regal, fach FROM kiste ORDER BY ' . ORDER_LAGERPLATZ)->fetchAll();
+$kisten = $pdo->query('SELECT kiste_id, kiste_nr, lager, regal, fach FROM v_kiste ORDER BY ' . ORDER_LAGERPLATZ)->fetchAll();
+$faecher = faecher_liste($pdo);
 $kategorien = $pdo->query('SELECT kategorie_id, bezeichnung FROM kategorie ORDER BY bezeichnung')->fetchAll();
 
 /*
@@ -403,6 +418,11 @@ require __DIR__ . '/inc/header.php';
       <span>in einer Kiste</span>
     </label>
     <label class="radio">
+      <input type="radio" name="ortart" value="fach" data-ort="fach"
+             <?= $daten['ortart'] === 'fach' ? 'checked' : '' ?>>
+      <span>direkt in einem Fach</span>
+    </label>
+    <label class="radio">
       <input type="radio" name="ortart" value="frei" data-ort="frei"
              <?= $daten['ortart'] === 'frei' ? 'checked' : '' ?>>
       <span>freier Standort</span>
@@ -425,6 +445,13 @@ require __DIR__ . '/inc/header.php';
         </option>
       <?php endforeach; ?>
     </select>
+    <p class="hinweis">Der Artikel liegt in dieser Kiste. Deren Fach bestimmt den Ort.</p>
+  </div>
+
+  <div class="zeile" id="feld-fach">
+    <label for="fach_id">Fach</label>
+    <?= fach_auswahl($faecher, 'fach_id', $daten['fach_id'], false) ?>
+    <p class="hinweis">Direkt ins Fach gelegt, ohne Kiste. Fehlt ein Fach, lege es unter <a href="orte.php">Lagerorte</a> an.</p>
   </div>
 
   <div class="zeile" id="feld-frei">
@@ -644,10 +671,12 @@ require __DIR__ . '/inc/header.php';
 // entscheidet ohnehin, welches Feld ausgewertet wird.
 (function () {
   const kiste = document.getElementById('feld-kiste');
+  const fach  = document.getElementById('feld-fach');
   const frei  = document.getElementById('feld-frei');
   function zeigen() {
     const wahl = document.querySelector('input[name="ortart"]:checked').value;
     kiste.hidden = wahl !== 'kiste';
+    fach.hidden  = wahl !== 'fach';
     frei.hidden  = wahl !== 'frei';
   }
   document.querySelectorAll('input[name="ortart"]').forEach(r => r.addEventListener('change', zeigen));
