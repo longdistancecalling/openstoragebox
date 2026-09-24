@@ -1203,3 +1203,8 @@ a.orte-eintrag:hover { border-color: var(--blau); background: var(--blau-weich);
   font: inherit;
 }
 .orte-edit .btn--klein { flex: none; }
+
+/* Verknüpfte Lagerort-Auswahl im Artikelformular: Lager · Regal · Fach
+   nebeneinander, auf schmalen Geräten untereinander. */
+.fachwahl { display: flex; gap: 8px; flex-wrap: wrap; }
+.fachwahl select { flex: 1 1 140px; min-width: 0; }

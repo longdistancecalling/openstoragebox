@@ -318,6 +318,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $id !== null) {
 
 $kisten = $pdo->query('SELECT kiste_id, kiste_nr, lager, regal, fach FROM v_kiste ORDER BY ' . ORDER_LAGERPLATZ)->fetchAll();
 $faecher = faecher_liste($pdo);
+// Fächer mit ihren IDs (Lager/Regal/Fach) für die verknüpften
+// Auswahlfelder. faecher_liste liefert nur Namen; hier brauchen wir
+// zusätzlich lager_id/regal_id, um im Browser filtern zu können.
+$faecherH = $pdo->query(
+    'SELECT fach_id, lager_id, lager, regal_id, regal, fach
+     FROM v_fach
+     ORDER BY s_lager, lager, s_regal, LENGTH(regal), regal, s_fach, LENGTH(fach), fach'
+)->fetchAll();
+$lagerFuerWahl = [];
+foreach ($faecherH as $ff) { $lagerFuerWahl[(int) $ff['lager_id']] = $ff['lager']; }
 $kategorien = $pdo->query('SELECT kategorie_id, bezeichnung FROM kategorie ORDER BY bezeichnung')->fetchAll();
 
 /*
@@ -449,9 +459,23 @@ require __DIR__ . '/inc/header.php';
   </div>
 
   <div class="zeile" id="feld-fach">
-    <label for="fach_id">Fach</label>
-    <?= fach_auswahl($faecher, 'fach_id', $daten['fach_id'], false) ?>
-    <p class="hinweis">Direkt ins Fach gelegt, ohne Kiste. Fehlt ein Fach, lege es unter <a href="orte.php">Lagerorte</a> an.</p>
+    <label for="ort_lager">Lagerort <span class="hinweis-inline">Lager → Regal → Fach</span></label>
+    <div class="fachwahl">
+      <select id="ort_lager" class="fachwahl-teil" aria-label="Lager">
+        <option value="">– Lager –</option>
+        <?php foreach ($lagerFuerWahl as $lid => $lname): ?>
+          <option value="<?= (int) $lid ?>"><?= h($lname) ?></option>
+        <?php endforeach; ?>
+      </select>
+      <select id="ort_regal" class="fachwahl-teil" aria-label="Regal">
+        <option value="">– Regal –</option>
+      </select>
+      <?= fach_auswahl($faecher, 'fach_id', $daten['fach_id'], false) ?>
+    </div>
+    <p class="hinweis">
+      Direkt ins Fach gelegt, ohne Kiste. Zuerst das Lager wählen, dann das Regal,
+      dann das Fach. Fehlt etwas, lege es unter <a href="orte.php">Lagerorte</a> an.
+    </p>
   </div>
 
   <div class="zeile" id="feld-frei">
@@ -681,6 +705,81 @@ require __DIR__ . '/inc/header.php';
   }
   document.querySelectorAll('input[name="ortart"]').forEach(r => r.addEventListener('change', zeigen));
   zeigen();
+})();
+
+// Verknüpfte Auswahl Lager -> Regal -> Fach für die Option "direkt im Fach".
+// Ein Lager füllt die Regale, ein Regal die Fächer. Ohne JavaScript bleibt
+// das serverseitig gefüllte Fach-Feld (volle Liste) benutzbar.
+(function () {
+  const lagerSel = document.getElementById('ort_lager');
+  const regalSel = document.getElementById('ort_regal');
+  const fachSel  = document.getElementById('fach_id');
+  if (!lagerSel || !regalSel || !fachSel) return;
+
+  const FAECHER = <?= json_encode(array_map(fn($f) => [
+      'fach_id'  => (int) $f['fach_id'],
+      'lager_id' => (int) $f['lager_id'],
+      'regal_id' => (int) $f['regal_id'],
+      'regal'    => $f['regal'],
+      'fach'     => $f['fach'],
+  ], $faecherH), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+
+  const opt = (val, text) => { const o = document.createElement('option'); o.value = val; o.textContent = text; return o; };
+
+  function regaleVon(lagerId) {
+    const gesehen = new Set(); const liste = [];
+    FAECHER.forEach(f => {
+      if (String(f.lager_id) === String(lagerId) && !gesehen.has(f.regal_id)) {
+        gesehen.add(f.regal_id); liste.push({ id: f.regal_id, name: f.regal });
+      }
+    });
+    return liste;
+  }
+  function faecherVon(lagerId, regalId) {
+    return FAECHER.filter(f =>
+      String(f.lager_id) === String(lagerId) &&
+      (!regalId || String(f.regal_id) === String(regalId)));
+  }
+
+  function fuelleRegale(lagerId, selRegal) {
+    regalSel.innerHTML = '';
+    regalSel.appendChild(opt('', '– Regal –'));
+    regaleVon(lagerId).forEach(r => {
+      const o = opt(r.id, r.name);
+      if (selRegal && String(selRegal) === String(r.id)) o.selected = true;
+      regalSel.appendChild(o);
+    });
+  }
+  function fuelleFaecher(lagerId, regalId, selFach) {
+    fachSel.innerHTML = '';
+    fachSel.appendChild(opt('', '– Fach –'));
+    faecherVon(lagerId, regalId).forEach(f => {
+      const label = regalId ? f.fach : (f.regal + ' / ' + f.fach);
+      const o = opt(f.fach_id, label);
+      if (selFach && String(selFach) === String(f.fach_id)) o.selected = true;
+      fachSel.appendChild(o);
+    });
+  }
+
+  lagerSel.addEventListener('change', () => {
+    fuelleRegale(lagerSel.value, '');
+    fuelleFaecher(lagerSel.value, '', '');
+  });
+  regalSel.addEventListener('change', () => {
+    fuelleFaecher(lagerSel.value, regalSel.value, '');
+  });
+
+  // Bearbeiten-Modus: das Server-Feld hat schon ein Fach gewählt.
+  // Dessen Lager und Regal davor setzen und die Listen passend füllen.
+  const aktuell = fachSel.value;
+  if (aktuell) {
+    const f = FAECHER.find(x => String(x.fach_id) === String(aktuell));
+    if (f) {
+      lagerSel.value = String(f.lager_id);
+      fuelleRegale(f.lager_id, f.regal_id);
+      fuelleFaecher(f.lager_id, f.regal_id, f.fach_id);
+    }
+  }
 })();
 </script>
 
