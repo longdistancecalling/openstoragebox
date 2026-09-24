@@ -19,10 +19,15 @@ require __DIR__ . '/inc/config.php';
 $lagerFilter = trim((string) ($_GET['lager'] ?? ''));
 $regalFilter = trim((string) ($_GET['regal'] ?? ''));
 
+// Alle Regale aus der Hierarchie – auch leere lassen sich so bedrucken.
+// Kistenzahl per Unterabfrage, damit ein frisch angelegtes Regal
+// ebenfalls in der Auswahl steht.
 $regale = $pdo->query(
-    'SELECT lager, regal, COUNT(DISTINCT kiste_id) AS kisten
-     FROM kiste GROUP BY lager, regal
-     ORDER BY lager, LENGTH(regal), regal'
+    'SELECT r.name AS regal, l.name AS lager,
+            (SELECT COUNT(*) FROM kiste k JOIN fach f ON f.fach_id = k.fach_id
+              WHERE f.regal_id = r.regal_id) AS kisten
+     FROM regal r JOIN lager l ON l.lager_id = r.lager_id
+     ORDER BY l.sortierung, l.name, r.sortierung, LENGTH(r.name), r.name'
 )->fetchAll();
 
 // Alles in einer Abfrage, dann in PHP gruppieren – sonst wären es beim
@@ -31,7 +36,7 @@ $sql = 'SELECT k.kiste_id, k.kiste_nr, k.lager, k.regal, k.fach, k.notiz AS kist
                a.artikel_id, a.inventar_nr, a.artikelname, a.menge,
                a.faellig_am, a.faellig_typ,
                DATEDIFF(a.faellig_am, CURDATE()) AS tage_bis_faellig
-        FROM kiste k
+        FROM v_kiste k
         LEFT JOIN artikel a ON a.kiste_id = k.kiste_id';
 $werte = [];
 $bed   = [];
