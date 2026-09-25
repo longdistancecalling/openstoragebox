@@ -5,3 +5,6 @@
 *.sql.gz
 *.teil
 *.log
+# Aufgeräumt: alter verschachtelter Ordner und Archive bleiben lokal
+files/
+*.tar.gz
