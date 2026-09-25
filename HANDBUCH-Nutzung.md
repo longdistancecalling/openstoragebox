@@ -65,8 +65,11 @@ Daneben lässt sich nach Kategorie, Lagerort und Sollbestand filtern und die
 Sortierung umstellen. Ein Klick auf eine Spaltenüberschrift sortiert
 danach; ein zweiter Klick dreht die Richtung um.
 
-Der **Lagerort** steht in jeder Zeile: die schwarze Kistennummer, dahinter
-Lager, Regal und Fach. Damit findet man das Material im Regal wieder.
+Der **Lagerort** steht in jeder Zeile. Bei Material in einer Kiste zeigt er
+die schwarze Kistennummer, dahinter Lager, Regal und Fach. Liegt ein Artikel
+**direkt in einem Fach**, steht dort „im Fach" mit dem Pfad Lager / Regal /
+Fach; an einem freien Standort der eingetragene Ort. Damit findet man das
+Material im Regal wieder.
 
 ---
 
@@ -152,8 +155,10 @@ ist optional:
 - **EAN** – der Hersteller-Barcode, ermöglicht das Scannen.
 - **Lagerort** – vier Möglichkeiten: in einer **Kiste**, **direkt in einem
   Fach** (ohne Kiste), an einem **freien Standort** (für Zelte, Aggregate,
-  Paletten) oder **noch keiner**. Kisten und Fächer stammen aus der
-  Lagerort-Verwaltung (siehe unten); fehlt das passende, legt eine
+  Paletten) oder **noch keiner**. Bei „direkt in einem Fach" wählt man den
+  Platz schrittweise über **Lager → Regal → Fach**: erst das Lager, dann
+  füllt sich die Regalliste, dann die Fächerliste. Kisten und Fächer stammen
+  aus der Lagerort-Verwaltung (siehe unten); fehlt das passende, legt eine
   Bearbeiterin oder ein Admin es dort an.
 - **Verpackungseinheit** – für Ware in Gebinden, siehe nächster Abschnitt.
 - **Sollbestand** – Mindestmenge; fällt der Bestand darunter, erscheint der
@@ -180,10 +185,14 @@ erst das Lager (z. B. „Keller"), dann darin ein Regal (z. B. „R1"), dann
 darin ein Fach (z. B. „F1"). Bei jedem Fach steht, wie viele Kisten und
 Artikel darin liegen.
 
-Ein Lager, Regal oder Fach lässt sich jederzeit **umbenennen** – der neue
-Name erscheint sofort überall, auch an allen Kisten und Artikeln, die darin
-liegen. **Löschen** kann nur ein Admin, und nur solange nichts mehr darin
-steht; sonst kommt ein Hinweis, erst umzuräumen.
+Jede Zeile trägt rechts zwei kleine Knöpfe. Das **Stift-Zeichen (✎)**
+schaltet die Zeile zum **Umbenennen** frei – Name ändern, speichern, fertig;
+der neue Name erscheint sofort überall, auch an allen Kisten und Artikeln,
+die darin liegen. Das **×** **löscht** den Eintrag; das darf nur ein Admin.
+Ein Ort lässt sich nur löschen, solange dort **nichts eingelagert** ist –
+liegt noch eine Kiste oder ein Artikel darin, ist das × gesperrt und ein
+Tooltip nennt die Zahl. Ein leeres Lager nimmt beim Löschen seine leeren
+Regale und Fächer gleich mit; die Rückfrage sagt das vorher an.
 
 Kisten und Artikel wählen ihr Fach danach aus einer Liste aus, statt es
 abzutippen. Das verhindert Tippfehler wie ein zweites „Kelller" und erlaubt
