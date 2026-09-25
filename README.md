@@ -62,10 +62,32 @@ das Zeug gerade.
 
 ## 2. Inbetriebnahme
 
-### Schritt 1 – Zugangsdaten setzen
+### Schritt 0 – Repository holen
 
 ```bash
-cd lagerverwaltung
+git clone <REPO-URL> lagerverwaltungdrk
+cd lagerverwaltungdrk
+```
+
+### Schritt 1 – Zugangsdaten setzen
+
+Am einfachsten mit dem beiliegenden Skript. Es fragt nach Datenbankname,
+Benutzer und Ports (Enter übernimmt die Vorgaben), erzeugt sichere
+Zufallspasswörter und schreibt die `.env` mit den Rechten `600`:
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+Eine bereits vorhandene `.env` fasst das Skript nicht an; zum bewussten
+Neuanlegen `./install.sh --force`. Ganz ohne Rückfragen (alle Vorgaben,
+Zufallspasswörter) läuft `./install.sh --yes`, und `./install.sh --up`
+startet den Stack gleich mit.
+
+Wer es von Hand machen will, kann die Vorlage weiterhin selbst kopieren:
+
+```bash
 cp .env.example .env
 sed -i "s|CHANGEME_ROOT|$(openssl rand -base64 24)|" .env
 sed -i "s|CHANGEME_APP|$(openssl rand -base64 24)|"  .env
@@ -73,10 +95,15 @@ sed -i "s|CHANGEME_APP|$(openssl rand -base64 24)|"  .env
 
 ### Schritt 2 – Stack starten
 
+Hat `install.sh` den Stack nicht schon gestartet:
+
 ```bash
 docker compose up -d --build
 docker compose ps
 ```
+
+Verlangt Docker auf dem System Root-Rechte, kommt `sudo` davor
+(`sudo docker compose up -d --build`).
 
 **Prüfen:** alle drei Container laufen, `lager-db` steht auf `healthy`.
 Das Schema wird beim ersten Start automatisch eingespielt.
@@ -331,6 +358,7 @@ src/schein.php              Entnahme- und Leihschein
 db/04_v4.sql                Migration auf v4 (EAN, Zugänge)
 db/03_v3.sql                Migration auf v3 (Benutzer)
 backup.sh / restore.sh      Datenbanksicherung und Wiederherstellung
+install.sh                  Ersteinrichtung: erzeugt die .env
 ```
 
 ---

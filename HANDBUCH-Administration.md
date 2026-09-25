@@ -34,6 +34,7 @@ docker/php/            das PHP-Image
 src/                   die Anwendung
   inc/                 gemeinsame Bausteine (config, auth, helpers …)
   assets/              CSS
+install.sh             Ersteinrichtung: erzeugt die .env
 backup.sh              Sicherung
 restore.sh             Wiederherstellung
 ```
@@ -49,41 +50,52 @@ stecken in den Containern.
 
 ### Schritte
 
-```bash
-git clone <repo-adresse> drk-lager
-cd drk-lager
-
-# Zugangsdaten anlegen
-cp .env.example .env
-```
-
-Dann in der `.env` die beiden Passwörter setzen. Unter Linux erzeugt man sie
-so:
+Drei Befehle, dann läuft es. Zuerst das Repository holen:
 
 ```bash
-sed -i "s|CHANGEME_ROOT|$(openssl rand -base64 24)|" .env
-sed -i "s|CHANGEME_APP|$(openssl rand -base64 24)|"  .env
+git clone <repo-adresse> lagerverwaltungdrk
+cd lagerverwaltungdrk
 ```
 
-Unter PowerShell:
+Dann die Zugangsdaten mit dem Einrichtungsskript anlegen. Es fragt nach
+Datenbankname, Benutzer und den beiden Ports (Enter übernimmt jeweils die
+Vorgabe), erzeugt sichere Zufallspasswörter und schreibt die `.env` mit den
+Rechten `600` (nur der eigene Benutzer darf sie lesen):
 
-```powershell
-$root = [Convert]::ToBase64String((1..24 | ForEach-Object { Get-Random -Max 256 }))
-$app  = [Convert]::ToBase64String((1..24 | ForEach-Object { Get-Random -Max 256 }))
-(Get-Content .env) -replace 'CHANGEME_ROOT', $root -replace 'CHANGEME_APP', $app | Set-Content .env
+```bash
+chmod +x install.sh
+./install.sh
 ```
 
-Stack starten:
+Am Ende fragt das Skript, ob es den Stack gleich starten soll. Verlangt
+Docker auf dem System Root-Rechte, antwortet man dort mit **n** und startet
+danach von Hand mit `sudo` (siehe unten). Weitere Aufrufarten:
+
+- `./install.sh --yes` – ohne Rückfragen, alle Vorgaben, Zufallspasswörter
+- `./install.sh --force` – eine vorhandene `.env` bewusst neu anlegen
+- `./install.sh --up` – `.env` anlegen und den Stack sofort starten
+
+> Das Skript überschreibt eine bereits vorhandene `.env` **nicht** von
+> selbst – so verliert ein laufendes System nie unbemerkt seine
+> Zugangsdaten. Die erzeugten Passwörter stehen nur in der `.env`; für ein
+> Backup diese Datei separat und sicher aufbewahren.
+
+**Ohne das Skript**, von Hand: `cp .env.example .env`, dann die beiden
+Passwörter `CHANGEME_ROOT` und `CHANGEME_APP` in der `.env` durch eigene
+Werte ersetzen (unter Linux z. B. mit `openssl rand -base64 24`).
+
+Stack starten, falls `install.sh` das nicht schon getan hat:
 
 ```bash
 docker compose up -d --build
 docker compose ps
 ```
 
-Beide Container müssen laufen, `lager-db` auf `healthy`. Beim allerersten
-Start mit leerem Volume spielt MariaDB automatisch **alle** SQL-Dateien aus
-`db/` der Reihe nach ein – von `01_schema.sql` bis `10_v10.sql`. Man muss
-nichts migrieren.
+Braucht Docker auf dem System Root-Rechte, kommt `sudo` davor:
+`sudo docker compose up -d --build`. Alle drei Container müssen laufen,
+`lager-db` auf `healthy`. Beim allerersten Start mit leerem Volume spielt
+MariaDB automatisch **alle** SQL-Dateien aus `db/` der Reihe nach ein – von
+`01_schema.sql` bis `10_v10.sql`. Man muss nichts migrieren.
 
 ### Ersten Administrator anlegen
 
