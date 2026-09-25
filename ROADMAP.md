@@ -161,6 +161,11 @@ nicht ausgewertet.
 - **HTTPS:** Ohne TLS gehen Passwörter im Klartext über die Leitung. Im
   Heimnetz hinter WireGuard vertretbar, für alles andere gehört Traefik mit
   Zertifikat davor.
+- **Repository umbenennen:** ✓ Erledigt – das Repo heißt jetzt
+  `openstoragebox` (vorher `lagerverwaltungdrk`), passend zum Produktnamen.
+  GitHub hält eine Weiterleitung vom alten Namen bereit; die Remote-URL der
+  Klons (Kubuntu-VM und VS-Code) wurde per `git remote set-url origin`
+  nachgezogen. Lokale Ordnernamen und der Docker-Mount blieben unberührt.
 
 ---
 
