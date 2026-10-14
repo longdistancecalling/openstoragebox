@@ -3,8 +3,7 @@
 Stand: 14.10.2026 · aktuelle Version v11
 
 Ein größerer offener Punkt (Chargen mit MHD), dazu die Einsatzauswertung
-und Kleinigkeiten. Dringend ist die Lücke im JSON-Gesamtexport (Punkt 3):
-Beim Umzug gehen dort heute Daten verloren.
+und Kleinigkeiten. Keiner blockiert den Betrieb.
 
 ---
 
@@ -32,7 +31,9 @@ Blanko-Leihschein; „Speichern & weiter“ beim Artikelanlegen;
 Touch-Terminal (touch.php) fürs Lager-Tablet; Navigation in einer
 Seitenleiste mit aufklappbarem Abschnitt „Verwaltung“, in der Kopfleiste
 nur noch Terminal und Entnahme (ersetzt das geplante Umsortieren der
-Kopfleiste).
+Kopfleiste); JSON-Gesamtexport vollständig (jetzt auch Zugänge,
+Zusatzfelder und Feldwerte), und der Import überführt Kistenorte aus
+Dateien von vor v10 in die Ort-Hierarchie.
 
 Dazu quer über die Versionen: Regalschilder, Lagerübersicht zum Aushängen,
 Entnahme- und Leihscheine, QR-Code auf dem Kistenetikett, Backup und Restore.
@@ -103,24 +104,7 @@ Werte vorschlagen (datalist) oder gleich eine kleine Einsatztabelle.
 
 ---
 
-## 3. JSON-Gesamtexport unvollständig
-
-Beim Prüfen des Imports für v11 aufgefallen, unabhängig von den Rückgaben:
-
-- **Zugänge, benutzerdefinierte Felder und Feldwerte fehlen im Export.**
-  `EXPORT_TABELLEN` in `daten.php` kennt `zugang`, `feld` und
-  `artikel_feldwert` nicht. Beim Umzug per JSON gehen Wareneingänge und
-  Zusatzangaben verloren.
-- **Exporte von vor v10 verlieren beim Import die Kistenorte.** Dort
-  stehen Lager, Regal und Fach noch als Text an der Kiste; diese Spalten
-  gibt es seit v10 nicht mehr, der Import überspringt sie stillschweigend.
-  Die Kisten landen ohne Ort. Abhilfe wie bei den Rückgaben: für ältere
-  Dateien die Texte beim Import in die Ort-Hierarchie überführen (die
-  Logik aus `10_v10.sql` in PHP).
-
----
-
-## 4. Kleinere offene Punkte
+## 3. Kleinere offene Punkte
 
 - **Drucken und Export trennen:** Statt einer Sammelseite zwei Einträge
   in der Seitenleiste. Was beides kann, taucht in beiden auf – die

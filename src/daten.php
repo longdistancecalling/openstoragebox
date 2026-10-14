@@ -21,8 +21,18 @@ const EXPORT_VERSION = 4;
 
 /** Tabellen in der Reihenfolge, in der sie wegen Fremdschlüsseln geschrieben werden müssen. */
 // Reihenfolge = FK-Reihenfolge fürs Schreiben (Eltern vor Kind). Die
-// Ortshierarchie steht vor der Kiste, weil kiste.fach_id darauf zeigt.
-const EXPORT_TABELLEN = ['kategorie', 'lager', 'regal', 'fach', 'kiste', 'artikel', 'entnahme', 'rueckgabe', 'inventur', 'inventur_position'];
+// Ortshierarchie steht vor der Kiste, weil kiste.fach_id darauf zeigt;
+// feld vor artikel_feldwert, entnahme vor rueckgabe.
+//
+// Jede Tabelle mit Bestandsdaten muss hier stehen – was fehlt, geht beim
+// Umzug verloren und wird beim Import trotzdem nicht geleert, sodass
+// verwaiste Zeilen zurückbleiben.
+const EXPORT_TABELLEN = [
+    'kategorie', 'lager', 'regal', 'fach', 'kiste', 'artikel',
+    'feld', 'artikel_feldwert',
+    'entnahme', 'rueckgabe', 'zugang',
+    'inventur', 'inventur_position',
+];
 
 // Steht bewusst hier oben: PHP zieht Funktionsdefinitionen beim Laden
 // nach vorn, Konstanten aber nicht. Eine Konstante unterhalb des Codes,
@@ -63,6 +73,7 @@ if (($_GET['aktion'] ?? '') === 'json_export') {
     // erfasst_von / gezaehlt_von zeigen auf Benutzer, die im Ziel nicht existieren.
     foreach ($paket['entnahme'] as &$z)          { unset($z['erfasst_von']); }
     foreach ($paket['rueckgabe'] as &$z)         { unset($z['erfasst_von']); }
+    foreach ($paket['zugang'] as &$z)            { unset($z['erfasst_von']); }
     foreach ($paket['inventur_position'] as &$z) { unset($z['gezaehlt_von']); }
     unset($z);
 
@@ -146,12 +157,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $zaehler[$t]++;
                         }
                     }
+
+                    // Dateien von vor v10: Lager, Regal und Fach stehen als
+                    // Text an der Kiste. Diese Spalten gibt es nicht mehr, die
+                    // Schleife oben hat sie übersprungen. Hier werden sie in
+                    // die Ort-Hierarchie überführt – wie es 10_v10.sql mit dem
+                    // Bestand getan hat –, sonst stünden alle Kisten ohne Ort da.
+                    $orteNeu = 0;
+                    $orteUnvollstaendig = 0;
+                    $zwischen = [];
+                    $setzen = $pdo->prepare('UPDATE kiste SET fach_id = ? WHERE kiste_id = ?');
+                    foreach ($paket['kiste'] ?? [] as $z) {
+                        if (!array_key_exists('lager', $z) || !empty($z['fach_id'])) {
+                            continue;
+                        }
+                        $fachId = fach_id_aufloesen(
+                            $pdo,
+                            (string) ($z['lager'] ?? ''),
+                            (string) ($z['regal'] ?? ''),
+                            (string) ($z['fach'] ?? ''),
+                            $zwischen
+                        );
+                        if ($fachId !== null) {
+                            $setzen->execute([$fachId, $z['kiste_id']]);
+                            $orteNeu++;
+                        } elseif (($z['lager'] ?? '') !== '' || ($z['regal'] ?? '') !== '' || ($z['fach'] ?? '') !== '') {
+                            $orteUnvollstaendig++;
+                        }
+                    }
+
                     $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
                     $pdo->commit();
 
                     $txt = [];
                     foreach ($zaehler as $t => $n) { $txt[] = "$n $t"; }
-                    flash('Import abgeschlossen: ' . implode(', ', $txt) . '.');
+                    $meldung = 'Import abgeschlossen: ' . implode(', ', $txt) . '.';
+                    if ($orteNeu > 0) {
+                        $meldung .= " Bei $orteNeu Kisten wurde der Lagerort aus der älteren Datei übernommen.";
+                    }
+                    if ($orteUnvollstaendig > 0) {
+                        $meldung .= " $orteUnvollstaendig Kisten hatten keinen vollständigen Ort"
+                                  . ' (Lager, Regal und Fach) und stehen jetzt ohne Ort – bitte unter Kisten nachtragen.';
+                    }
+                    flash($meldung);
                     redirect('index.php');
                 } catch (Throwable $e) {
                     $pdo->rollBack();
@@ -544,7 +592,7 @@ require __DIR__ . '/inc/header.php';
 
   <section class="kachel">
     <h2>Gesamtexport</h2>
-    <p>Alle Bestandsdaten in einer JSON-Datei – Kategorien, Kisten, Artikel, Entnahmen, Inventuren.
+    <p>Alle Bestandsdaten in einer JSON-Datei – Kategorien, Lagerorte, Kisten, Artikel mit Zusatzfeldern, Entnahmen, Rückgaben, Zugänge, Inventuren.
        Zum Umziehen auf einen anderen Server oder als Sicherung, die auch ohne Datenbankzugriff lesbar ist.</p>
     <p class="hinweis">
       <?php foreach ($anz as $t => $n): ?><?= $n ?> <?= h($t) ?><?= $t !== 'inventur_position' ? ' · ' : '' ?><?php endforeach; ?>

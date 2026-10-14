@@ -654,8 +654,9 @@ zusätzlich Kategorie und den buchenden Benutzer.
 
 Unter *Daten* gibt es drei Funktionen:
 
-**Gesamtexport (JSON)** – alle Bestandsdaten in einer Datei: Kategorien, Kisten,
-Artikel, Entnahmen, Inventuren. Zum Umzug auf einen anderen Server oder als
+**Gesamtexport (JSON)** – alle Bestandsdaten in einer Datei: Kategorien,
+Lagerorte, Kisten, Artikel mit Zusatzfeldern, Entnahmen, Rückgaben, Zugänge,
+Inventuren. Zum Umzug auf einen anderen Server oder als
 Sicherung, die man auch ohne Datenbankzugriff lesen kann. Benutzerkonten sind
 bewusst nicht enthalten – Passwort-Hashes gehören nicht in eine Datei, die per
 Mail weitergeschickt wird.
@@ -664,7 +665,12 @@ Mail weitergeschickt wird.
 Datei. Alles-oder-nichts in einer Transaktion; schlägt eine Zeile fehl, bleibt
 die Datenbank unverändert. Zur Bestätigung muss `ERSETZEN` eingetippt werden.
 Der Import schreibt nur Spalten, die es in der Zieltabelle gibt, und verkraftet
-damit auch Dateien aus älteren Versionen. Benutzer bleiben erhalten.
+damit auch Dateien aus älteren Versionen. Zwei Umbauten rechnet er dabei nach:
+Kistenorte, die in Dateien von vor v10 noch als Text (Lager, Regal, Fach) an
+der Kiste stehen, werden in die Ort-Hierarchie überführt; abgeschlossene
+Leihen aus Dateien von vor v11 werden zu Rückgaben. Tabellen, die eine ältere
+Datei noch nicht kannte (etwa Zugänge), bleiben nach dem Import leer.
+Benutzer bleiben erhalten.
 
 **Artikelimport (CSV, ab Bearbeiter)** – Massenerfassung aus einer
 Tabellenkalkulation. Erst Vorschau mit Prüfung jeder Zeile, dann Import.
