@@ -1,6 +1,6 @@
 # OpenStorageBox – Funktionsübersicht
 
-Version 9 · Stand 10.09.2026 · DRK KV Eisenach
+Version 11 · Stand 14.10.2026 · DRK KV Eisenach
 
 PHP 8.3 + MariaDB 11 im Docker-Stack, 32 Seiten, keine externen
 Abhängigkeiten.
@@ -32,8 +32,9 @@ Abhängigkeiten.
 
 - **Entnahme** mit fünf Gründen: Einsatz, Verschleiß, Defekt,
   Abgelaufen, Verliehen
-- **Verliehen** ist der einzige Grund mit Rückgabe – offene Leihen
-  stehen mit Tageszähler in einer eigenen Liste
+- **Rückgaben** zu Leihe und Einsatz, auch in Teilen – offene Leihen
+  stehen mit Tageszähler in einer eigenen Liste, beim Einsatz zeigt das
+  Protokoll, was zurückkam und was verbraucht wurde
 - **Wareneingang** als Gegenstück: Beschaffung, Spende, Rücklauf,
   Korrektur
 - **Bewegungsprotokoll** über Zu- und Abgänge, filterbar nach Richtung,
@@ -53,7 +54,7 @@ Knöpfen und reduziertem Ablauf. Erkannt werden:
 | `K:K001` | Kiste mit Inhaltsliste und Buchungsknöpfen |
 | `A:A-00042` | Artikel mit Bestand und Buchung |
 | `R:Keller\|R1` | alle Kisten eines Regals |
-| `E:E-00042` | Buchung zu einem Papierbeleg, bei Leihe mit Rückgabe |
+| `E:E-00042` | Buchung zu einem Papierbeleg, bei Leihe und Einsatz mit Rückgabe |
 | EAN | Hersteller-Barcode |
 
 Mit hinterlegter Adresse enthalten die QR-Codes eine vollständige URL –
@@ -117,12 +118,7 @@ sind in der Oberfläche änderbar, nicht im Quelltext.
 
 ## Was noch fehlt
 
-Siehe ROADMAP.md. Die zwei größeren Punkte:
+Siehe ROADMAP.md. Der größte offene Punkt:
 
 - **Chargen mit unterschiedlichem MHD** – heute braucht es zwei
   Artikelzeilen für zwei Lieferungen
-- **Rückläufer aus dem Einsatz** – „Einsatz" gilt als endgültig, obwohl
-  Material zurückkommt; Teilrückgaben sind auch bei Leihen nicht möglich
-
-Der zweite Punkt führt heute zu falschen Verbrauchszahlen und wäre der
-nächste, den ich angehen würde.

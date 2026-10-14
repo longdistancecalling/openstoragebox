@@ -176,7 +176,7 @@ if ($code['art'] === 'kiste') {
     $stmt = $pdo->prepare(
         'SELECT e.*, a.artikelname, a.inventar_nr, a.ve_inhalt, a.ve_einheit,
                 a.gebinde_einheit, v.lagerort_text, b.anzeigename AS gebucht_von
-         FROM entnahme e
+         FROM v_entnahme e
          JOIN artikel a   ON a.artikel_id = e.artikel_id
          JOIN v_artikel v ON v.artikel_id = e.artikel_id
          LEFT JOIN benutzer b ON b.benutzer_id = e.erfasst_von
@@ -408,12 +408,20 @@ require __DIR__ . '/inc/header.php';
           <div class="notiz" style="margin-top:4px"><?= h($beleg['lagerort_text'] ?? '') ?></div>
           <div style="margin-top:8px">
             <span class="grund grund--<?= h($beleg['grund']) ?>"><?= h(grund_label($beleg['grund'])) ?></span>
+            <?php
+              $belegZurueck = (int) $beleg['zurueck_einzeln'];
+              $belegOffen   = (int) $beleg['offen_einzeln'];
+            ?>
             <?php if ($beleg['grund'] === GRUND_LEIHE): ?>
-              <?php if ($beleg['zurueck_am']): ?>
-                <span class="marke marke--gruen">zurück <?= h(datum_de($beleg['zurueck_am'])) ?></span>
+              <?php if ($belegOffen < 1): ?>
+                <span class="marke marke--gruen">zurück <?= h(datum_de($beleg['letzte_rueckgabe'])) ?></span>
+              <?php elseif ($belegZurueck > 0): ?>
+                <span class="marke marke--amber">noch offen: <?= h(einzeln_text($beleg, $belegOffen)) ?></span>
               <?php else: ?>
                 <span class="marke marke--amber">noch offen</span>
               <?php endif; ?>
+            <?php elseif ($belegZurueck > 0): ?>
+              <span class="marke marke--gruen"><?= h(einzeln_text($beleg, $belegZurueck)) ?> zurück</span>
             <?php endif; ?>
           </div>
         </div>
@@ -432,14 +440,8 @@ require __DIR__ . '/inc/header.php';
 
       <div class="knoepfe" style="margin-top:12px;border:0">
         <a class="btn" href="schein.php?id=<?= (int) $beleg['entnahme_id'] ?>">Schein drucken</a>
-        <?php if ($beleg['grund'] === GRUND_LEIHE && !$beleg['zurueck_am'] && darf('bearbeiter')): ?>
-          <form method="post" action="entnahmen.php" style="display:inline"
-                onsubmit="return confirm('Rückgabe buchen? Der Bestand wird wieder erhöht.');">
-            <?= csrf_field() ?>
-            <input type="hidden" name="aktion" value="rueckgabe">
-            <input type="hidden" name="entnahme_id" value="<?= (int) $beleg['entnahme_id'] ?>">
-            <button class="btn btn--primaer" type="submit">Rückgabe buchen</button>
-          </form>
+        <?php if (rueckgabe_moeglich($beleg['grund']) && $belegOffen > 0 && darf('bearbeiter')): ?>
+          <a class="btn btn--primaer" href="rueckgabe.php?id=<?= (int) $beleg['entnahme_id'] ?>">Rückgabe buchen</a>
         <?php endif; ?>
         <a class="btn" href="scan.php?c=<?= rawurlencode('A:' . $beleg['inventar_nr']) ?>">Artikel buchen</a>
       </div>

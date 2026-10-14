@@ -113,9 +113,11 @@ const ORDER_LAGERORT = 'ohne_kiste, ' . ORDER_LAGERPLATZ . ', standort_frei';
 /**
  * Entnahmegründe.
  *
- * 'verliehen' ist der einzige Grund, bei dem Material zurückkommt.
- * Die anderen vier sind endgültig – deshalb steht dieser Unterschied
- * an einer Stelle und wird überall daraus abgeleitet.
+ * Bei 'verliehen' und 'einsatz' kann Material zurückkommen, auch in
+ * Teilen (RUECKGABE_GRUENDE). Eine Leihe bleibt offen, bis alles zurück
+ * ist; beim Einsatz gilt, was nicht zurückkommt, als verbraucht. Die
+ * anderen drei sind endgültig – deshalb steht dieser Unterschied an
+ * einer Stelle und wird überall daraus abgeleitet.
  */
 const ENTNAHME_GRUENDE = [
     'einsatz'     => 'Einsatz',
@@ -126,6 +128,9 @@ const ENTNAHME_GRUENDE = [
 ];
 
 const GRUND_LEIHE = 'verliehen';
+
+/** Gründe, zu denen eine Rückgabe gebucht werden kann. */
+const RUECKGABE_GRUENDE = ['einsatz', GRUND_LEIHE];
 
 /** Gründe für einen Wareneingang. Spiegelbild der Entnahmegründe. */
 const ZUGANG_GRUENDE = [

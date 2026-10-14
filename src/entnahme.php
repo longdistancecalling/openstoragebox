@@ -299,9 +299,10 @@ require __DIR__ . '/inc/header.php';
   </div>
 
   <p class="hinweis" id="leih-hinweis">
-    <strong>Verliehen</strong> ist der einzige Grund, bei dem Material zurückkommt.
-    Die Buchung bleibt offen, bis du die Rückgabe im Protokoll bestätigst –
-    dann wandert der Bestand automatisch zurück. Die vier anderen Gründe sind endgültig.
+    Bei <strong>Verliehen</strong> und <strong>Einsatz</strong> kann Material zurückkommen,
+    auch in Teilen – die Rückgabe buchst du später unter „Bewegungen“, dann wandert der
+    Bestand zurück. Eine Leihe bleibt offen, bis alles zurück ist; beim Einsatz gilt, was
+    nicht zurückkommt, als verbraucht. Verschleiß, Defekt und Abgelaufen sind endgültig.
   </p>
 
   <div class="zeile">

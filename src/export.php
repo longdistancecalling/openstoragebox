@@ -45,9 +45,10 @@ if ($format === 'csv') {
         $sql = 'SELECT e.entnommen_am, a.inventar_nr, a.artikelname,
                        IFNULL(k.bezeichnung, "") AS kategorie, e.menge, e.grund,
                        IFNULL(e.person, "") AS person, IFNULL(e.bezug, "") AS bezug,
-                       IFNULL(e.notiz, "") AS notiz, IFNULL(e.zurueck_am, "") AS zurueck_am,
+                       IFNULL(e.notiz, "") AS notiz,
+                       e.menge_einzeln, e.zurueck_einzeln, e.letzte_rueckgabe,
                        IFNULL(b.anzeigename, "") AS gebucht_von
-                FROM entnahme e
+                FROM v_entnahme e
                 JOIN artikel a ON a.artikel_id = e.artikel_id
                 LEFT JOIN kategorie k ON k.kategorie_id = a.kategorie_id
                 LEFT JOIN benutzer b ON b.benutzer_id = e.erfasst_von';
@@ -80,16 +81,19 @@ if ($format === 'csv') {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($werte);
 
+        // Rückgaben in Einzelstücken, damit sich "ausgegeben − zurück =
+        // verbraucht" in der Tabellenkalkulation direkt rechnen lässt.
         $daten = array_map(static fn($z) => [
             datum_de($z['entnommen_am']), $z['inventar_nr'], $z['artikelname'], $z['kategorie'],
             $z['menge'], grund_label($z['grund']), $z['person'], $z['bezug'], $z['notiz'],
-            $z['zurueck_am'] ? datum_de($z['zurueck_am']) : '', $z['gebucht_von'],
+            $z['menge_einzeln'], $z['zurueck_einzeln'], datum_de($z['letzte_rueckgabe']),
+            $z['gebucht_von'],
         ], $stmt->fetchAll());
 
         csv_ausgeben(
             'entnahmen_' . date('Y-m-d') . '.csv',
             ['Datum', 'Nummer', 'Artikel', 'Kategorie', 'Menge', 'Grund', 'Person', 'Bezug',
-             'Notiz', 'Zurück am', 'Gebucht von'],
+             'Notiz', 'Stück ausgegeben', 'Stück zurück', 'Letzte Rückgabe', 'Gebucht von'],
             $daten
         );
     }

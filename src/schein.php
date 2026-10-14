@@ -8,7 +8,8 @@ require __DIR__ . '/inc/config.php';
  * Bei einer Leihe ist der Schein der eigentliche Zweck: er hält fest,
  * wer wann was mitgenommen hat, und wird unterschrieben. Deshalb trägt
  * er bei Leihen zwei Unterschriftsblöcke – Übergabe und Rückgabe –,
- * bei endgültigen Entnahmen nur eine Empfangsbestätigung.
+ * bei einem Einsatz Empfang und Rücklauf, bei endgültigen Entnahmen
+ * nur eine Empfangsbestätigung.
  *
  *   ?id=…      eine bestimmte Buchung
  *   ?offen=1   alle offenen Leihen, je ein Blatt
@@ -181,11 +182,12 @@ if ($blanko !== '') {
 }
 
 $sql = 'SELECT e.*, a.inventar_nr, a.ean, a.artikelname,
+               a.ve_inhalt, a.ve_einheit, a.gebinde_einheit,
                v.lagerort_text, v.kiste_nr,
                kat.bezeichnung AS kategorie,
                b.anzeigename AS gebucht_von,
                DATEDIFF(CURDATE(), e.entnommen_am) AS tage_weg
-        FROM entnahme e
+        FROM v_entnahme e
         JOIN artikel a    ON a.artikel_id = e.artikel_id
         JOIN v_artikel v  ON v.artikel_id = e.artikel_id
         LEFT JOIN kategorie kat ON kat.kategorie_id = a.kategorie_id
@@ -195,7 +197,7 @@ if ($id !== null) {
     $sql  .= ' WHERE e.entnahme_id = ?';
     $werte = [$id];
 } elseif ($offen) {
-    $sql  .= " WHERE e.grund = '" . GRUND_LEIHE . "' AND e.zurueck_am IS NULL";
+    $sql  .= " WHERE e.grund = '" . GRUND_LEIHE . "' AND e.offen_einzeln > 0";
     $werte = [];
 } else {
     // Ohne Auswahl: die letzten Buchungen des heutigen Tages – das ist
@@ -247,8 +249,10 @@ function schein_nr(int $entnahmeId): string
 </div>
 
 <?php foreach ($scheine as $s):
-    $leihe  = $s['grund'] === GRUND_LEIHE;
-    $zurueck = $s['zurueck_am'] !== null;
+    $leihe   = $s['grund'] === GRUND_LEIHE;
+    $einsatz = !$leihe && rueckgabe_moeglich($s['grund']);
+    $teil    = (int) $s['zurueck_einzeln'] > 0;           // schon etwas zurück
+    $zurueck = $teil && (int) $s['offen_einzeln'] < 1;     // alles zurück
 ?>
 <article class="etikett schein">
 
@@ -335,16 +339,59 @@ function schein_nr(int $entnahmeId): string
         <div class="us-titel">
           Rückgabe
           <?php if ($zurueck): ?>
-            <span class="us-erledigt">gebucht am <?= h(datum_de($s['zurueck_am'])) ?></span>
+            <span class="us-erledigt">gebucht am <?= h(datum_de($s['letzte_rueckgabe'])) ?></span>
+          <?php elseif ($teil): ?>
+            <span class="us-erledigt">teilweise: <?= h(einzeln_text($s, (int) $s['zurueck_einzeln'])) ?> zurück</span>
           <?php endif; ?>
         </div>
         <div class="us-zeile">
-          <span class="us-linie"><?= $zurueck ? h(datum_de($s['zurueck_am'])) : '' ?></span>
+          <span class="us-linie"><?= $zurueck ? h(datum_de($s['letzte_rueckgabe'])) : '' ?></span>
           <span class="us-label">Datum</span>
         </div>
         <div class="us-zeile">
           <span class="us-linie"></span>
           <span class="us-label">Unterschrift Entleiher</span>
+        </div>
+        <div class="us-zeile">
+          <span class="us-linie"></span>
+          <span class="us-label">Unterschrift Rücknahme</span>
+        </div>
+      </div>
+    </div>
+
+  <?php elseif ($einsatz): ?>
+    <p class="schein-text">
+      Material für den Einsatz. Was unverbraucht zurückkommt, wird zurückgebucht –
+      auch in Teilen. Was nicht zurückkommt, gilt als verbraucht.
+    </p>
+
+    <div class="schein-unterschriften">
+      <div class="us-block">
+        <div class="us-titel">Empfang bestätigt</div>
+        <div class="us-zeile">
+          <span class="us-linie"><?= h(datum_de($s['entnommen_am'])) ?></span>
+          <span class="us-label">Datum</span>
+        </div>
+        <div class="us-zeile">
+          <span class="us-linie"></span>
+          <span class="us-label">Unterschrift Empfänger<?= $s['person'] ? ' – ' . h($s['person']) : '' ?></span>
+        </div>
+      </div>
+
+      <div class="us-block">
+        <div class="us-titel">
+          Rücklauf
+          <?php if ($teil): ?>
+            <span class="us-erledigt"><?= h(einzeln_text($s, (int) $s['zurueck_einzeln'])) ?> zurückgebucht</span>
+          <?php endif; ?>
+        </div>
+        <div class="us-zeile">
+          <span class="us-linie"></span>
+          <span class="us-label">Datum</span>
+        </div>
+        <div class="us-zeile">
+          <span class="us-linie"></span>
+          <span class="us-label">Menge zurück</span>
         </div>
         <div class="us-zeile">
           <span class="us-linie"></span>

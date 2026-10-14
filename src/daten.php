@@ -16,12 +16,13 @@ require __DIR__ . '/inc/config.php';
  */
 
 const EXPORT_FORMAT  = 'lagerverwaltung';
-const EXPORT_VERSION = 3;
+// v4: Rückgaben als eigene Tabelle statt entnahme.zurueck_am.
+const EXPORT_VERSION = 4;
 
 /** Tabellen in der Reihenfolge, in der sie wegen Fremdschlüsseln geschrieben werden müssen. */
 // Reihenfolge = FK-Reihenfolge fürs Schreiben (Eltern vor Kind). Die
 // Ortshierarchie steht vor der Kiste, weil kiste.fach_id darauf zeigt.
-const EXPORT_TABELLEN = ['kategorie', 'lager', 'regal', 'fach', 'kiste', 'artikel', 'entnahme', 'inventur', 'inventur_position'];
+const EXPORT_TABELLEN = ['kategorie', 'lager', 'regal', 'fach', 'kiste', 'artikel', 'entnahme', 'rueckgabe', 'inventur', 'inventur_position'];
 
 // Steht bewusst hier oben: PHP zieht Funktionsdefinitionen beim Laden
 // nach vorn, Konstanten aber nicht. Eine Konstante unterhalb des Codes,
@@ -61,6 +62,7 @@ if (($_GET['aktion'] ?? '') === 'json_export') {
     }
     // erfasst_von / gezaehlt_von zeigen auf Benutzer, die im Ziel nicht existieren.
     foreach ($paket['entnahme'] as &$z)          { unset($z['erfasst_von']); }
+    foreach ($paket['rueckgabe'] as &$z)         { unset($z['erfasst_von']); }
     foreach ($paket['inventur_position'] as &$z) { unset($z['gezaehlt_von']); }
     unset($z);
 
@@ -94,6 +96,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif ((int) ($paket['version'] ?? 0) > EXPORT_VERSION) {
                 $fehler[] = 'Die Datei stammt aus einer neueren Version und kann hier nicht gelesen werden.';
             } else {
+                // Dateien vor v4 kennen keine Tabelle rueckgabe; dort steht
+                // eine abgeschlossene Leihe als entnahme.zurueck_am. Daraus
+                // wird je eine vollständige Rückgabe, sonst wären nach dem
+                // Import alle zurückgegebenen Leihen wieder offen.
+                if ((int) ($paket['version'] ?? 0) < 4 && empty($paket['rueckgabe'])) {
+                    $paket['rueckgabe'] = [];
+                    foreach ($paket['entnahme'] ?? [] as $z) {
+                        if (!empty($z['zurueck_am'])) {
+                            $paket['rueckgabe'][] = [
+                                'entnahme_id' => $z['entnahme_id'],
+                                'menge'       => $z['menge'],
+                                'einheit'     => $z['einheit'] ?? 'einzeln',
+                                'datum'       => $z['zurueck_am'],
+                                'notiz'       => 'aus älterem Export übernommen',
+                            ];
+                        }
+                    }
+                }
+
                 try {
                     $pdo->beginTransaction();
                     // Fremdschlüssel während des Leerens und Schreibens aus,

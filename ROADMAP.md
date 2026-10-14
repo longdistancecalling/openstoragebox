@@ -1,10 +1,10 @@
 # Roadmap
 
-Stand: 10.09.2026 · aktuelle Version v7
+Stand: 14.10.2026 · aktuelle Version v11
 
-Zwei größere offene Punkte (Chargen mit MHD, Rückläufer aus dem Einsatz),
-ansonsten Kleinigkeiten. Keiner blockiert den Betrieb, aber Punkt 2 führt
-heute zu falschen Verbrauchszahlen.
+Ein größerer offener Punkt (Chargen mit MHD), dazu die Einsatzauswertung
+und Kleinigkeiten. Dringend ist die Lücke im JSON-Gesamtexport (Punkt 3):
+Beim Umzug gehen dort heute Daten verloren.
 
 ---
 
@@ -22,16 +22,26 @@ heute zu falschen Verbrauchszahlen.
 | v8 | Einstellungen in der Datenbank, Einsatzknopf |
 | v9 | Sollbestand je Artikel, Seite „Handlungsbedarf" |
 | v10 | Lagerorte als eigene Hierarchie (Lager→Regal→Fach), Artikel direkt im Fach |
+| v11 | Rückgaben als eigene Buchungen: Teilrückgaben bei Leihen, Rückläufer aus dem Einsatz, Rückgabemaske `rueckgabe.php` |
 
 Zuletzt ohne eigene Migration: Scan-Seite versteht die eigenen QR-Codes
 (`K:` und `A:`) und bucht Gebinde korrekt; Blanko-Scheine zum Ausdrucken;
 Klebeetiketten mit QR in drei Rasterformaten; QR auch auf Regalschild und
 Entnahmeschein, Scan-Seite versteht `R:` (Regal) und `E:` (Beleg);
 Blanko-Leihschein; „Speichern & weiter“ beim Artikelanlegen;
-Touch-Terminal (touch.php) fürs Lager-Tablet.
+Touch-Terminal (touch.php) fürs Lager-Tablet; Navigation in einer
+Seitenleiste mit aufklappbarem Abschnitt „Verwaltung“, in der Kopfleiste
+nur noch Terminal und Entnahme (ersetzt das geplante Umsortieren der
+Kopfleiste).
 
 Dazu quer über die Versionen: Regalschilder, Lagerübersicht zum Aushängen,
 Entnahme- und Leihscheine, QR-Code auf dem Kistenetikett, Backup und Restore.
+
+Repository umbenannt: es heißt jetzt `openstoragebox` (vorher
+`lagerverwaltungdrk`), passend zum Produktnamen. GitHub hält eine
+Weiterleitung vom alten Namen bereit; die Remote-URL der Klons
+(Kubuntu-VM und VS-Code) wurde per `git remote set-url origin`
+nachgezogen. Lokale Ordnernamen und der Docker-Mount blieben unberührt.
 
 ---
 
@@ -77,55 +87,43 @@ Monaten Betrieb ablesen, vorher wäre sie geraten.
 
 ---
 
-## 2. Rückläufer aus dem Einsatz
+## 2. Einsatzauswertung
 
-**Das Problem:** „Einsatz" ist als endgültige Entnahme modelliert. In der
-Praxis kommt aber Material zurück, das nicht gebraucht wurde – volle
-Kisten, unangebrochene Verpflegung. Die Aussage „endgültig – eine
-Rückgabe ist nicht vorgesehen" auf dem Entnahmeschein ist damit
-schlicht falsch.
+Seit v11 weiß jede Einsatzentnahme, was davon zurückkam und was
+verbraucht ist. Was fehlt, ist die Sicht über einen ganzen Einsatz:
+gruppiert nach `entnahme.bezug` – was wurde bei „Hochwasser Eisenach"
+ausgegeben, was kam zurück, was ist verbraucht. Das Feld wird heute schon
+gefüllt, nur nicht ausgewertet. Die Zahlen liefert `v_entnahme` bereits
+(`menge_einzeln`, `zurueck_einzeln`, `offen_einzeln`); es braucht nur eine
+Seite mit Gruppierung und Summen, gut als CSV für die Nachbeschaffung.
 
-**Was heute geht:** Ein Zugang mit dem Grund „Rücklauf". Der Bestand
-stimmt danach wieder, aber die Verbindung zur ursprünglichen Entnahme
-fehlt. Niemand kann nachher sagen, dass von 20 ausgegebenen Kisten 7
-zurückkamen und 13 tatsächlich verbraucht wurden – für die Nachbereitung
-eines Einsatzes und die Nachbeschaffung ist genau das die interessante
-Zahl.
-
-**Die zweite Lücke, die dabei auffällt:** Auch bei Leihen ist die
-Rückgabe heute alles oder nichts. `entnahme.zurueck_am` ist ein einzelnes
-Datum – werden 10 Stück verliehen und kommen 7 zurück, lässt sich das
-nicht erfassen. Beide Fälle brauchen dieselbe Lösung.
-
-**Lösungsweg:** Eigene Tabelle `rueckgabe` mit `entnahme_id`, Menge,
-Einheit, Datum und Benutzer. Damit sind Teilrückgaben und mehrere
-Rückgaben zu einer Entnahme möglich; `zurueck_am` wird durch
-`SUM(rueckgabe.menge)` gegenüber `entnahme.menge` abgelöst. Der Grund
-„Einsatz" verliert seine Sonderstellung: rückgabefähig wären dann
-Einsatz **und** Verleih, endgültig blieben Verschleiß, Defekt und
-Abgelaufen.
-
-Zu ändern wären: Migration, `entnahmen.php` (Rückgabemaske statt
-Ein-Klick-Knopf), `schein.php` (Text und Unterschriftsblock auch beim
-Einsatzschein), `scan.php` und die Fälligkeits-/Bewegungsansichten.
-Überschaubarer als die Chargen oben, aber kein Nachmittag.
-
-**Sinnvolle Ergänzung dabei:** eine Einsatzauswertung über
-`entnahme.bezug` – was wurde bei „Hochwasser Eisenach" ausgegeben, was
-kam zurück, was ist verbraucht. Das Feld wird heute schon gefüllt, nur
-nicht ausgewertet.
+Haken: `bezug` ist Freitext. „Hochwasser Eisenach" und „HW Eisenach"
+landen in verschiedenen Gruppen. Entweder beim Erfassen die bisherigen
+Werte vorschlagen (datalist) oder gleich eine kleine Einsatztabelle.
 
 ---
 
-## 3. Kleinere offene Punkte
+## 3. JSON-Gesamtexport unvollständig
 
-- **Kopfleiste umsortieren:** Entnahmeknopf nach links, Verwaltungsmenü nach
-  rechts. Aktuell steht der Knopf ganz rechts und das Menü am Ende der
-  Navigation. Reine CSS-Änderung an `.einsatz` und `.menue` in `style.css`,
-  dazu die Reihenfolge im Markup von `inc/header.php`.
+Beim Prüfen des Imports für v11 aufgefallen, unabhängig von den Rückgaben:
 
-- **Drucken und Export trennen:** Statt einer Sammelseite zwei
-  Navigationsmenüs. Was beides kann, taucht in beiden auf – die
+- **Zugänge, benutzerdefinierte Felder und Feldwerte fehlen im Export.**
+  `EXPORT_TABELLEN` in `daten.php` kennt `zugang`, `feld` und
+  `artikel_feldwert` nicht. Beim Umzug per JSON gehen Wareneingänge und
+  Zusatzangaben verloren.
+- **Exporte von vor v10 verlieren beim Import die Kistenorte.** Dort
+  stehen Lager, Regal und Fach noch als Text an der Kiste; diese Spalten
+  gibt es seit v10 nicht mehr, der Import überspringt sie stillschweigend.
+  Die Kisten landen ohne Ort. Abhilfe wie bei den Rückgaben: für ältere
+  Dateien die Texte beim Import in die Ort-Hierarchie überführen (die
+  Logik aus `10_v10.sql` in PHP).
+
+---
+
+## 4. Kleinere offene Punkte
+
+- **Drucken und Export trennen:** Statt einer Sammelseite zwei Einträge
+  in der Seitenleiste. Was beides kann, taucht in beiden auf – die
   Artikelliste etwa als Druckansicht und als CSV.
 
   | Drucken | Export |
@@ -141,8 +139,8 @@ nicht ausgewertet.
   Umbau: `export.php` in zwei Seiten teilen (`drucken.php`, `export.php`),
   `daten.php` geht im Exportmenü auf. Die eigentlichen Druck- und
   CSV-Erzeuger bleiben unverändert, es ändert sich nur die Verteilung der
-  Einstiegspunkte. Zusammen mit der Kopfleisten-Umsortierung oben in einem
-  Durchgang sinnvoll, weil beides `inc/header.php` anfasst.
+  Einstiegspunkte. Mit der Seitenleiste ist das nur ein zusätzlicher
+  Eintrag in `inc/header.php`.
 
 - **Etikett und Aushang mit Gebindeangabe:** zeigen aktuell die Menge, nicht
   die Gesamtzahl. Auf einem Aushang ist „8 Kisten = 167 Flaschen“ die
@@ -161,11 +159,6 @@ nicht ausgewertet.
 - **HTTPS:** Ohne TLS gehen Passwörter im Klartext über die Leitung. Im
   Heimnetz hinter WireGuard vertretbar, für alles andere gehört Traefik mit
   Zertifikat davor.
-- **Repository umbenennen:** ✓ Erledigt – das Repo heißt jetzt
-  `openstoragebox` (vorher `lagerverwaltungdrk`), passend zum Produktnamen.
-  GitHub hält eine Weiterleitung vom alten Namen bereit; die Remote-URL der
-  Klons (Kubuntu-VM und VS-Code) wurde per `git remote set-url origin`
-  nachgezogen. Lokale Ordnernamen und der Docker-Mount blieben unberührt.
 
 ---
 

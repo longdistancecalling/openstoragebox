@@ -449,6 +449,32 @@ function einheit_text(array $a, string $einheit, int $anzahl): string
          . ' (' . ($anzahl * (int) $a['ve_inhalt']) . ' ' . ($a['ve_einheit'] ?: 'Stück') . ')';
 }
 
+/**
+ * Eine Anzahl Einzelstücke als Text, z. B. für "noch offen".
+ * Geht sie glatt in Gebinden auf, steht das Gebinde vorn ("2 Kisten
+ * (40 Flaschen)"), sonst nur die Stückzahl ("27 Flaschen").
+ */
+function einzeln_text(array $a, int $einzeln): string
+{
+    $ve = (int) ($a['ve_inhalt'] ?? 0);
+    if ($ve > 1 && $einzeln > 0 && $einzeln % $ve === 0) {
+        return einheit_text($a, 'gebinde', intdiv($einzeln, $ve));
+    }
+    return einheit_text($a, 'einzeln', $einzeln);
+}
+
+/** Kann zu einer Entnahme mit diesem Grund eine Rückgabe gebucht werden? */
+function rueckgabe_moeglich(string $grund): bool
+{
+    return in_array($grund, RUECKGABE_GRUENDE, true);
+}
+
+/** Belegnummer einer Entnahme, wie sie auf Schein und QR-Code steht. */
+function beleg_nr(int $entnahmeId): string
+{
+    return 'E-' . str_pad((string) $entnahmeId, 5, '0', STR_PAD_LEFT);
+}
+
 
 /* =====================================================================
    Scan-Codes

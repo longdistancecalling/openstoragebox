@@ -110,22 +110,25 @@ Entnehmen oder Hinzufügen bucht.
 
 | Grund | Bedeutung | kommt zurück |
 |---|---|---|
-| Einsatz | im Einsatz verbraucht | nein |
+| Einsatz | für einen Einsatz ausgegeben | **was übrig bleibt** |
 | Verschleiß | abgenutzt, ausgesondert | nein |
 | Defekt | kaputt, entsorgt | nein |
 | Abgelaufen | Haltbarkeit überschritten | nein |
 | Verliehen | an anderen Ortsverband oder Person | **ja** |
 
-**Verliehen ist der einzige Grund, bei dem Material zurückkommt.** Bei einer
-Leihe ist das Personenfeld Pflicht – man muss wissen, wer das Zeug hat. Die
-Buchung bleibt offen, bis die Rückgabe bestätigt wird.
+**Bei Einsatz und Verliehen kann Material zurückkommen, auch in Teilen.**
+Bei einer Leihe ist das Personenfeld Pflicht – man muss wissen, wer das Zeug
+hat. Die Leihe bleibt offen, bis alles zurück ist. Beim Einsatz bucht man
+zurück, was unverbraucht wiederkommt; der Rest gilt als verbraucht.
 
 ---
 
 ## 5. Material einlagern
 
-Wenn Nachschub kommt oder Material aus dem Einsatz zurückkehrt: bei einem
-Artikel auf **Einbuchen**, oder über *Bewegungen → Zugang buchen*. Anders
+Wenn Nachschub kommt: bei einem Artikel auf **Einbuchen**, oder über
+*Bewegungen → Zugang buchen*. Material, das aus einem Einsatz oder einer
+Leihe zurückkommt, besser über die Rückgabe buchen (Abschnitt 6) – dann
+bleibt sichtbar, zu welcher Entnahme es gehört. Anders
 als beim Entnehmen sind hier auch Artikel mit Bestand null wählbar – genau
 die will man ja auffüllen.
 
@@ -135,14 +138,21 @@ vorkommt, ist meist eine Inventur der bessere Weg.
 
 ---
 
-## 6. Eine Leihe zurücknehmen
+## 6. Rückgaben buchen
 
 Auf **Bewegungen** stehen ganz oben die *offenen Leihen* mit einem
-Tageszähler. Kommt Material zurück, dort auf **Zurück gebucht** klicken –
-der Bestand steigt wieder, und die Leihe wird geschlossen.
+Tageszähler. Kommt Material zurück, dort auf **Rückgabe** klicken. Die
+Maske schlägt vor, was noch offen ist; kommt nur ein Teil zurück, die Menge
+einfach ändern. Der Bestand steigt sofort, die Leihe bleibt mit dem Rest
+offen und verschwindet erst, wenn alles zurück ist.
 
-Wer den Papier-Leihschein in der Hand hat, kann auch dessen QR-Code
-scannen; dann erscheint die Buchung direkt mit dem Rückgabe-Knopf.
+Nach einem **Einsatz** geht es genauso: im Protokoll bei der Einsatzentnahme
+auf **Rückgabe** klicken und buchen, was unverbraucht zurückkommt – bei
+Bedarf auch in mehreren Schritten. Im Protokoll steht danach etwa
+„7 zurück · 13 verbraucht“.
+
+Wer den Papierschein in der Hand hat, kann auch dessen QR-Code scannen;
+dann erscheint die Buchung direkt mit dem Knopf **Rückgabe buchen**.
 
 ---
 

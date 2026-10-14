@@ -2,54 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/inc/config.php';
 
-/* ===================================================================
-   POST – Rückgabe einer Leihe
-   =================================================================== */
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    csrf_check();
-    erfordere('bearbeiter');
-
-    if (($_POST['aktion'] ?? '') === 'rueckgabe') {
-        $eid = ctype_digit((string) ($_POST['entnahme_id'] ?? '')) ? (int) $_POST['entnahme_id'] : 0;
-
-        try {
-            // Wieder eine Transaktion: Bestand zurückbuchen und die Leihe
-            // schließen gehören zusammen.
-            $pdo->beginTransaction();
-
-            $stmt = $pdo->prepare(
-                'SELECT artikel_id, menge, grund, zurueck_am
-                 FROM entnahme WHERE entnahme_id = ? FOR UPDATE'
-            );
-            $stmt->execute([$eid]);
-            $e = $stmt->fetch();
-
-            if (!$e || $e['grund'] !== GRUND_LEIHE) {
-                throw new RuntimeException('Diese Buchung ist keine offene Leihe.');
-            }
-            if ($e['zurueck_am'] !== null) {
-                throw new RuntimeException('Diese Leihe wurde bereits zurückgebucht.');
-            }
-
-            $pdo->prepare('UPDATE artikel SET menge = menge + ? WHERE artikel_id = ?')
-                ->execute([(int) $e['menge'], (int) $e['artikel_id']]);
-
-            $pdo->prepare('UPDATE entnahme SET zurueck_am = CURDATE() WHERE entnahme_id = ?')
-                ->execute([$eid]);
-
-            $pdo->commit();
-            flash((int) $e['menge'] . ' Stück zurück im Bestand.');
-        } catch (RuntimeException $ex) {
-            $pdo->rollBack();
-            flash($ex->getMessage(), 'fehler');
-        } catch (PDOException $ex) {
-            $pdo->rollBack();
-            error_log('Rückgabe: ' . $ex->getMessage());
-            flash('Die Rückgabe konnte nicht gebucht werden.', 'fehler');
-        }
-        redirect('entnahmen.php');
-    }
-}
+// Rückgaben bucht rueckgabe.php – auch in Teilen und auch nach einem Einsatz.
 
 /* ===================================================================
    Filter
@@ -96,14 +49,18 @@ if (DateTimeImmutable::createFromFormat('Y-m-d', $bis)) {
 }
 $where = $bedingungen ? 'WHERE ' . implode(' AND ', $bedingungen) : '';
 
+// Bei Abgängen kommt der Rückgabestand aus v_entnahme dazu; bei Zugängen
+// bleiben die Spalten leer.
 $sql = "SELECT e.*, a.artikelname, a.inventar_nr, a.ean,
                a.ve_inhalt, a.ve_einheit, a.gebinde_einheit,
                a.kategorie_id, k.bezeichnung AS kategorie,
-               b.anzeigename AS gebucht_von
+               b.anzeigename AS gebucht_von,
+               ve.zurueck_einzeln, ve.offen_einzeln, ve.letzte_rueckgabe
         FROM v_bewegung e
         JOIN artikel a ON a.artikel_id = e.artikel_id
         LEFT JOIN kategorie k ON k.kategorie_id = a.kategorie_id
         LEFT JOIN benutzer b ON b.benutzer_id = e.erfasst_von
+        LEFT JOIN v_entnahme ve ON ve.entnahme_id = e.entnahme_id AND e.richtung = 'abgang'
         $where
         ORDER BY e.datum DESC, e.erfasst_am DESC";
 $stmt = $pdo->prepare($sql);
@@ -123,11 +80,11 @@ foreach ($zeilen as $z) {
 // Offene Leihen immer separat, unabhängig vom Filter – das ist die
 // Frage, die im Lager am häufigsten gestellt wird.
 $offen = $pdo->query(
-    "SELECT e.*, a.artikelname, a.inventar_nr,
+    "SELECT e.*, a.artikelname, a.inventar_nr, a.ve_inhalt, a.ve_einheit, a.gebinde_einheit,
             DATEDIFF(CURDATE(), e.entnommen_am) AS tage_weg
-       FROM entnahme e
+       FROM v_entnahme e
        JOIN artikel a ON a.artikel_id = e.artikel_id
-      WHERE e.grund = '" . GRUND_LEIHE . "' AND e.zurueck_am IS NULL
+      WHERE e.grund = '" . GRUND_LEIHE . "' AND e.offen_einzeln > 0
       ORDER BY e.entnommen_am"
 )->fetchAll();
 
@@ -177,16 +134,17 @@ require __DIR__ . '/inc/header.php';
           <?php if ($o['bezug']): ?><span class="notiz"><?= h($o['bezug']) ?></span><?php endif; ?>
         </td>
         <td data-label="Bei wem"><?= h($o['person'] ?? '—') ?></td>
-        <td class="zahl" data-label="Menge"><?= (int) $o['menge'] ?></td>
+        <td class="zahl" data-label="Menge">
+          <?= h(einzeln_text($o, (int) $o['offen_einzeln'])) ?>
+          <?php if ((int) $o['zurueck_einzeln'] > 0): ?>
+            <span class="notiz">von <?= h(einheit_text($o, (string) $o['einheit'], (int) $o['menge'])) ?></span>
+          <?php endif; ?>
+        </td>
         <td class="aktion" data-label="">
           <a class="btn btn--klein" href="schein.php?id=<?= (int) $o['entnahme_id'] ?>">Schein</a>
-          <form method="post" action="entnahmen.php" style="display:inline"
-                onsubmit="return confirm('Rückgabe buchen? Der Bestand wird wieder erhöht.');">
-            <?= csrf_field() ?>
-            <input type="hidden" name="aktion" value="rueckgabe">
-            <input type="hidden" name="entnahme_id" value="<?= (int) $o['entnahme_id'] ?>">
-            <button class="btn btn--klein btn--primaer" type="submit" <?= darf('bearbeiter') ? '' : 'disabled' ?>>Zurück gebucht</button>
-          </form>
+          <?php if (darf('bearbeiter')): ?>
+            <a class="btn btn--klein btn--primaer" href="rueckgabe.php?id=<?= (int) $o['entnahme_id'] ?>">Rückgabe</a>
+          <?php endif; ?>
         </td>
       </tr>
     <?php endforeach; ?>
@@ -301,13 +259,30 @@ require __DIR__ . '/inc/header.php';
         <?php if ($z['gebucht_von']): ?><span class="notiz">gebucht von <?= h($z['gebucht_von']) ?></span><?php endif; ?>
       </td>
       <td data-label="Status">
-        <?php if ($z['richtung'] === 'zugang'): ?>
+        <?php
+          $zurueck = (int) ($z['zurueck_einzeln'] ?? 0);
+          $rest    = (int) ($z['offen_einzeln'] ?? 0);
+        ?>
+        <?php if ($z['richtung'] === 'zugang' && $z['entnahme_id']): ?>
+          <span class="notiz">Rückgabe zu
+            <a href="rueckgabe.php?id=<?= (int) $z['entnahme_id'] ?>"><?= h(beleg_nr((int) $z['entnahme_id'])) ?></a></span>
+        <?php elseif ($z['richtung'] === 'zugang'): ?>
           <span class="notiz">Zugang</span>
         <?php elseif ($z['grund'] === GRUND_LEIHE): ?>
-          <?php if ($z['zurueck_am']): ?>
-            <span class="marke marke--gruen">zurück <?= h(datum_de($z['zurueck_am'])) ?></span>
+          <?php if ($rest < 1): ?>
+            <span class="marke marke--gruen">zurück <?= h(datum_de($z['letzte_rueckgabe'])) ?></span>
+          <?php elseif ($zurueck > 0): ?>
+            <span class="marke marke--amber">teilweise zurück</span>
+            <span class="notiz">offen: <?= h(einzeln_text($z, $rest)) ?></span>
           <?php else: ?>
             <span class="marke marke--amber">offen</span>
+          <?php endif; ?>
+        <?php elseif (rueckgabe_moeglich($z['grund'])): ?>
+          <?php if ($zurueck > 0): ?>
+            <span class="marke marke--gruen"><?= h(einzeln_text($z, $zurueck)) ?> zurück</span>
+            <span class="notiz"><?= $rest > 0 ? h(einzeln_text($z, $rest)) . ' verbraucht' : 'nichts verbraucht' ?></span>
+          <?php else: ?>
+            <span class="notiz">verbraucht</span>
           <?php endif; ?>
         <?php else: ?>
           <span class="notiz">endgültig</span>
@@ -316,6 +291,9 @@ require __DIR__ . '/inc/header.php';
       <td class="aktion" data-label="">
         <?php if ($z['richtung'] === 'abgang'): ?>
           <a class="btn btn--klein" href="schein.php?id=<?= (int) $z['bewegung_id'] ?>">Schein</a>
+          <?php if (rueckgabe_moeglich($z['grund']) && $rest > 0 && darf('bearbeiter')): ?>
+            <a class="btn btn--klein" href="rueckgabe.php?id=<?= (int) $z['bewegung_id'] ?>">Rückgabe</a>
+          <?php endif; ?>
         <?php endif; ?>
       </td>
     </tr>

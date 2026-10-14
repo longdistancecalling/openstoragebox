@@ -17,7 +17,7 @@ PHP 8.3 + MariaDB 11, als Docker-Compose-Stack.
 ```
 kategorie 1 ─── n  artikel  n ─── 1 kiste        (Kiste optional)
                      │ 1
-                     ├──── n entnahme
+                     ├──── n entnahme 1 ─── n rueckgabe
                      └──── n inventur_position n ─── 1 inventur
 ```
 
@@ -32,7 +32,7 @@ einziges UPDATE, alle Artikel wandern mit.
 | Ein-Ort-Regel in `artikel.php` statt DB-`CHECK` | Genau einer der drei Orte ist gesetzt. MariaDB lehnt einen nachträglich per `ALTER` ergänzten `CHECK` mit Spaltenbezug ab, deshalb prüft die Anwendung |
 | Lagerorte als Tabellen `lager`/`regal`/`fach` | Feste Hierarchie Lager→Regal→Fach. Vorher klebten die Namen als Text an der Kiste – jetzt eigene Struktur, auf die Kiste **und** Artikel zeigen. Umbenennen wirkt überall |
 | `inventar_nr` getrennt von `artikel_id` | die Datenbank-ID ist ein technisches Detail, die Inventarnummer klebt am Material und darf eigenen Konventionen folgen |
-| `entnahme.zurueck_am` nur bei `verliehen` | per CHECK erzwungen: die vier anderen Gründe sind endgültig |
+| Rückgaben als eigene Tabelle `rueckgabe` | eine Entnahme kann in mehreren Teilen zurückkommen; der offene Rest ist `SUM(rueckgabe)` gegenüber der Entnahme, gerechnet in Einzelstücken (View `v_entnahme`) |
 | Snapshot-Spalten in `inventur_position` | eine abgeschlossene Inventur ist ein Beleg und muss lesbar bleiben, auch wenn Artikel später umbenannt werden |
 | `faellig_am` + `faellig_typ` | "Was ist in 30 Tagen fällig?" ist eine WHERE-Klausel statt eines UNION |
 | View `v_artikel` | Join und die Berechnung von `lagerort_text` und `verliehen_offen` stehen an einer Stelle |
@@ -45,20 +45,24 @@ in einer Transaktion mit `SELECT … FOR UPDATE` auf der Artikelzeile. Ohne dies
 Sperre könnten zwei gleichzeitige Entnahmen denselben Ausgangsbestand lesen und
 den Bestand ins Minus schicken.
 
-Bei `verliehen` bleibt die Buchung offen, bis du die Rückgabe bestätigst; dann
-wandert die Menge zurück in den Bestand. Die Übersicht "Offene Leihen"
-beantwortet damit die Frage, die im Lager am häufigsten gestellt wird: wo ist
-das Zeug gerade.
+Bei `verliehen` und `einsatz` kann Material zurückkommen, auch in Teilen. Jede
+Rückgabe ist eine eigene Buchung (`rueckgabe.php`), erhöht den Bestand und
+steht im Protokoll als Zugang „Rücklauf“ mit Verweis auf den Beleg. Eine Leihe
+bleibt offen, bis alles zurück ist; die Übersicht "Offene Leihen" beantwortet
+damit die Frage, die im Lager am häufigsten gestellt wird: wo ist das Zeug
+gerade. Beim Einsatz gilt, was nicht zurückkommt, als verbraucht – so lässt
+sich nach einem Einsatz ablesen, dass von 20 ausgegebenen Kisten 7 zurückkamen
+und 13 tatsächlich verbraucht wurden.
 
 ### Entnahmegründe
 
 | Grund | Kommt zurück | Typischer Fall |
 |---|---|---|
-| Einsatz | nein | verbraucht im Einsatz |
+| Einsatz | **teilweise** – Unverbrauchtes wird zurückgebucht, der Rest gilt als verbraucht | im Einsatz ausgegeben |
 | Verschleiß | nein | abgenutzt, ausgesondert |
 | Defekt | nein | kaputt, entsorgt |
 | Abgelaufen | nein | Haltbarkeit überschritten |
-| Verliehen | **ja** | an anderen Ortsverband oder Person |
+| Verliehen | **ja** – offen, bis alles zurück ist, auch in Teilen | an anderen Ortsverband oder Person |
 
 ## 2. Inbetriebnahme
 
@@ -117,7 +121,7 @@ docker compose exec -T db mariadb -u root -p"$(grep DB_ROOT_PASS .env | cut -d= 
   lager < db/02_v2.sql
 ```
 
-Für die weiteren Versionen ebenso `db/03_v3.sql` bis `db/10_v10.sql`, der Reihe nach. Beide Skripte sind wiederholbar – ein zweiter
+Für die weiteren Versionen ebenso `db/03_v3.sql` bis `db/11_v11.sql`, der Reihe nach. Beide Skripte sind wiederholbar – ein zweiter
 Durchlauf richtet keinen Schaden an. Bei einer **Neuinstallation** werden alle
 Dateien im Init-Verzeichnis alphabetisch eingespielt, du musst nichts migrieren.
 
@@ -151,8 +155,9 @@ Adminer liegt daneben auf Port 8081 (Server `db`, Benutzer aus der `.env`).
    stehen sofort am neuen Platz
 5. Kiste `K001` löschen wollen → wird mit Begründung abgelehnt
 6. Entnahme buchen mit Grund *Einsatz* → Bestand sinkt, Protokolleintrag erscheint
-7. Entnahme mit Grund *Verliehen* → steht unter „Offene Leihen"; „Zurück gebucht"
-   klicken → Bestand steigt wieder
+7. Entnahme mit Grund *Verliehen* → steht unter „Offene Leihen"; „Rückgabe"
+   klicken, einen Teil zurückbuchen → Bestand steigt, Leihe bleibt mit dem Rest
+   offen; den Rest zurückbuchen → Leihe verschwindet aus der Liste
 8. Export → Kistenetiketten A5 → Druckvorschau zeigt eine Seite je Kiste
 9. Inventur starten → Zählwerte eintragen → Bericht zeigt Differenzen
 
@@ -321,6 +326,7 @@ docker/php/Dockerfile       php:8.3-apache mit pdo_mysql
 db/01_schema.sql            Grundschema (v1)
 db/02_v2.sql                Migration auf v2, wiederholbar
 db/10_v10.sql               Migration auf v10: Lagerort-Hierarchie
+db/11_v11.sql               Migration auf v11: Rückgaben (auch in Teilen, auch nach Einsatz)
 src/inc/config.php          PDO-Verbindung, Sortierkonstanten, Entnahmegründe
 src/inc/helpers.php         Escaping, CSRF, Flash, Lagerort-Chip, CSV-Ausgabe
 src/inc/auth.php            Anmeldung, Rollen, Brute-Force-Sperre
@@ -331,7 +337,8 @@ src/assets/druck.css        Stylesheet Druck (A5-Etiketten, A4-Listen)
 src/index.php               Artikelliste mit Suche, Filter, Sortierung
 src/artikel.php             Artikel anlegen, bearbeiten, löschen
 src/entnahme.php            Entnahme buchen
-src/entnahmen.php           Protokoll, offene Leihen, Rückgabe
+src/entnahmen.php           Protokoll, offene Leihen
+src/rueckgabe.php           Rückgabe zu Leihe oder Einsatz buchen, auch in Teilen
 src/kisten.php              Kistenübersicht mit Belegung
 src/kiste.php               Kiste anlegen, bearbeiten, löschen (Fach-Auswahl)
 src/orte.php                Lagerorte verwalten: Lager, Regale, Fächer
@@ -448,7 +455,7 @@ Erkannt werden fünf Eingaben:
 | `K:K001` | Kiste mit Inhaltsliste und Buchungsknöpfen |
 | `A:A-00042` | Artikel mit Bestand und Buchung |
 | `R:Keller\|R1` | alle Kisten eines Regals, zum Durchklicken |
-| `E:E-00042` | die Buchung zu einem Papierbeleg, bei Leihe mit Rückgabe |
+| `E:E-00042` | die Buchung zu einem Papierbeleg, bei Leihe und Einsatz mit Rückgabe |
 | `4006381333931` | Hersteller-EAN |
 
 Damit lässt sich eine Kette durchklicken: Regalschild scannen, Kiste antippen,
@@ -460,8 +467,8 @@ Bei einer Kiste erscheint der gesamte Inhalt mit Buchungsknöpfen je Position �
 man steht vor der Kiste, scannt einmal und bucht, was herausgeht.
 
 Der Beleg-Code ist der Weg vom Papier zurück ins System: Wer einen
-unterschriebenen Leihschein in der Hand hält, scannt ihn und bucht die Rückgabe,
-ohne die Buchung suchen zu müssen.
+unterschriebenen Leih- oder Einsatzschein in der Hand hält, scannt ihn und
+bucht die Rückgabe, ohne die Buchung suchen zu müssen.
 
 Der Ablauf ist zweistufig: Scannen zeigt den Artikel mit Bestand, Lagerort und
 Fälligkeit. Gebucht wird erst mit dem zweiten Klick – ein versehentlicher Scan
@@ -574,7 +581,8 @@ Der **Entnahmeschein** (*Bewegungen → Schein*) ist der Beleg zu einer Buchung.
 Bei einer Leihe ist er der eigentliche Zweck: er hält fest, wer wann was
 mitgenommen hat, und wird unterschrieben. Deshalb trägt er dort zwei
 Unterschriftsblöcke – Übergabe und Rückgabe – samt Hinweis auf Eigentum und
-Haftung. Bei endgültigen Entnahmen genügt eine Empfangsbestätigung.
+Haftung. Beim Einsatz stehen Empfang und Rücklauf nebeneinander, bei den
+übrigen, endgültigen Entnahmen genügt eine Empfangsbestätigung.
 
 Nach dem Buchen einer Leihe springt die Anwendung direkt auf den Schein, damit
 er unterschrieben wird, solange der Entleiher noch danebensteht. Über

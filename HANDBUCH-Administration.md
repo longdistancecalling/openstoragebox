@@ -1,6 +1,6 @@
 # OpenStorageBox – Handbuch für die Administration
 
-DRK KV Eisenach · Stand Version 9
+DRK KV Eisenach · Stand Version 11
 
 Dieses Heft richtet sich an die Person, die die Lagerverwaltung betreibt:
 Installation, Sicherung, Benutzer, Updates. Für die tägliche Arbeit gibt es
@@ -95,7 +95,7 @@ Braucht Docker auf dem System Root-Rechte, kommt `sudo` davor:
 `sudo docker compose up -d --build`. Alle drei Container müssen laufen,
 `lager-db` auf `healthy`. Beim allerersten Start mit leerem Volume spielt
 MariaDB automatisch **alle** SQL-Dateien aus `db/` der Reihe nach ein – von
-`01_schema.sql` bis `10_v10.sql`. Man muss nichts migrieren.
+`01_schema.sql` bis `11_v11.sql`. Man muss nichts migrieren.
 
 ### Ersten Administrator anlegen
 
@@ -163,6 +163,11 @@ Durchlauf schadet nicht.
 > Durchlauf nichts mehr anfasst – der Umbau läuft nur, solange die alten
 > Spalten noch da sind. Nach der Migration werden Lagerorte unter
 > *Verwaltung → Lagerorte* gepflegt.
+
+> **Auch `11_v11.sql` schreibt Daten um:** Sie überträgt abgeschlossene
+> Leihen (bisher ein Datum an der Entnahme) in die neue Tabelle für
+> Rückgaben und entfernt danach die alte Spalte. Auch hier vorher
+> `./backup.sh`. Ein zweiter Durchlauf fasst nichts mehr an.
 
 ### Kontrolle nach dem Update
 
@@ -365,9 +370,9 @@ oft auf `=`. Beim Auslesen `cut -d= -f2-` verwenden (mit dem Minus), nicht
 
 ## 11. Weiterentwicklung
 
-Offene Punkte und ihre Begründung stehen in `ROADMAP.md`. Die beiden großen
-sind Chargen mit unterschiedlichem Mindesthaltbarkeitsdatum und Rückläufer
-aus dem Einsatz. Der Funktionsstand ist in `FEATURES.md` zusammengefasst.
+Offene Punkte und ihre Begründung stehen in `ROADMAP.md`. Der größte ist
+Chargen mit unterschiedlichem Mindesthaltbarkeitsdatum. Der Funktionsstand
+ist in `FEATURES.md` zusammengefasst.
 
 Der Quelltext ist durchgehend auf Deutsch kommentiert, mit Betonung auf dem
 *Warum* einer Entscheidung. Wer eine Stelle ändert, findet dort meist den
