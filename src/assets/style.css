@@ -76,22 +76,125 @@ a { color: var(--blau); }
   letter-spacing: .01em;
 }
 
-.nav { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+/* Die Marke schiebt alles Übrige – Knopfpaar und Benutzer – nach rechts. */
+.topbar .brand { margin-right: auto; }
 
-.nav a {
+/* Klappt am Handy die Seitenleiste auf; am Desktop steht sie immer da. */
+.menue-knopf {
+  display: none;
+  align-items: center;
+  gap: 6px;
   padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, .3);
   border-radius: var(--r);
-  color: rgba(255, 255, 255, .72);
-  text-decoration: none;
-  font-size: 14px;
+  background: transparent;
+  color: #fff;
+  font: 500 14px/1.2 var(--sans);
+  cursor: pointer;
 }
 
-.nav a:hover { background: rgba(255, 255, 255, .1); color: #fff; }
-.nav a.is-active { background: rgba(255, 255, 255, .16); color: #fff; font-weight: 500; }
+.menue-knopf:hover { background: rgba(255, 255, 255, .1); }
 
 /* --- Grundgerüst --------------------------------------------------- */
 
+/* Die Seite füllt mindestens den Schirm, damit die Seitenleiste auch
+   bei kurzen Seiten bis ganz nach unten reicht. */
+body { display: flex; flex-direction: column; min-height: 100vh; }
+
+.rahmen {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+}
+
+.inhalt { min-width: 0; }
+
 .wrap { max-width: 1180px; margin: 0 auto; padding: 22px 20px 56px; }
+
+/* --- Seitenleiste ---------------------------------------------------- */
+
+.seitenleiste {
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+}
+
+.seitenleiste-liste {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 18px 12px;
+}
+
+.seitenleiste a {
+  padding: 8px 12px;
+  border-radius: var(--r);
+  color: var(--ink-2);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.seitenleiste a:hover { background: var(--line-2); color: var(--ink); }
+
+.seitenleiste a.is-active {
+  background: var(--blau-weich);
+  color: var(--blau);
+  font-weight: 500;
+}
+
+/* Aufklappbarer Abschnitt "Verwaltung". Der Titel im Stil der
+   Rollenmarke – ein Etikett, kein Link –, aber so hoch wie die Links,
+   damit er sich gut treffen lässt. Der Standardmarker wird durch ein
+   eigenes Dreieck ersetzt, weil er je nach Browser anders aussieht. */
+.seitenleiste-gruppe { margin-top: 12px; }
+
+.seitenleiste-gruppe a { display: block; margin-top: 2px; }
+
+.seitenleiste-titel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: var(--r);
+  font: 500 10px/1 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+.seitenleiste-titel::-webkit-details-marker { display: none; }
+.seitenleiste-titel::marker { content: ''; }
+
+.seitenleiste-titel::after {
+  content: '▸';
+  display: inline-block;   /* sonst greift die Drehung nicht */
+  font-size: 12px;
+  transition: transform .15s;
+}
+
+.seitenleiste-gruppe[open] > .seitenleiste-titel::after { transform: rotate(90deg); }
+
+.seitenleiste-titel:hover { background: var(--line-2); color: var(--ink); }
+
+/* Am Handy steht die Leiste über dem Inhalt statt daneben. Mit Skript
+   ist sie zu, bis der Menü-Knopf sie öffnet; ohne Skript bleibt sie
+   offen, damit die Navigation erreichbar ist. */
+@media (max-width: 760px) {
+  .menue-knopf { display: inline-flex; }
+  .rahmen { display: block; }
+  .seitenleiste { border-right: 0; border-bottom: 1px solid var(--line); }
+  .seitenleiste-liste { position: static; padding: 10px 12px; }
+  .js .seitenleiste:not(.is-offen) { display: none; }
+}
+
+@media print {
+  .seitenleiste,
+  .menue-knopf { display: none; }
+  .rahmen { display: block; }
+}
 
 .kopf {
   display: flex;
@@ -933,15 +1036,13 @@ small.je {
    nirgends vorkommt. Im Einsatz soll niemand suchen müssen.
    --------------------------------------------------------------------- */
 
-/* Terminal und Entnahme stehen als Paar rechts in der Leiste. Der
-   Container trägt das margin-left:auto, das die beiden gemeinsam nach
-   rechts schiebt – die Knöpfe selbst haben keins mehr, sonst rissen sie
-   auseinander. */
+/* Terminal und Entnahme stehen als Paar rechts in der Leiste. Nach
+   rechts schiebt sie das margin-right:auto der Marke – die Knöpfe
+   selbst haben kein Auto-Margin, sonst rissen sie auseinander. */
 .kopf-aktionen {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-left: auto;
 }
 
 /* Gemeinsame Form beider Knöpfe: gleiche Größe, damit sie als Paar
@@ -977,102 +1078,18 @@ small.je {
   opacity: .9;
 }
 
-/* Die Navigation verliert ihr margin-left:auto, sobald das Knopfpaar da
-   ist – sonst schieben beide gegeneinander. */
-.topbar:has(.kopf-aktionen) .nav { margin-left: 16px; }
-
 @media (max-width: 760px) {
   /* Auf schmalen Geräten rückt das Paar nach oben und füllt die Breite,
      die beiden Knöpfe teilen sich die Zeile. */
   .kopf-aktionen {
     order: -1;
     width: 100%;
-    margin-left: 0;
   }
   .terminal-knopf,
   .einsatz {
     flex: 1;
     justify-content: center;
     padding: 12px;
-  }
-  .topbar:has(.kopf-aktionen) .nav { margin-left: 0; }
-}
-
-/* --- v8: Verwaltungsmenü ----------------------------------------------
-   Klappmenü über <details>. Der Marker wird entfernt und durch ein
-   eigenes Dreieck ersetzt, weil der Standardmarker je nach Browser
-   unterschiedlich aussieht und die Ausrichtung stört.
-   --------------------------------------------------------------------- */
-
-.menue { position: relative; }
-
-.menue > summary {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: var(--r);
-  color: rgba(255, 255, 255, .72);
-  font-size: 14px;
-  cursor: pointer;
-  list-style: none;
-  white-space: nowrap;
-}
-
-.menue > summary::-webkit-details-marker { display: none; }
-.menue > summary::marker { content: ''; }
-
-.menue > summary::after {
-  content: '▾';
-  font-size: 11px;
-  opacity: .7;
-}
-
-.menue > summary:hover { background: rgba(255, 255, 255, .1); color: #fff; }
-.menue[open] > summary { background: rgba(255, 255, 255, .16); color: #fff; }
-.menue.is-active > summary { background: rgba(255, 255, 255, .16); color: #fff; font-weight: 500; }
-
-.menue-liste {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 20;
-  min-width: 190px;
-  padding: 6px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
-}
-
-.menue-liste a {
-  display: block;
-  padding: 8px 12px;
-  border-radius: var(--r);
-  color: var(--ink);
-  font-size: 14px;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.menue-liste a:hover { background: var(--line-2); }
-
-.menue-liste a.is-active {
-  background: var(--blau-weich);
-  color: var(--blau);
-  font-weight: 500;
-}
-
-/* Am Handy klappt das Menü in den Fluss statt darüber – ein
-   überlagerndes Feld auf schmalem Schirm verdeckt den halben Inhalt. */
-@media (max-width: 760px) {
-  .menue { width: 100%; }
-  .menue > summary { justify-content: space-between; }
-  .menue-liste {
-    position: static;
-    margin-top: 6px;
-    box-shadow: none;
-    min-width: 0;
   }
 }
 

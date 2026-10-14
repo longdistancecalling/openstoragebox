@@ -38,7 +38,8 @@ nicht die nötige Stufe. Das ist kein Fehler.
 
 ## 2. Sich zurechtfinden
 
-Oben läuft die Navigationsleiste:
+Links steht die Seitenleiste mit allen Bereichen (am Handy über den Knopf
+**☰ Menü** oben aufklappen):
 
 - **Artikel** – die Bestandsliste, der Ausgangspunkt für fast alles
 - **Scannen** – buchen per Barcode oder QR-Code
@@ -47,9 +48,10 @@ Oben läuft die Navigationsleiste:
 - **Kisten** – die Lagerplätze
 - **Inventur** – zählen und abgleichen
 - **Export** – alles zum Drucken und Herunterladen
-- **Verwaltung** – Stammdaten und Einstellungen (je nach Stufe)
+- **Verwaltung** – Stammdaten und Einstellungen (je nach Stufe); ein Klick
+  auf die Überschrift klappt den Abschnitt auf und zu
 
-Ganz rechts steht immer ein roter **Entnahme**-Knopf. Er ist im Einsatz
+Oben rechts steht immer ein roter **Entnahme**-Knopf. Er ist im Einsatz
 gedacht, wenn es schnell gehen muss – er führt mit einem Klick zum
 Ausbuchen, egal wo man gerade ist. Tastenkürzel: Alt und E zusammen.
 

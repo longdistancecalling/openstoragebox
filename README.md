@@ -240,20 +240,27 @@ Ersterfassung meist eine Kiste oder ein Regal am Stück befüllt.
 
 ### Navigation
 
-Vorn steht, was im Lageralltag gebraucht wird: Artikel, Scannen, Bewegungen,
-Bedarf, Kisten, Inventur, Export. Alles, was man selten und meist im
-Sitzen macht, liegt im Klappmenü **Verwaltung**: Kategorien, Daten, Felder,
-Benutzer, Einstellungen.
+Die Navigation steht in einer Seitenleiste links; in der Kopfleiste bleiben
+nur die Knöpfe Terminal und Entnahme (siehe unten) und der angemeldete
+Benutzer.
 
-Zwölf gleichrangige Punkte nebeneinander findet niemand mehr durch, und die
-täglich genutzten gehen darin unter. Das Menü füllt sich nach Rolle – ein Leser
-sieht dort nur *Daten* (für den Export), ein Bearbeiter zusätzlich
-*Kategorien*, ein Administrator alles.
+Oben in der Seitenleiste steht, was im Lageralltag gebraucht wird: Artikel,
+Scannen, Bewegungen, Bedarf, Kisten, Inventur, Export. Alles, was man selten
+und meist im Sitzen macht, liegt darunter im aufklappbaren Abschnitt
+**Verwaltung**: Lagerorte, Kategorien, Daten, Felder, Benutzer, Einstellungen.
 
-Öffnet man eine Verwaltungsseite, ist das Menü aufgeklappt und markiert, damit
-erkennbar bleibt, wo man gerade steht. Umgesetzt ist es mit dem
+Zwölf gleichrangige Punkte untereinander findet niemand mehr durch, und die
+täglich genutzten gehen darin unter. Der Abschnitt füllt sich nach Rolle – ein
+Leser sieht dort nur *Daten* (für den Export), ein Bearbeiter zusätzlich
+*Lagerorte* und *Kategorien*, ein Administrator alles.
+
+Öffnet man eine Verwaltungsseite, ist der Abschnitt aufgeklappt und markiert,
+damit erkennbar bleibt, wo man gerade steht. Umgesetzt ist er mit dem
 `<details>`-Element: das funktioniert auch ohne JavaScript und ist mit der
 Tastatur bedienbar.
+
+Am Handy steht die Seitenleiste nicht neben, sondern über dem Inhalt und ist
+zugeklappt; der Knopf **☰ Menü** in der Kopfleiste öffnet sie.
 
 ### Der Einsatzknopf
 

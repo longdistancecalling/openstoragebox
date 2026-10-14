@@ -6,12 +6,16 @@ $titel = $titel ?? APP_NAME;
 $aktiv = $aktiv ?? '';
 
 /*
- * Die Navigation ist zweigeteilt.
+ * Die Navigation steht in der Seitenleiste und ist zweigeteilt.
  *
- * Vorn steht, was im Lageralltag gebraucht wird. Alles, was man selten
- * und meist im Sitzen macht – Stammdaten, Import, Benutzer – liegt im
- * Menü "Verwaltung". Zwölf gleichrangige Punkte nebeneinander findet
- * niemand mehr durch, und die täglich genutzten gehen darin unter.
+ * Oben steht, was im Lageralltag gebraucht wird. Alles, was man selten
+ * und meist im Sitzen macht – Stammdaten, Import, Benutzer – steht
+ * darunter im Abschnitt "Verwaltung". Zwölf gleichrangige Punkte
+ * untereinander findet niemand mehr durch, und die täglich genutzten
+ * gehen darin unter.
+ *
+ * In der Kopfleiste bleiben nur Terminal und Entnahme – die beiden
+ * Knöpfe, die im Einsatz sofort gefunden werden müssen.
  */
 $nav = [
     'index'     => ['Artikel',      'index.php'],
@@ -36,8 +40,8 @@ if (darf('admin')) {
     $verwaltung['einstellungen'] = ['Einstellungen', 'einstellungen.php'];
 }
 
-// Ist gerade eine Verwaltungsseite offen? Dann das Menü hervorheben
-// und aufgeklappt zeigen.
+// Ist gerade eine Verwaltungsseite offen? Dann den Abschnitt
+// aufgeklappt zeigen, sonst bleibt er zu.
 $inVerwaltung = isset($verwaltung[$aktiv]);
 $ich = benutzer();
 ?>
@@ -51,10 +55,16 @@ $ich = benutzer();
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
+<!-- Ohne Skript bleibt die Seitenleiste am Handy einfach offen;
+     erst mit Skript wird sie zum Klappmenü. -->
+<script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
 
 <header class="topbar">
+  <button type="button" class="menue-knopf" aria-controls="seitenleiste" aria-expanded="false">
+    <span aria-hidden="true">☰</span> Menü
+  </button>
   <a class="brand" href="index.php">
     <span class="brand-mark">OSB</span>
     <span class="brand-text">
@@ -64,28 +74,6 @@ $ich = benutzer();
       <?php endif; ?>
     </span>
   </a>
-  <nav class="nav">
-    <?php foreach ($nav as $key => [$label, $href]): ?>
-      <a href="<?= h($href) ?>"<?= $aktiv === $key ? ' class="is-active" aria-current="page"' : '' ?>><?= h($label) ?></a>
-    <?php endforeach; ?>
-
-    <?php if ($verwaltung): ?>
-      <!--
-        <details> statt eines JavaScript-Menüs: klappt auch ohne Skript
-        auf, ist mit der Tastatur bedienbar und braucht keine
-        ARIA-Bastelei. Das Skript unten schließt es nur bei Klick
-        daneben.
-      -->
-      <details class="menue<?= $inVerwaltung ? ' is-active' : '' ?>">
-        <summary>Verwaltung</summary>
-        <div class="menue-liste">
-          <?php foreach ($verwaltung as $key => [$label, $href]): ?>
-            <a href="<?= h($href) ?>"<?= $aktiv === $key ? ' class="is-active" aria-current="page"' : '' ?>><?= h($label) ?></a>
-          <?php endforeach; ?>
-        </div>
-      </details>
-    <?php endif; ?>
-  </nav>
   <?php if (darf('bearbeiter')): ?>
     <!--
       Terminal und Entnahme stehen als Paar rechts in der Leiste, in
@@ -115,16 +103,44 @@ $ich = benutzer();
   <?php endif; ?>
 </header>
 
+<div class="rahmen">
+<nav class="seitenleiste" id="seitenleiste" aria-label="Navigation">
+  <!-- Die Leiste selbst reicht bis zum Seitenende, die Liste darin
+       bleibt beim Scrollen langer Artikellisten oben stehen. -->
+  <div class="seitenleiste-liste">
+    <?php foreach ($nav as $key => [$label, $href]): ?>
+      <a href="<?= h($href) ?>"<?= $aktiv === $key ? ' class="is-active" aria-current="page"' : '' ?>><?= h($label) ?></a>
+    <?php endforeach; ?>
+
+    <?php if ($verwaltung): ?>
+      <!--
+        <details> statt eines JavaScript-Menüs: klappt auch ohne Skript
+        auf, ist mit der Tastatur bedienbar und braucht keine
+        ARIA-Bastelei.
+      -->
+      <details class="seitenleiste-gruppe"<?= $inVerwaltung ? ' open' : '' ?>>
+        <summary class="seitenleiste-titel">Verwaltung</summary>
+        <?php foreach ($verwaltung as $key => [$label, $href]): ?>
+          <a href="<?= h($href) ?>"<?= $aktiv === $key ? ' class="is-active" aria-current="page"' : '' ?>><?= h($label) ?></a>
+        <?php endforeach; ?>
+      </details>
+    <?php endif; ?>
+  </div>
+</nav>
+
 <script>
-// Menü schließen, wenn daneben geklickt oder Escape gedrückt wird.
+// Am Handy klappt der Menü-Knopf die Seitenleiste auf und zu.
 (function () {
-  const m = document.querySelector('.menue');
-  if (!m) return;
-  document.addEventListener('click', e => { if (!m.contains(e.target)) m.open = false; });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') m.open = false; });
+  const k = document.querySelector('.menue-knopf');
+  const s = document.getElementById('seitenleiste');
+  k.addEventListener('click', () => {
+    const offen = s.classList.toggle('is-offen');
+    k.setAttribute('aria-expanded', offen ? 'true' : 'false');
+  });
 })();
 </script>
 
+<div class="inhalt">
 <main class="wrap">
 <?php foreach (flash_take() as $f): ?>
   <p class="flash flash--<?= h($f['type']) ?>"><?= h($f['text']) ?></p>
