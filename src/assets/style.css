@@ -706,7 +706,7 @@
     right: 0;
     bottom: -10px;
     height: 10px;
-    background: radial-gradient(circle at 10px 0, var(--welle-kopf) 9px, transparent 10px) 0 0 / 20px 10px repeat-x;
+    background: radial-gradient(30px 10px at 30px 0, var(--welle-kopf) 94%, transparent 100%) 0 0 / 60px 10px repeat-x;
   }
   [data-farbe="wellenwacht"] .kopf h1,
   [data-farbe="wellenwacht"] .abschnitt { color: var(--welle-kopf); }

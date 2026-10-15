@@ -313,8 +313,12 @@ aufrufen wollte.
 ### Darstellung: Farben und Schrift
 
 In der Kopfleiste – Vollansicht, Terminal und Anmeldeseite – steht ein
-**Hell/Dunkel-Schalter**: ein Klick schaltet um, aus Dunkel geht es zurück
-zu Hell. Alles Weitere steht auf der Seite **Verwaltung → Darstellung**
+**Hell/Dunkel-Schalter**: ein Klick schaltet um, der nächste zurück zum
+zuletzt gewählten Design. Wer Wellenwacht eingestellt hat, kommt aus
+Dunkel wieder zu Wellenwacht, nicht zu Hell; wer Phosphor benutzt, aus
+dem hellen Design wieder zu Phosphor. Dafür merkt sich der Cookie das
+letzte Design der jeweils anderen Seite (`farbe.schrift.gegen`); beim
+ersten Klick geht es zu Hell bzw. Dunkel. Alles Weitere steht auf der Seite **Verwaltung → Darstellung**
 (`darstellung.php`, für alle Rollen), mit Farbmuster und Schriftprobe je
 Option. Farben und Schrift sind unabhängig voneinander wählbar:
 
@@ -338,7 +342,7 @@ Option. Farben und Schrift sind unabhängig voneinander wählbar:
 | **E-Ink** | für E-Paper-Displays: nur Schwarz, Weiß und Grau, keine Verläufe, Schatten, Übergänge oder Animationen (die auf E-Paper flackern). Status ohne Farbe: „abgelaufen“ invertiert, „bald“ umrandet |
 
 Dunkel, Nachtsicht, Blaupause und Phosphor gelten als dunkle Designs: Der
-Hell/Dunkel-Schalter steht dort auf „an“ und führt zu Hell.
+Hell/Dunkel-Schalter steht dort auf „an“.
 
 Damit sechzehn Designs übersichtlich bleiben, ordnet die Seite sie in
 aufklappbare Gruppen: *Standard* (Hell, Dunkel), *Barrierefrei* (Hoher

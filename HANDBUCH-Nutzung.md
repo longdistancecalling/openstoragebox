@@ -60,7 +60,8 @@ Klick zurück, egal wo man gerade ist.
 
 Oben rechts steht der Schalter **☾ Dunkel** – in der Vollansicht, im
 Terminal und schon auf der Anmeldeseite. Ein Klick schaltet zwischen hellem
-und dunklem Design um.
+und dunklem Design um, der nächste zurück zu dem Design, das vorher
+eingestellt war – etwa wieder zu Wellenwacht statt zum Standard-Hell.
 
 Weitere Möglichkeiten stehen in der Seitenleiste unter **Verwaltung →
 Darstellung**. Dort lassen sich zwei Dinge wählen, auch zusammen – jede

@@ -23,14 +23,21 @@ $d = darstellung();
    Speichern
    =================================================================== */
 if (isset($_GET['farbe']) || isset($_GET['schrift'])) {
+    $vorher = $d['farbe'];
     if (isset(DARSTELLUNG_FARBEN[$_GET['farbe'] ?? ''])) {
         $d['farbe'] = $_GET['farbe'];
     }
     if (isset(DARSTELLUNG_SCHRIFTEN[$_GET['schrift'] ?? ''])) {
         $d['schrift'] = $_GET['schrift'];
     }
+    // Wechsel zwischen hell und dunkel: das bisherige Design merken, der
+    // Schalter führt dorthin zurück. Innerhalb einer Seite (z. B. Dunkel
+    // → Nachtsicht) bleibt das gemerkte Gegenstück, wie es ist.
+    if (darstellung_dunkel($d['farbe']) !== darstellung_dunkel($vorher)) {
+        $d['gegen'] = $vorher;
+    }
 
-    setcookie(DARSTELLUNG_COOKIE, $d['farbe'] . '.' . $d['schrift'], [
+    setcookie(DARSTELLUNG_COOKIE, $d['farbe'] . '.' . $d['schrift'] . '.' . $d['gegen'], [
         'expires'  => time() + 365 * 24 * 3600,
         'path'     => '/',
         'samesite' => 'Lax',
@@ -153,8 +160,9 @@ require __DIR__ . '/inc/header.php';
     Farben <b><?= h(DARSTELLUNG_FARBEN[$d['farbe']]) ?></b> ·
     Schrift <b><?= h(DARSTELLUNG_SCHRIFTEN[$d['schrift']]) ?></b>
     <span class="hinweis">
-      Die Wahl gilt für alle, die dieses Gerät benutzen. Hell/Dunkel geht auch über den Schalter
-      oben in der Kopfleiste. Ausdrucke bleiben immer schwarz auf weiß.
+      Die Wahl gilt für alle, die dieses Gerät benutzen. Der Schalter oben in der Kopfleiste
+      wechselt zu <b><?= h(DARSTELLUNG_FARBEN[$d['gegen']]) ?></b> und wieder zurück.
+      Ausdrucke bleiben immer schwarz auf weiß.
     </span>
   </div>
   <?php if ($d['farbe'] !== 'hell' || $d['schrift'] !== 'standard'): ?>

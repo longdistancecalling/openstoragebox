@@ -638,17 +638,36 @@ function fach_id_aufloesen(PDO $pdo, string $lager, string $regal, string $fach,
    Darstellung: Farben und Schrift pro Gerät
    ===================================================================== */
 
+/** Gehört das Farbdesign zu den dunklen (DARSTELLUNG_DUNKLE)? */
+function darstellung_dunkel(string $farbe): bool
+{
+    return in_array($farbe, DARSTELLUNG_DUNKLE, true);
+}
+
 /**
- * Die gewählte Darstellung aus dem Cookie, ['farbe' => …, 'schrift' => …].
- * Unbekannte Werte fallen auf den Standard zurück.
+ * Die gewählte Darstellung aus dem Cookie "farbe.schrift.gegen":
+ * ['farbe' => …, 'schrift' => …, 'gegen' => …].
+ *
+ * 'gegen' ist das zuletzt benutzte Design der anderen Seite – dorthin
+ * führt der Hell/Dunkel-Schalter. Wer Wellenwacht gewählt hat, auf
+ * Dunkel und wieder zurück schaltet, landet so wieder bei Wellenwacht
+ * statt bei Hell; ebenso von Phosphor aus. Unbekannte oder unpassende
+ * Werte (auch aus älteren Cookies ohne dritten Teil) fallen auf Hell
+ * bzw. Dunkel zurück.
  */
 function darstellung(): array
 {
-    [$farbe, $schrift] = array_pad(explode('.', (string) ($_COOKIE[DARSTELLUNG_COOKIE] ?? ''), 2), 2, '');
-    return [
-        'farbe'   => isset(DARSTELLUNG_FARBEN[$farbe])      ? $farbe   : array_key_first(DARSTELLUNG_FARBEN),
-        'schrift' => isset(DARSTELLUNG_SCHRIFTEN[$schrift]) ? $schrift : array_key_first(DARSTELLUNG_SCHRIFTEN),
-    ];
+    [$farbe, $schrift, $gegen] = array_pad(explode('.', (string) ($_COOKIE[DARSTELLUNG_COOKIE] ?? ''), 3), 3, '');
+    if (!isset(DARSTELLUNG_FARBEN[$farbe])) {
+        $farbe = array_key_first(DARSTELLUNG_FARBEN);
+    }
+    if (!isset(DARSTELLUNG_SCHRIFTEN[$schrift])) {
+        $schrift = array_key_first(DARSTELLUNG_SCHRIFTEN);
+    }
+    if (!isset(DARSTELLUNG_FARBEN[$gegen]) || darstellung_dunkel($gegen) === darstellung_dunkel($farbe)) {
+        $gegen = darstellung_dunkel($farbe) ? 'hell' : 'dunkel';
+    }
+    return ['farbe' => $farbe, 'schrift' => $schrift, 'gegen' => $gegen];
 }
 
 /**
@@ -703,18 +722,19 @@ function darstellung_link(array $aenderung): string
  * Der Hell/Dunkel-Schalter für die Kopfleiste. Ein Link statt eines
  * Formulars: geht ohne Skript, ein Klick schaltet um und führt auf die
  * aktuelle Seite zurück. Alle dunklen Designs (DARSTELLUNG_DUNKLE)
- * gelten als "an", ein Klick führt von dort zu Hell; von jedem hellen
- * Design zu Dunkel. Die übrigen Designs stehen unter Verwaltung →
- * Darstellung.
+ * gelten als "an". Ein Klick führt zum zuletzt benutzten Design der
+ * anderen Seite (darstellung()['gegen']), beim ersten Mal zu Hell bzw.
+ * Dunkel. Die übrigen Designs stehen unter Verwaltung → Darstellung.
  * $klasse ist das CSS-Präfix ("hell-dunkel" bzw. "t-hell-dunkel").
  */
 function hell_dunkel_schalter(string $klasse = 'hell-dunkel'): void
 {
-    $dunkel = in_array(darstellung()['farbe'], DARSTELLUNG_DUNKLE, true);
+    $d      = darstellung();
+    $dunkel = darstellung_dunkel($d['farbe']);
     ?>
     <a class="<?= h($klasse) ?>" role="switch" aria-checked="<?= $dunkel ? 'true' : 'false' ?>"
-       href="<?= h(darstellung_link(['farbe' => $dunkel ? 'hell' : 'dunkel'])) ?>"
-       title="<?= $dunkel ? 'Helles Design einschalten' : 'Dunkles Design einschalten' ?>">
+       href="<?= h(darstellung_link(['farbe' => $d['gegen']])) ?>"
+       title="<?= h(($dunkel ? 'Helles' : 'Dunkles') . ' Design einschalten: ' . DARSTELLUNG_FARBEN[$d['gegen']]) ?>">
       <span class="<?= h($klasse) ?>-zeichen" aria-hidden="true">☾</span>
       <span class="<?= h($klasse) ?>-text">Dunkel</span>
       <span class="<?= h($klasse) ?>-spur" aria-hidden="true"></span>
