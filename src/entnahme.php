@@ -17,6 +17,7 @@ $daten = [
     'person'       => benutzer()['anzeigename'],
     'bezug'        => '',
     'notiz'        => '',
+    'mhd'          => '',   // gewählte Charge bei Artikeln mit MHD-Chargen
 ];
 
 /* ===================================================================
@@ -62,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->beginTransaction();
 
             $stmt = $pdo->prepare(
-                'SELECT artikelname, menge, lose, ve_inhalt, ve_einheit, gebinde_einheit
+                'SELECT artikelname, menge, lose, ve_inhalt, ve_einheit, gebinde_einheit, mit_chargen
                  FROM artikel WHERE artikel_id = ? FOR UPDATE'
             );
             $stmt->execute([$artikelId]);
@@ -82,13 +83,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare('UPDATE artikel SET menge = ?, lose = ? WHERE artikel_id = ?')
                 ->execute([$neueMenge, $neueLose, $artikelId]);
 
+            // MHD-Chargen: entnommen wird genau aus der gewählten Charge.
+            $mhd = mhd_aus_eingabe($daten['mhd']);
+            if (!empty($art['mit_chargen']) && $mhd === null) {
+                throw new RuntimeException('Bitte die Charge (MHD) auswählen, aus der entnommen wird.');
+            }
+            $mhd = chargen_mitbuchen($pdo, $art, $artikelId, stueckzahl($art, $menge, $einheit), false, $mhd);
+
             $pdo->prepare(
-                'INSERT INTO entnahme (artikel_id, menge, einheit, grund, entnommen_am, person, bezug, notiz, erfasst_von)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO entnahme (artikel_id, menge, einheit, mhd, grund, entnommen_am, person, bezug, notiz, erfasst_von)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             )->execute([
                 $artikelId,
                 $menge,
                 $einheit,
+                $mhd,
                 $daten['grund'],
                 $daten['entnommen_am'],
                 $daten['person'] !== '' ? $daten['person'] : null,
@@ -105,6 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->commit();
 
             $text = einheit_text($art, $einheit, $menge) . ' ' . $art['artikelname']
+                  . ($mhd !== null ? ' mit MHD ' . datum_de($mhd) : '')
                   . ' entnommen (' . grund_label($daten['grund']) . ').';
             if ($daten['grund'] === GRUND_LEIHE) {
                 $text .= ' Die Rückgabe steht unter „Bewegungen" offen.';
@@ -165,6 +175,28 @@ if ($artikelId !== null) {
     $stmt->execute([$artikelId]);
     $gewaehlt = $stmt->fetch() ?: null;
 }
+
+/*
+ * Chargen aller angezeigten Chargen-Artikel, damit die Auswahl beim
+ * Wechsel des Artikels im Browser umgebaut werden kann:
+ * artikel_id => [[mhd, Beschriftung], …], älteste zuerst.
+ */
+$chargenJe = [];
+$nachId = array_column($artikelListe, null, 'artikel_id');
+$stmt = $pdo->query(
+    'SELECT c.artikel_id, c.mhd, c.menge
+     FROM charge c JOIN artikel a ON a.artikel_id = c.artikel_id
+     WHERE a.mit_chargen = 1 ORDER BY c.artikel_id, c.mhd'
+);
+foreach ($stmt as $c) {
+    $a = $nachId[$c['artikel_id']] ?? null;
+    if ($a) {
+        $chargenJe[(int) $c['artikel_id']][] =
+            [$c['mhd'], 'MHD ' . datum_de($c['mhd']) . ' – ' . einzeln_text($a, (int) $c['menge'])];
+    }
+}
+$gewaehltChargen = $gewaehlt && (int) $gewaehlt['mit_chargen'] === 1
+                 ? chargen_laden($pdo, (int) $gewaehlt['artikel_id']) : [];
 
 $titel = 'Entnahme buchen';
 $aktiv = 'entnahmen';
@@ -268,6 +300,14 @@ require __DIR__ . '/inc/header.php';
         </option>
       </select>
     </div>
+    <div class="zeile" id="feld-charge"<?= $gewaehltChargen ? '' : ' hidden' ?>>
+      <label for="mhd">Charge <span class="hinweis-inline">älteste vorausgewählt</span></label>
+      <?php if ($gewaehltChargen): ?>
+        <?= charge_auswahl($gewaehlt, $gewaehltChargen, 'mhd', $daten['mhd']) ?>
+      <?php else: ?>
+        <select id="mhd" name="mhd"></select>
+      <?php endif; ?>
+    </div>
     <div class="zeile">
       <label for="grund">Grund</label>
       <select id="grund" name="grund" required>
@@ -337,6 +377,37 @@ require __DIR__ . '/inc/header.php';
       select.selectedIndex = -1;
     }
     select.size = Math.min(10, Math.max(1, sichtbar));
+  });
+})();
+
+/*
+ * Einheit und Charge an den gewählten Artikel anpassen – wie in
+ * zugang.php. Ohne das bliebe die Auswahl beim zuerst angezeigten
+ * Artikel stehen, wenn man in der Liste einen anderen anklickt.
+ */
+(function () {
+  const CHARGEN = <?= json_encode($chargenJe, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
+  const sel        = document.getElementById('artikel_id');
+  const zeileEinh  = document.getElementById('feld-einheit');
+  const eSel       = document.getElementById('einheit');
+  const zeileCharge = document.getElementById('feld-charge');
+  const cSel       = document.getElementById('mhd');
+  if (!sel) return;
+  sel.addEventListener('change', () => {
+    const o = sel.selectedOptions[0];
+    if (!o) return;
+    const g = o.dataset.gebinde || '', e = o.dataset.einzeln || '';
+    zeileEinh.hidden = g === '' && e === '';
+    if (!zeileEinh.hidden) {
+      eSel.options[0].textContent = g || 'Gebinde';
+      eSel.options[1].textContent = e || 'Einzelstücke';
+    }
+    const liste = CHARGEN[o.value] || [];
+    cSel.innerHTML = '';
+    liste.forEach(([mhd, text], i) => { cSel.add(new Option(text, mhd, i === 0, i === 0)); });
+    zeileCharge.hidden = liste.length === 0;
+    // Ein verstecktes Pflichtfeld würde das Absenden stumm blockieren.
+    cSel.required = liste.length > 0;
   });
 })();
 

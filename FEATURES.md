@@ -1,6 +1,6 @@
 # OpenStorageBox – Funktionsübersicht
 
-Version 11 · Stand 14.10.2026 · DRK KV Eisenach
+Version 12 · Stand 14.10.2026 · DRK KV Eisenach
 
 PHP 8.3 + MariaDB 11 im Docker-Stack, 32 Seiten, keine externen
 Abhängigkeiten.
@@ -27,6 +27,9 @@ Abhängigkeiten.
   wahlweise Pflichtfeld
 - **Fälligkeiten**: Ablaufdatum oder nächster Prüftermin, Vorwarnzeit
   einstellbar
+- **MHD-Chargen**: gleiche Lebensmittel mit verschiedenen
+  Mindesthaltbarkeitsdaten in einem Artikel – MHD beim Einbuchen,
+  Chargenwahl bei der Entnahme, frühestes MHD als Fälligkeit
 
 ## Buchen
 
@@ -41,13 +44,20 @@ Abhängigkeiten.
   Grund, Kategorie und Zeitraum
 - Jede Buchung läuft in einer Transaktion mit Zeilensperre und hält
   fest, wer sie erfasst hat
-- **Einsatzknopf** in Signalfarbe auf jeder Seite, auch über Alt+E
+- **Terminal als Startseite**: nach der Anmeldung geht es direkt zu Entnahme,
+  Einlagern, Übersicht und Bedarf; der Terminal-Knopf steht auf jeder Seite
+- **Darstellung pro Gerät**: 16 Farbdesigns in Gruppen – Hell, Dunkel;
+  Hoher Kontrast, Rot-Grün-sicher; Nachtsicht (Rotlicht), E-Ink; Rotes Plus,
+  Rettungsdienst, Feuerwehr, THW, Wasserwacht; Wald, Lagerbuch, Blaupause,
+  Phosphor, Warnweste –, Schrift Standard, OpenDyslexic oder Lexend (für
+  LRS), frei kombinierbar
 
 ## Scannen
 
 Ein USB-Handscanner reicht – keine Bibliothek, keine Kamerarechte. Für ein
-Tablet an der Wand gibt es zusätzlich ein **Touch-Terminal** mit großen
-Knöpfen und reduziertem Ablauf. Erkannt werden:
+Tablet an der Wand gibt es zusätzlich ein **Touch-Terminal** mit vier
+großen Bereichen – Entnahme, Einlagern, Übersicht, Bedarf – und
+Auswahl per Fingertipp statt Klapplisten. Erkannt werden:
 
 | Code | führt zu |
 |---|---|
@@ -118,7 +128,5 @@ sind in der Oberfläche änderbar, nicht im Quelltext.
 
 ## Was noch fehlt
 
-Siehe ROADMAP.md. Der größte offene Punkt:
-
-- **Chargen mit unterschiedlichem MHD** – heute braucht es zwei
-  Artikelzeilen für zwei Lieferungen
+Siehe ROADMAP.md. Als Nächstes stehen dort die Einsatzauswertung und die
+Inventur je MHD-Charge.

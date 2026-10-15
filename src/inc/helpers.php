@@ -620,3 +620,317 @@ function fach_id_aufloesen(PDO $pdo, string $lager, string $regal, string $fach,
     $zwischen[$schluessel] = (int) $fachId;
     return (int) $fachId;
 }
+
+
+/* =====================================================================
+   Darstellung: Farben und Schrift pro Gerät
+   ===================================================================== */
+
+/**
+ * Die gewählte Darstellung aus dem Cookie, ['farbe' => …, 'schrift' => …].
+ * Unbekannte Werte fallen auf den Standard zurück.
+ */
+function darstellung(): array
+{
+    [$farbe, $schrift] = array_pad(explode('.', (string) ($_COOKIE[DARSTELLUNG_COOKIE] ?? ''), 2), 2, '');
+    return [
+        'farbe'   => isset(DARSTELLUNG_FARBEN[$farbe])      ? $farbe   : array_key_first(DARSTELLUNG_FARBEN),
+        'schrift' => isset(DARSTELLUNG_SCHRIFTEN[$schrift]) ? $schrift : array_key_first(DARSTELLUNG_SCHRIFTEN),
+    ];
+}
+
+/**
+ * Attribute für das <html>-Element. Das Stylesheet hängt Farben und
+ * Schrift daran auf; serverseitig gesetzt, damit nichts kurz im
+ * falschen Design aufblitzt.
+ */
+function darstellung_attribute(): string
+{
+    $d = darstellung();
+    return ' data-farbe="' . h($d['farbe']) . '" data-schrift="' . h($d['schrift']) . '"';
+}
+
+/**
+ * Zusätzliches für den <head>: Lexend kommt von Google Fonts (wie die
+ * Standardschriften), OpenDyslexic liegt in assets/fonts. color-scheme
+ * sorgt im dunklen Design für dunkle Datumsauswahl und Rollbalken.
+ */
+function darstellung_kopf(): string
+{
+    $d    = darstellung();
+    $html = '';
+    if (in_array($d['farbe'], DARSTELLUNG_DUNKLE, true)) {
+        $html .= '<meta name="color-scheme" content="dark">' . "\n";
+    }
+    if ($d['schrift'] === 'lexend') {
+        $html .= '<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">' . "\n";
+    }
+    // Rotes Plus (nach dem DRK-Styleguide): Merriweather ist dort die Hausschrift
+    // für Überschriften. Nur mit der Standardschrift – eine gewählte
+    // Leseschrift hat Vorrang.
+    if ($d['farbe'] === 'rotesplus' && $d['schrift'] === 'standard') {
+        $html .= '<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;700&display=swap" rel="stylesheet">' . "\n";
+    }
+    return $html;
+}
+
+/**
+ * Link, der eine Einstellung ändert und auf die aktuelle Seite
+ * zurückführt. $aenderung ist ['farbe' => …] oder ['schrift' => …].
+ */
+function darstellung_link(array $aenderung): string
+{
+    $zurueck = basename((string) ($_SERVER['SCRIPT_NAME'] ?? 'index.php'));
+    if (($_SERVER['QUERY_STRING'] ?? '') !== '') {
+        $zurueck .= '?' . $_SERVER['QUERY_STRING'];
+    }
+    return 'darstellung.php?' . http_build_query($aenderung + ['zurueck' => $zurueck]);
+}
+
+/**
+ * Der Hell/Dunkel-Schalter für die Kopfleiste. Ein Link statt eines
+ * Formulars: geht ohne Skript, ein Klick schaltet um und führt auf die
+ * aktuelle Seite zurück. Alle dunklen Designs (DARSTELLUNG_DUNKLE)
+ * gelten als "an", ein Klick führt von dort zu Hell; von jedem hellen
+ * Design zu Dunkel. Die übrigen Designs stehen unter Verwaltung →
+ * Darstellung.
+ * $klasse ist das CSS-Präfix ("hell-dunkel" bzw. "t-hell-dunkel").
+ */
+function hell_dunkel_schalter(string $klasse = 'hell-dunkel'): void
+{
+    $dunkel = in_array(darstellung()['farbe'], DARSTELLUNG_DUNKLE, true);
+    ?>
+    <a class="<?= h($klasse) ?>" role="switch" aria-checked="<?= $dunkel ? 'true' : 'false' ?>"
+       href="<?= h(darstellung_link(['farbe' => $dunkel ? 'hell' : 'dunkel'])) ?>"
+       title="<?= $dunkel ? 'Helles Design einschalten' : 'Dunkles Design einschalten' ?>">
+      <span class="<?= h($klasse) ?>-zeichen" aria-hidden="true">☾</span>
+      <span class="<?= h($klasse) ?>-text">Dunkel</span>
+      <span class="<?= h($klasse) ?>-spur" aria-hidden="true"></span>
+    </a>
+    <?php
+}
+
+
+/**
+ * Die drei Listen der Seite Bedarf: überfällig (abgelaufen oder Prüfung
+ * verpasst), unter Sollbestand, bald fällig (Zeitraum aus den
+ * Einstellungen). Auch das Terminal zeigt sie, deshalb an einer Stelle.
+ */
+function bedarf_laden(PDO $pdo): array
+{
+    $ueberfaellig = $pdo->query(
+        'SELECT * FROM v_artikel
+          WHERE faellig_am IS NOT NULL AND tage_bis_faellig < 0
+          ORDER BY faellig_am'
+    )->fetchAll();
+
+    $unterdeckung = $pdo->query(
+        'SELECT * FROM v_artikel
+          WHERE unter_soll = 1
+          ORDER BY (fehlmenge / NULLIF(soll_bestand,0)) DESC, artikelname'
+    )->fetchAll();
+
+    $stmt = $pdo->prepare(
+        'SELECT * FROM v_artikel
+          WHERE faellig_am IS NOT NULL AND tage_bis_faellig >= 0 AND tage_bis_faellig <= ?
+          ORDER BY faellig_am'
+    );
+    $stmt->execute([WARNUNG_TAGE]);
+
+    return [
+        'ueberfaellig' => $ueberfaellig,
+        'unterdeckung' => $unterdeckung,
+        'bald'         => $stmt->fetchAll(),
+    ];
+}
+
+
+/* =====================================================================
+   MHD-Chargen (v12)
+   =====================================================================
+   Ein Artikel mit mit_chargen = 1 teilt seinen Gesamtbestand nach MHD
+   auf. Die Tabelle charge zählt Einzelstücke; artikel.menge/lose
+   bleiben der Gesamtbestand. Jede Bestandsbuchung ruft deshalb nach
+   bestand_rechnen() noch chargen_mitbuchen() auf – für Artikel ohne
+   Chargen tut die nichts.
+   ===================================================================== */
+
+/** Eine Buchungsmenge in Einzelstücken. */
+function stueckzahl(array $art, int $menge, string $einheit): int
+{
+    return $einheit === 'gebinde' && !empty($art['ve_inhalt'])
+         ? $menge * (int) $art['ve_inhalt']
+         : $menge;
+}
+
+/** Die Chargen eines Artikels, frühestes MHD zuerst. */
+function chargen_laden(PDO $pdo, int $artikelId): array
+{
+    $stmt = $pdo->prepare('SELECT mhd, menge FROM charge WHERE artikel_id = ? ORDER BY mhd');
+    $stmt->execute([$artikelId]);
+    return $stmt->fetchAll();
+}
+
+/** Ein MHD aus einem Formularfeld (JJJJ-MM-TT), sonst null. */
+function mhd_aus_eingabe(string $wert): ?string
+{
+    $wert = trim($wert);
+    $d = DateTimeImmutable::createFromFormat('!Y-m-d', $wert);
+    return $d && $d->format('Y-m-d') === $wert ? $wert : null;
+}
+
+/**
+ * Bucht Einzelstücke auf eine Charge (positiv) oder von ihr ab
+ * (negativ). Fehlt die Charge, wird sie angelegt; wird sie leer,
+ * verschwindet sie.
+ */
+function charge_buchen(PDO $pdo, array $art, int $artikelId, string $mhd, int $einzeln): void
+{
+    if ($einzeln > 0) {
+        $pdo->prepare(
+            'INSERT INTO charge (artikel_id, mhd, menge) VALUES (?, ?, ?)
+             ON DUPLICATE KEY UPDATE menge = menge + VALUES(menge)'
+        )->execute([$artikelId, $mhd, $einzeln]);
+        return;
+    }
+
+    $ab   = -$einzeln;
+    $stmt = $pdo->prepare('SELECT menge FROM charge WHERE artikel_id = ? AND mhd = ? FOR UPDATE');
+    $stmt->execute([$artikelId, $mhd]);
+    $vorhanden = $stmt->fetchColumn();
+    if ($vorhanden === false) {
+        throw new RuntimeException('Eine Charge mit MHD ' . datum_de($mhd) . ' gibt es bei diesem Artikel nicht.');
+    }
+    if ((int) $vorhanden < $ab) {
+        throw new RuntimeException(
+            'In der Charge mit MHD ' . datum_de($mhd) . ' sind nur ' . einheit_text($art, 'einzeln', (int) $vorhanden)
+            . ', entnommen werden sollen ' . einheit_text($art, 'einzeln', $ab) . '.'
+        );
+    }
+    if ((int) $vorhanden === $ab) {
+        $pdo->prepare('DELETE FROM charge WHERE artikel_id = ? AND mhd = ?')->execute([$artikelId, $mhd]);
+    } else {
+        $pdo->prepare('UPDATE charge SET menge = menge - ? WHERE artikel_id = ? AND mhd = ?')
+            ->execute([$ab, $artikelId, $mhd]);
+    }
+}
+
+/**
+ * Bucht von den ältesten Chargen ab, notfalls über mehrere hinweg.
+ * Gibt das älteste betroffene MHD zurück.
+ */
+function chargen_fifo_abbuchen(PDO $pdo, array $art, int $artikelId, int $einzeln): ?string
+{
+    $erstes = null;
+    foreach (chargen_laden($pdo, $artikelId) as $c) {
+        if ($einzeln < 1) {
+            break;
+        }
+        $nimm = min($einzeln, (int) $c['menge']);
+        charge_buchen($pdo, $art, $artikelId, $c['mhd'], -$nimm);
+        $erstes ??= $c['mhd'];
+        $einzeln -= $nimm;
+    }
+    return $erstes;
+}
+
+/**
+ * Setzt das Datum eines Chargen-Artikels auf das früheste MHD, von dem
+ * noch etwas da ist – oder leert es, wenn keine Charge mehr übrig ist.
+ * Damit warnen Bedarf und Fälligkeiten, ohne von Chargen zu wissen.
+ */
+function chargen_mhd_setzen(PDO $pdo, int $artikelId): void
+{
+    $pdo->prepare(
+        "UPDATE artikel
+            SET faellig_am  = (SELECT MIN(c.mhd) FROM charge c WHERE c.artikel_id = ?),
+                faellig_typ = IF((SELECT MIN(c.mhd) FROM charge c WHERE c.artikel_id = ?) IS NULL, NULL, 'ablauf')
+          WHERE artikel_id = ? AND mit_chargen = 1"
+    )->execute([$artikelId, $artikelId, $artikelId]);
+}
+
+/**
+ * Bucht die Chargen zu einer Bestandsbuchung mit. Für Artikel ohne
+ * Chargen tut sie nichts und gibt null zurück. $art braucht mit_chargen
+ * und die Gebindefelder, $einzeln ist die Menge in Einzelstücken.
+ *
+ * Zugang: $mhd ist Pflicht – die Ware kommt mit ihrem MHD ins Lager.
+ * Abgang: $mhd ist die ausgewählte Charge. null heißt "älteste zuerst",
+ * für Buchungen ohne Auswahl.
+ *
+ * Gibt das MHD zurück, das ins Protokoll gehört.
+ */
+function chargen_mitbuchen(PDO $pdo, array $art, int $artikelId, int $einzeln, bool $zugang, ?string $mhd): ?string
+{
+    if (empty($art['mit_chargen'])) {
+        return null;
+    }
+    if ($zugang) {
+        if ($mhd === null) {
+            throw new RuntimeException('Bitte das MHD der eingebuchten Ware angeben.');
+        }
+        charge_buchen($pdo, $art, $artikelId, $mhd, $einzeln);
+    } elseif ($mhd !== null) {
+        charge_buchen($pdo, $art, $artikelId, $mhd, -$einzeln);
+    } else {
+        $mhd = chargen_fifo_abbuchen($pdo, $art, $artikelId, $einzeln);
+    }
+    chargen_mhd_setzen($pdo, $artikelId);
+    return $mhd;
+}
+
+/**
+ * Gleicht die Chargen an den Gesamtbestand an, wenn der sich ohne
+ * Angabe eines MHD geändert hat (Inventur, CSV-Import). Fehlmengen
+ * gehen von den ältesten Chargen ab – was im Regal fehlt, ist meist
+ * das, was zuerst hätte raus sollen. Mehrmengen kommen zur Charge mit
+ * dem spätesten MHD.
+ *
+ * Gibt einen Hinweis zurück, wenn Bestand keiner Charge zugeordnet
+ * werden konnte, weil es keine gab – sonst null.
+ */
+function chargen_angleichen(PDO $pdo, int $artikelId): ?string
+{
+    $stmt = $pdo->prepare(
+        'SELECT artikelname, menge, lose, ve_inhalt, ve_einheit, gebinde_einheit, mit_chargen
+         FROM artikel WHERE artikel_id = ?'
+    );
+    $stmt->execute([$artikelId]);
+    $art = $stmt->fetch();
+    if (!$art || !$art['mit_chargen']) {
+        return null;
+    }
+
+    $gesamt  = (int) $art['menge'] * max(1, (int) $art['ve_inhalt']) + (int) $art['lose'];
+    $chargen = chargen_laden($pdo, $artikelId);
+    $diff    = $gesamt - array_sum(array_map('intval', array_column($chargen, 'menge')));
+
+    $hinweis = null;
+    if ($diff < 0) {
+        chargen_fifo_abbuchen($pdo, $art, $artikelId, -$diff);
+    } elseif ($diff > 0) {
+        if ($chargen) {
+            charge_buchen($pdo, $art, $artikelId, end($chargen)['mhd'], $diff);
+        } else {
+            $hinweis = $art['artikelname'] . ': ' . einheit_text($art, 'einzeln', $diff)
+                     . ' ohne MHD – bitte unter „Bearbeiten“ ein MHD zuordnen.';
+        }
+    }
+    chargen_mhd_setzen($pdo, $artikelId);
+    return $hinweis;
+}
+
+/**
+ * Auswahlfeld für die Charge bei einer Buchung. Ohne $aktuell ist die
+ * älteste vorausgewählt; jede Option zeigt MHD und Menge.
+ */
+function charge_auswahl(array $art, array $chargen, string $name, string $aktuell = ''): string
+{
+    $html = '<select name="' . h($name) . '" id="' . h($name) . '" required>';
+    foreach ($chargen as $i => $c) {
+        $sel = ($aktuell === '' ? $i === 0 : $aktuell === $c['mhd']) ? ' selected' : '';
+        $html .= '<option value="' . h($c['mhd']) . '"' . $sel . '>MHD ' . h(datum_de($c['mhd']))
+               . ' – ' . h(einzeln_text($art, (int) $c['menge'])) . '</option>';
+    }
+    return $html . '</select>';
+}

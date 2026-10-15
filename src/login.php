@@ -9,7 +9,7 @@ $fehler = null;
 $ersteinrichtung = (int) $pdo->query('SELECT COUNT(*) FROM benutzer')->fetchColumn() === 0;
 
 if (angemeldet()) {
-    redirect('index.php');
+    redirect(startseite());
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -55,6 +55,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             login($name, $pw);
             flash("Willkommen, $anz. $org ist eingerichtet, du bist der erste Administrator.");
+            // Bewusst die Vollansicht, nicht das Terminal: nach der
+            // Ersteinrichtung stehen Lagerorte, Kategorien und Benutzer an,
+            // und die Begrüßung erscheint nur dort.
             redirect('index.php');
         }
     }
@@ -66,11 +69,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $fehler = login($name, $pw);
         if ($fehler === null) {
-            $ziel = $_SESSION['nach_login'] ?? 'index.php';
+            // Gemerkt wird die volle REQUEST_URI ("/entnahmen.php?…"); ohne
+            // den führenden Schrägstrich passt sie auf die Prüfung unten.
+            // Vorher scheiterte jedes gemerkte Ziel daran und es ging
+            // immer zur Artikelliste.
+            $ziel = ltrim((string) ($_SESSION['nach_login'] ?? ''), '/');
             unset($_SESSION['nach_login']);
             // Nur relative Ziele akzeptieren – kein Redirect auf fremde Hosts.
+            // "/" (die Startadresse) bleibt danach leer und führt ebenfalls
+            // zur Startseite.
             if (!preg_match('#^[a-z_]+\.php(\?.*)?$#i', $ziel)) {
-                $ziel = 'index.php';
+                $ziel = startseite();
             }
             redirect($ziel);
         }
@@ -78,13 +87,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de"<?= darstellung_attribute() ?>>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Anmelden – <?= h(APP_NAME) ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<?= darstellung_kopf() ?>
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body class="login-body">
@@ -158,6 +168,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <button class="btn btn--primaer" type="submit">Anmelden</button>
     </form>
   <?php endif; ?>
+
+  <!-- Hell/Dunkel schon vor der Anmeldung umschaltbar; alles Weitere
+       (Rot-Grün-sicher, Leseschriften) unter Verwaltung → Darstellung. -->
+  <div class="login-darstellung"><?php hell_dunkel_schalter(); ?></div>
 </main>
 
 </body>

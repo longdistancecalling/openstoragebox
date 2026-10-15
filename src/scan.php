@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'buche
             $pdo->beginTransaction();
 
             $stmt = $pdo->prepare(
-                'SELECT artikelname, menge, lose, ve_inhalt, ve_einheit, gebinde_einheit
+                'SELECT artikelname, menge, lose, ve_inhalt, ve_einheit, gebinde_einheit, mit_chargen
                  FROM artikel WHERE artikel_id = ? FOR UPDATE'
             );
             $stmt->execute([$artikelId]);
@@ -86,23 +86,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'buche
             $pdo->prepare('UPDATE artikel SET menge = ?, lose = ? WHERE artikel_id = ?')
                 ->execute([$neueMenge, $neueLose, $artikelId]);
 
+            // MHD-Chargen: Entnahme aus der gewählten Charge; beim Zugang
+            // hat ein neu eingetragenes MHD Vorrang vor der Auswahl.
+            $mhd = mhd_aus_eingabe((string) ($_POST['mhd'] ?? ''));
+            if ($richtung === 'zugang') {
+                $mhd = mhd_aus_eingabe((string) ($_POST['mhd_neu'] ?? '')) ?? $mhd;
+            } elseif (!empty($art['mit_chargen']) && $mhd === null) {
+                throw new RuntimeException('Bitte die Charge (MHD) auswählen, aus der entnommen wird.');
+            }
+            $mhd = chargen_mitbuchen($pdo, $art, $artikelId, stueckzahl($art, $menge, $einheit),
+                                     $richtung === 'zugang', $mhd);
+
             if ($richtung === 'abgang') {
                 $pdo->prepare(
-                    'INSERT INTO entnahme (artikel_id, menge, einheit, grund, entnommen_am,
+                    'INSERT INTO entnahme (artikel_id, menge, einheit, mhd, grund, entnommen_am,
                                            person, bezug, notiz, erfasst_von)
-                     VALUES (?, ?, ?, ?, CURDATE(), ?, ?, ?, ?)'
+                     VALUES (?, ?, ?, ?, ?, CURDATE(), ?, ?, ?, ?)'
                 )->execute([
-                    $artikelId, $menge, $einheit, $grund, $ich['anzeigename'],
+                    $artikelId, $menge, $einheit, $mhd, $grund, $ich['anzeigename'],
                     trim((string) ($_POST['bezug'] ?? '')) ?: null,
                     'per Scan gebucht', (int) $ich['benutzer_id'],
                 ]);
             } else {
                 $pdo->prepare(
-                    'INSERT INTO zugang (artikel_id, menge, einheit, grund, datum,
+                    'INSERT INTO zugang (artikel_id, menge, einheit, mhd, grund, datum,
                                          person, bezug, notiz, erfasst_von)
-                     VALUES (?, ?, ?, ?, CURDATE(), ?, ?, ?, ?)'
+                     VALUES (?, ?, ?, ?, ?, CURDATE(), ?, ?, ?, ?)'
                 )->execute([
-                    $artikelId, $menge, $einheit, $grund, $ich['anzeigename'],
+                    $artikelId, $menge, $einheit, $mhd, $grund, $ich['anzeigename'],
                     trim((string) ($_POST['bezug'] ?? '')) ?: null,
                     'per Scan gebucht', (int) $ich['benutzer_id'],
                 ]);
@@ -116,7 +127,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'buche
 
             $letzte = [
                 'text'     => ($richtung === 'zugang' ? '+' : '−') . ' '
-                            . einheit_text($art, $einheit, $menge) . ' ' . $art['artikelname'],
+                            . einheit_text($art, $einheit, $menge) . ' ' . $art['artikelname']
+                            . ($mhd !== null ? ' (MHD ' . datum_de($mhd) . ')' : ''),
                 'stand'    => bestand_text($art + ['ve_inhalt' => $art['ve_inhalt']]),
                 'richtung' => $richtung,
             ];
@@ -224,7 +236,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'zuord
 /** Zeigt die Buchungsknöpfe für einen Artikel. */
 function buchungsformular(array $a, string $code): void
 {
+    global $pdo;
     $gebinde = (int) $a['hat_gebinde'] === 1;
+    $chargen = (int) $a['mit_chargen'] === 1 ? chargen_laden($pdo, (int) $a['artikel_id']) : null;
     ?>
     <div class="scan-aktionen">
       <?php foreach ([
@@ -245,6 +259,20 @@ function buchungsformular(array $a, string $code): void
                 <option value="gebinde"><?= h(mehrzahl($a['gebinde_einheit'] ?: 'Gebinde')) ?></option>
                 <option value="einzeln"><?= h($a['ve_einheit'] ?: 'Stück') ?></option>
               </select>
+            <?php endif; ?>
+            <?php if ($chargen !== null && $richtung === 'abgang' && $chargen): ?>
+              <?= str_replace('id="mhd"', 'aria-label="Charge"', charge_auswahl($a, $chargen, 'mhd')) ?>
+            <?php elseif ($chargen !== null && $richtung === 'zugang'): ?>
+              <?php if ($chargen): ?>
+                <select name="mhd" aria-label="vorhandene Charge">
+                  <?php foreach ($chargen as $c): ?>
+                    <option value="<?= h($c['mhd']) ?>">MHD <?= h(datum_de($c['mhd'])) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              <?php endif; ?>
+              <input type="date" name="mhd_neu" aria-label="neues MHD"
+                     title="<?= $chargen ? 'oder neues MHD eintragen' : 'MHD der Ware' ?>"
+                     <?= $chargen ? '' : 'required' ?>>
             <?php endif; ?>
             <select name="grund" aria-label="Grund">
               <?php foreach ($gruende as $w => $l):
@@ -337,6 +365,9 @@ require __DIR__ . '/inc/header.php';
               <strong class="scan-name"><?= h($a['artikelname']) ?></strong>
               <?php if ($a['zusatzfelder']): ?>
                 <div class="zusatz"><?= h($a['zusatzfelder']) ?></div>
+              <?php endif; ?>
+              <?php if ($a['chargen_text']): ?>
+                <span class="chargen-text">MHD <?= h($a['chargen_text']) ?></span>
               <?php endif; ?>
             </div>
             <div class="scan-bestand">
@@ -464,6 +495,9 @@ require __DIR__ . '/inc/header.php';
           <div style="margin-top:6px"><?= lagerort($a) ?></div>
           <?php if ($a['zusatzfelder']): ?>
             <div class="zusatz" style="margin-top:4px"><?= h($a['zusatzfelder']) ?></div>
+          <?php endif; ?>
+          <?php if ($a['chargen_text']): ?>
+            <span class="chargen-text" style="margin-top:4px">MHD <?= h($a['chargen_text']) ?></span>
           <?php endif; ?>
           <?php if ($a['faellig_am']): ?>
             <div style="margin-top:6px">

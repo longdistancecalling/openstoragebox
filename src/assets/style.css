@@ -4,27 +4,818 @@
    angeschrieben steht, Grotesk für alles, was gelesen wird.
    ===================================================================== */
 
-:root {
+:root,
+[data-farbe="hell"] {
   --ink:      #14181b;
   --ink-2:    #2a3138;
   --paper:    #f1f2ef;
   --surface:  #ffffff;
   --line:     #d7dad4;
   --line-2:   #eceee9;
-  --muted:    #6a716b;
+  --muted:    #5c635d;   /* dunkler als früher: 4,5:1 auf Papier (WCAG AA) */
   --blau:     #14568f;
   --blau-weich:#e8eff7;
   --amber:    #8a5a00;
   --amber-weich:#fbf1dd;
   --rot:      #9e1b14;
   --rot-weich:#fbe9e7;
+  --rot-linie:#e6c9c6;
   --gruen:    #2c6b3f;
+  --gruen-weich:var(--gruen-weich);
+  --blau-dunkel:#0f4676;
 
+  /* Rollen statt Farbwerte, damit die Designs (siehe unten) nur hier
+     umschalten müssen: */
+  --surface-2: #fafbf9;   /* leicht abgesetzte Fläche, Zeilen-Hover */
+  --kopf:      #14181b;   /* dunkle Flächen: Kopfleiste, Scanfeld, aktive Knöpfe */
+  --kopf-2:    #2a3138;   /* dunkle Marken, z. B. Kistennummer */
+  --auf-dunkel:#fff;      /* Text auf dunklen Flächen */
+  --auf-blau:  #fff;      /* Text auf blauen Knöpfen */
+  --gedimmt:   #687069;   /* zurückgenommener Text, noch 4,5:1 */
+  --gedimmt-2: #8d948d;   /* nur Trennzeichen, rein schmückend */
+
+  /* Kopfleiste: Linien, Hover und leiser Text auf der dunklen Fläche.
+     Als Variablen, damit Nachtsicht auch hier kein weißes Licht hat. */
+  --auf-dunkel-leise: rgba(255, 255, 255, .68);
+  --kopf-linie:       rgba(255, 255, 255, .3);
+  --kopf-linie-leise: rgba(255, 255, 255, .18);
+  --kopf-linie-stark: rgba(255, 255, 255, .55);
+  --kopf-hover:       rgba(255, 255, 255, .1);
+  --kopf-hover-stark: rgba(255, 255, 255, .22);
+  --schalter-knopf:   #fff;
+}
+
+/* Schrift und Form – getrennt von den Farben, damit eine Vorschau mit
+   data-farbe (Seite Darstellung) die gewählte Leseschrift nicht verliert. */
+:root {
   --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --r: 3px;
 }
+
+/* =====================================================================
+   Darstellungen – pro Gerät wählbar (Hell/Dunkel-Schalter in der
+   Kopfleiste, alles Weitere unter Verwaltung → Darstellung; Cookie).
+   Das <html>-Element trägt data-farbe und data-schrift. Nur für den
+   Bildschirm: Ausdrucke bleiben immer schwarz auf weiß.
+   ===================================================================== */
+
+@media screen {
+
+  /* Dunkel: helle Schrift auf fast schwarzem Grund. Farben etwas heller
+     als im hellen Design, damit sie auf Dunkel denselben Kontrast haben. */
+  [data-farbe="dunkel"] {
+    color-scheme: dark;
+    --ink:        #e6e8e5;
+    --ink-2:      #c6cbc5;
+    --paper:      #101315;
+    --surface:    #181c1f;
+    --surface-2:  #1f2427;
+    --line:       #353c41;
+    --line-2:     #262c30;
+    --muted:      #9ea69f;
+    --gedimmt:    #8b938c;
+    --gedimmt-2:  #5f6761;
+    --blau:       #6fa9e6;
+    --blau-weich: #1b2e42;
+    --blau-dunkel:#9cc6f1;
+    --auf-blau:   #0d1620;
+    --amber:      #e5a945;
+    --amber-weich:#36290f;
+    --rot:        #f2807a;
+    --rot-weich:  #3c1d1b;
+    --rot-linie:  #5c2b28;
+    --gruen:      #72c690;
+    --gruen-weich:#173020;
+    --kopf:       #090b0c;
+    --kopf-2:     #2d353a;
+  }
+
+  /* Rot-Grün-sicher: Rot und Grün sind für Menschen mit Rot-Grün-
+     Sehschwäche kaum zu unterscheiden. Statt dessen Zinnober (Warnung,
+     Abgang) gegen Blau (in Ordnung, Zugang) und Gelb für "bald" – die
+     Paare unterscheiden sich auch in der Helligkeit. Angelehnt an die
+     Palette von Okabe und Ito. */
+  [data-farbe="rotgruen"] {
+    --rot:        #a44200;
+    --rot-weich:  #fbe5d6;
+    --rot-linie:  #e9c3a8;
+    --gruen:      #005a96;
+    --gruen-weich:#dcecf8;
+    --amber:      #725800;
+    --amber-weich:#fbf0c2;
+  }
+
+  /* Nachtsicht: nur rotes Licht auf Schwarz. Rot stört die
+     Dunkelanpassung der Augen am wenigsten – wer nachts im Einsatz oder
+     im dunklen Zelt aufs Tablet schaut, sieht danach im Dunkeln weiter.
+     Deshalb gibt es auch in der Kopfleiste kein Weiß. Unterschiede
+     tragen Helligkeit und Sättigung: Warnungen kräftig rot, "bald"
+     orange, "in Ordnung" blass apricot. */
+  [data-farbe="nachtsicht"] {
+    color-scheme: dark;
+    --ink:        #ff9282;
+    --ink-2:      #f07a6a;
+    --paper:      #080000;
+    --surface:    #130404;
+    --surface-2:  #1c0606;
+    --line:       #43120d;
+    --line-2:     #2a0907;
+    --muted:      #e2685a;
+    --gedimmt:    #e2685a;
+    --gedimmt-2:  #7a2a20;
+    --blau:       #ff9a6b;
+    --blau-weich: #2e0c06;
+    --blau-dunkel:#ffb08a;
+    --auf-blau:   #160200;
+    --amber:      #ffb067;
+    --amber-weich:#2e1504;
+    --rot:        #ff5a46;
+    --rot-weich:  #3a0805;
+    --rot-linie:  #6a1a12;
+    --gruen:      #ffc89a;
+    --gruen-weich:#2a1606;
+    --kopf:       #000;
+    --kopf-2:     #3a0c08;
+    --auf-dunkel: #ff9282;
+    --auf-dunkel-leise: #d4604f;
+    --kopf-linie:       rgba(255, 90, 70, .38);
+    --kopf-linie-leise: rgba(255, 90, 70, .22);
+    --kopf-linie-stark: rgba(255, 110, 90, .6);
+    --kopf-hover:       rgba(255, 80, 60, .14);
+    --kopf-hover-stark: rgba(255, 80, 60, .28);
+    --schalter-knopf:   #ff9282;
+    scrollbar-color: var(--line) var(--paper);
+  }
+
+  /* Blaupause: wie ein technischer Bauplan – tiefes Blau mit feinem
+     Raster, helle Linien, Überschriften in Schablonenschrift. */
+  [data-farbe="blaupause"] {
+    color-scheme: dark;
+    --ink:        #eef5ff;
+    --ink-2:      #d6e6fb;
+    --paper:      #0d3b6f;
+    --surface:    #11467f;
+    --surface-2:  #15508f;
+    --line:       #5583b8;
+    --line-2:     #1d5594;
+    --muted:      #bcd4f0;
+    --gedimmt:    #a9c6e8;
+    --gedimmt-2:  #7aa2d0;
+    --blau:       #a8d8ff;
+    --blau-weich: #1b5a9e;
+    --blau-dunkel:#d0eaff;
+    --auf-blau:   #0b2f59;
+    --amber:      #ffd98a;
+    --amber-weich:#4b4733;
+    --rot:        #ffb8ad;
+    --rot-weich:  #5a3445;
+    --rot-linie:  #8a5a6a;
+    --gruen:      #a4f0c4;
+    --gruen-weich:#1f5a52;
+    --kopf:       #082a52;
+    --kopf-2:     #1d4f86;
+  }
+
+  /* Lagerbuch: warm wie ein altes Bestandsbuch – cremefarbenes Papier
+     mit feinen Linien, braune Tinte, Füllerblau für Links, Stempelrot
+     für Warnungen, ein Einband aus Leder als Kopfleiste. */
+  [data-farbe="lagerbuch"] {
+    --ink:        #2b1d0e;
+    --ink-2:      #4a3520;
+    --paper:      #efe4cc;
+    --surface:    #fbf5e6;
+    --surface-2:  #f6edd8;
+    --line:       #d4c09a;
+    --line-2:     #e8dbbd;
+    --muted:      #6a5238;
+    --gedimmt:    #6f5a42;
+    --gedimmt-2:  #a8926f;
+    --blau:       #1f3f7a;
+    --blau-weich: #e2e5ee;
+    --blau-dunkel:#152d58;
+    --auf-blau:   #fbf5e6;
+    --amber:      #7a5000;
+    --amber-weich:#f3e2b5;
+    --rot:        #9a2416;
+    --rot-weich:  #f5dcd0;
+    --rot-linie:  #e0b8a6;
+    --gruen:      #2f5a28;
+    --gruen-weich:#dfe7cc;
+    --kopf:       #3a2816;
+    --kopf-2:     #5b4127;
+    --auf-dunkel: #f6ead0;
+    --auf-dunkel-leise: rgba(246, 234, 208, .72);
+    --kopf-linie:       rgba(246, 234, 208, .32);
+    --kopf-linie-leise: rgba(246, 234, 208, .2);
+    --kopf-linie-stark: rgba(246, 234, 208, .58);
+    --kopf-hover:       rgba(246, 234, 208, .12);
+    --kopf-hover-stark: rgba(246, 234, 208, .24);
+    --schalter-knopf:   #f6ead0;
+  }
+
+  /* Wald: ruhiges Grün für den Alltag – Salbeipapier, Tannengrün in der
+     Kopfleiste, Tannentürkis für Links und Knöpfe. "In Ordnung" in
+     Moos, Warnungen in Rost, "bald" in Ocker – Rost und Moos
+     unterscheiden sich auch in der Helligkeit, nicht nur im Farbton. */
+  [data-farbe="wald"] {
+    --ink:        #1b2a1f;
+    --ink-2:      #2f4436;
+    --paper:      #e9efe4;
+    --surface:    #fbfdf8;
+    --surface-2:  #f2f6ed;
+    --line:       #c5d3bf;
+    --line-2:     #dfe8d9;
+    --muted:      #4e6152;
+    --gedimmt:    #56695a;
+    --gedimmt-2:  #93a596;
+    --blau:       #1d5a4a;
+    --blau-weich: #dcebe4;
+    --blau-dunkel:#144236;
+    --auf-blau:   #fff;
+    --amber:      #7a5800;
+    --amber-weich:#f4e9c4;
+    --rot:        #a3361a;
+    --rot-weich:  #f8e0d6;
+    --rot-linie:  #e6bfae;
+    --gruen:      #2e6a1e;
+    --gruen-weich:#dcebd0;
+    --kopf:       #163a2b;
+    --kopf-2:     #2c5643;
+  }
+
+  /* Phosphor: wie ein alter Grün-Monitor – grüne Schrift auf Schwarz.
+     Warnungen bleiben rot und gelb, sonst ginge "abgelaufen" unter. */
+  [data-farbe="phosphor"] {
+    color-scheme: dark;
+    --ink:        #5cff8f;
+    --ink-2:      #3ee07a;
+    --paper:      #020a04;
+    --surface:    #04140a;
+    --surface-2:  #072012;
+    --line:       #11502a;
+    --line-2:     #0a2a16;
+    --muted:      #2fcc66;
+    --gedimmt:    #29b85b;
+    --gedimmt-2:  #157a3a;
+    --blau:       #b6ffd0;
+    --blau-weich: #0a3a20;
+    --blau-dunkel:#e0ffeb;
+    --auf-blau:   #021006;
+    --amber:      #ffcc33;
+    --amber-weich:#2a2104;
+    --rot:        #ff6b5e;
+    --rot-weich:  #2a0806;
+    --rot-linie:  #5a1a14;
+    --gruen:      #5cff8f;
+    --gruen-weich:#06251a;
+    --kopf:       #000;
+    --kopf-2:     #0d3a1e;
+    --auf-dunkel: #5cff8f;
+    --auf-dunkel-leise: #3ccc6e;
+    --kopf-linie:       rgba(92, 255, 143, .35);
+    --kopf-linie-leise: rgba(92, 255, 143, .2);
+    --kopf-linie-stark: rgba(92, 255, 143, .55);
+    --kopf-hover:       rgba(92, 255, 143, .1);
+    --kopf-hover-stark: rgba(92, 255, 143, .22);
+    --schalter-knopf:   #5cff8f;
+    scrollbar-color: var(--line) var(--paper);
+  }
+
+  /* Rotes Plus: nach dem DRK-Styleguide (styleguide.drk.de, Basiselemente und
+     Digital/Webseite). Viel Weiß, Fließtext in Dunkelgrau, Überschriften
+     und Hauptknöpfe in DRK-Rot, Links und Auswahl in DRK-Dunkelblau,
+     Formularflächen in Hellblau, Hover in Dunkelrot. Alle Farben stammen
+     aus der DRK-Palette; nur der leise Text ist eine Spur dunkler als das
+     optionale DRK-Grau (#7F7F7F), das auf Weiß keine 4,5:1 erreicht.
+     Das Rotkreuz-Zeichen ist ein Schutzzeichen und kommt nicht vor. */
+  [data-farbe="rotesplus"] {
+    --plus-rot:       #e60005;
+    --plus-dunkelrot: #a51e0f;
+    --ink:        #554f4a;   /* DRK-Dunkelgrau */
+    --ink-2:      #3d3834;
+    --paper:      #ffffff;   /* Weiß, großzügig */
+    --surface:    #ffffff;
+    --surface-2:  #efeeea;   /* DRK-Hellgrau */
+    --line:       #b4b4b4;   /* DRK-Mittelgrau, Trennlinien */
+    --line-2:     #e8e7e2;
+    --muted:      #625c56;
+    --gedimmt:    #625c56;
+    --gedimmt-2:  #b4b4b4;
+    --blau:       #002d55;   /* DRK-Dunkelblau */
+    --blau-weich: #ebf5ff;   /* DRK-Hellblau */
+    --blau-dunkel:#001a33;
+    --auf-blau:   #fff;
+    --amber:      #002d55;   /* "bald": Dunkelblau auf Blau 30 % */
+    --amber-weich:#b4c3d7;
+    --rot:        #a51e0f;   /* Warnung: Dunkelrot auf DRK-Rot 30 % */
+    --rot-weich:  #fac3af;
+    --rot-linie:  #eb8264;   /* DRK-Rot 60 % */
+    --gruen:      #002d55;   /* "in Ordnung": Dunkelblau auf Hellblau */
+    --gruen-weich:#ebf5ff;
+    --kopf:       #ffffff;   /* weiße Kopfleiste mit rotem Strich */
+    --kopf-2:     #002d55;
+    --auf-dunkel: #554f4a;
+    --auf-dunkel-leise: #625c56;
+    --kopf-linie:       rgba(85, 79, 74, .3);
+    --kopf-linie-leise: rgba(85, 79, 74, .18);
+    --kopf-linie-stark: rgba(85, 79, 74, .5);
+    --kopf-hover:       rgba(85, 79, 74, .08);
+    --kopf-hover-stark: rgba(85, 79, 74, .2);
+    --schalter-knopf:   #fff;
+  }
+
+  /* Feuerwehr: Kopfleiste in Feuerrot (RAL 3000, Grundfarbe der
+     Fahrzeuge nach DIN 14502-3), darunter ein Warnband in Rot und
+     Leuchtgelb wie die Heckmarkierung. Links und Knöpfe in Nachtblau
+     wie die Uniform. Rot bleibt Kopfleiste und Warnungen vorbehalten. */
+  [data-farbe="feuerwehr"] {
+    --fw-rot:     #a72920;
+    --fw-gelb:    #ffd400;
+    --ink:        #1b2130;
+    --ink-2:      #2e3647;
+    --paper:      #f1f0ed;
+    --surface:    #ffffff;
+    --surface-2:  #f7f6f3;
+    --line:       #d3d0c8;
+    --line-2:     #e7e5df;
+    --muted:      #565b66;
+    --gedimmt:    #5d626c;
+    --gedimmt-2:  #a2a6ad;
+    --blau:       #1f3a6e;
+    --blau-weich: #e3e8f2;
+    --blau-dunkel:#142749;
+    --auf-blau:   #fff;
+    --amber:      #6e5200;
+    --amber-weich:#fdf1b3;
+    --rot:        #9c1d14;
+    --rot-weich:  #f9dcd8;
+    --rot-linie:  #ebb9b2;
+    --gruen:      #2c6b3f;
+    --gruen-weich:#e3efe6;
+    --kopf:       #a72920;
+    --kopf-2:     #1f3a6e;
+    --auf-dunkel-leise: rgba(255, 255, 255, .92);   /* auf Feuerrot sonst zu blass */
+  }
+
+  /* THW: Kopfleiste in THW-Blau (RAL 5002, RGB 0/62/144 – Werte aus den
+     Gestaltungsrichtlinien der THW-Jugend) mit blau-weißem Warnband,
+     Orange als Akzent. Kein Logo, kein Zahnrad. */
+  [data-farbe="thw"] {
+    --thw-blau:   #003e90;
+    --thw-orange: #b14f00;
+    --ink:        #14213a;
+    --ink-2:      #2a3a57;
+    --paper:      #eef2f8;
+    --surface:    #ffffff;
+    --surface-2:  #f5f8fc;
+    --line:       #c9d3e3;
+    --line-2:     #e2e8f2;
+    --muted:      #4c5a72;
+    --gedimmt:    #55627a;
+    --gedimmt-2:  #98a4b8;
+    --blau:       #003e90;
+    --blau-weich: #dde7f6;
+    --blau-dunkel:#002c68;
+    --auf-blau:   #fff;
+    --amber:      #8a4500;
+    --amber-weich:#ffe6cc;
+    --rot:        #a3241b;
+    --rot-weich:  #f8dcd9;
+    --rot-linie:  #ebb8b2;
+    --gruen:      #2c6b3f;
+    --gruen-weich:#e1efe5;
+    --kopf:       #003e90;
+    --kopf-2:     #002c68;
+  }
+
+  /* Hoher Kontrast: Schwarz auf Weiß, Gelb für Hervorhebungen, kräftige
+     Rahmen um alles Bedienbare, unterstrichene Links. Für Sehschwäche
+     und für das Tablet im prallen Sonnenlicht. */
+  [data-farbe="kontrast"] {
+    --ink:        #000;
+    --ink-2:      #000;
+    --paper:      #fff;
+    --surface:    #fff;
+    --surface-2:  #f0f0f0;
+    --line:       #000;
+    --line-2:     #595959;
+    --muted:      #262626;
+    --gedimmt:    #333;
+    --gedimmt-2:  #595959;
+    --blau:       #0033b8;
+    --blau-weich: #ffe600;
+    --blau-dunkel:#001f80;
+    --auf-blau:   #fff;
+    --amber:      #000;
+    --amber-weich:#ffe600;
+    --rot:        #a00000;
+    --rot-weich:  #ffe0e0;
+    --rot-linie:  #a00000;
+    --gruen:      #005a00;
+    --gruen-weich:#dcffdc;
+    --kopf:       #000;
+    --kopf-2:     #000;
+    --auf-dunkel-leise: #fff;
+    --kopf-linie:       #fff;
+    --kopf-linie-leise: #fff;
+    --kopf-linie-stark: #fff;
+  }
+
+  /* Rettungsdienst: weiß wie ein Rettungswagen, darunter ein
+     Schachbrettband in Leuchtrot und Gelb wie die "Battenburg"-
+     Markierung. Hauptknöpfe in Rot, Links in Petrol. */
+  [data-farbe="rettungsdienst"] {
+    --rd-rot:     #c4161c;
+    --rd-gelb:    #ffd100;
+    --ink:        #1d1f24;
+    --ink-2:      #33363d;
+    --paper:      #f6f6f4;
+    --surface:    #fff;
+    --surface-2:  #fafaf8;
+    --line:       #d6d6d2;
+    --line-2:     #ebebe7;
+    --muted:      #575b63;
+    --gedimmt:    #5c6068;
+    --gedimmt-2:  #a2a5ab;
+    --blau:       #0b4f6c;
+    --blau-weich: #e1eef4;
+    --blau-dunkel:#083a50;
+    --auf-blau:   #fff;
+    --amber:      #6e5200;
+    --amber-weich:#fff1b0;
+    --rot:        #a3140f;
+    --rot-weich:  #fde0dd;
+    --rot-linie:  #f0b4ae;
+    --gruen:      #2c6b3f;
+    --gruen-weich:#e3efe6;
+    --kopf:       #fff;
+    --kopf-2:     #0b4f6c;
+    --auf-dunkel: #1d1f24;
+    --auf-dunkel-leise: #575b63;
+    --kopf-linie:       rgba(29, 31, 36, .3);
+    --kopf-linie-leise: rgba(29, 31, 36, .18);
+    --kopf-linie-stark: rgba(29, 31, 36, .5);
+    --kopf-hover:       rgba(29, 31, 36, .07);
+    --kopf-hover-stark: rgba(29, 31, 36, .2);
+    --schalter-knopf:   #fff;
+  }
+
+  /* Warnweste: Leuchtgelb mit silbernem Reflexstreifen in der
+     Kopfleiste, Leuchtorange für Kistennummern, Hauptknöpfe schwarz
+     mit gelber Schrift. Auffällig – eher fürs Auge als für den Dauerbetrieb. */
+  [data-farbe="warnweste"] {
+    --ink:        #1a1a1a;
+    --ink-2:      #2a2a2a;
+    --paper:      #f7f7ef;
+    --surface:    #fff;
+    --surface-2:  #fbfbf3;
+    --line:       #c8c8b4;
+    --line-2:     #e6e6d6;
+    --muted:      #4d4d40;
+    --gedimmt:    #4d4d40;
+    --gedimmt-2:  #9a9a88;
+    --blau:       #1a1a1a;
+    --blau-weich: #f0ff99;
+    --blau-dunkel:#000;
+    --auf-blau:   #e3ff00;
+    --amber:      #7a3d00;
+    --amber-weich:#ffd9b8;
+    --rot:        #a3140f;
+    --rot-weich:  #fde0dd;
+    --rot-linie:  #f0b4ae;
+    --gruen:      #2c6b3f;
+    --gruen-weich:#e3efe6;
+    --kopf:       #dfff00;
+    --kopf-2:     #ff6a13;
+    --auf-dunkel: #111;
+    --auf-dunkel-leise: #2a2a2a;
+    --kopf-linie:       rgba(0, 0, 0, .35);
+    --kopf-linie-leise: rgba(0, 0, 0, .2);
+    --kopf-linie-stark: rgba(0, 0, 0, .55);
+    --kopf-hover:       rgba(0, 0, 0, .08);
+    --kopf-hover-stark: rgba(0, 0, 0, .18);
+    --schalter-knopf:   #fff;
+  }
+
+  /* Wasserwacht: Wasserblau und Weiß, die Kopfleiste mit einer
+     Wellenkante, Rot nur für Warnungen. */
+  [data-farbe="wasserwacht"] {
+    --ww-kopf:    #005a85;
+    --ink:        #0d2a3a;
+    --ink-2:      #1d3e50;
+    --paper:      #eaf6fb;
+    --surface:    #fff;
+    --surface-2:  #f3fafd;
+    --line:       #b9dbe9;
+    --line-2:     #dceef5;
+    --muted:      #3f6273;
+    --gedimmt:    #456879;
+    --gedimmt-2:  #8fb3c4;
+    --blau:       #0067a3;
+    --blau-weich: #d6eef9;
+    --blau-dunkel:#004f7d;
+    --auf-blau:   #fff;
+    --amber:      #7a5400;
+    --amber-weich:#fff0c2;
+    --rot:        #b3261e;
+    --rot-weich:  #fde2df;
+    --rot-linie:  #f0b8b2;
+    --gruen:      #1e6b4f;
+    --gruen-weich:#dcf0e7;
+    --kopf:       #005a85;
+    --kopf-2:     #0067a3;
+    --auf-dunkel-leise: rgba(255, 255, 255, .92);   /* auf Wasserblau sonst zu blass */
+  }
+
+  /* E-Ink: nur Schwarz, Weiß und Grau, keine Verläufe, keine Schatten,
+     keine Bewegung – für E-Paper-Displays, die jede Animation als
+     Flackern zeigen. Status ohne Farbe: Warnungen invertiert,
+     "bald" umrandet. */
+  [data-farbe="eink"] {
+    --ink:        #000;
+    --ink-2:      #1a1a1a;
+    --paper:      #fff;
+    --surface:    #fff;
+    --surface-2:  #f2f2f2;
+    --line:       #000;
+    --line-2:     #bfbfbf;
+    --muted:      #333;
+    --gedimmt:    #404040;
+    --gedimmt-2:  #808080;
+    --blau:       #000;
+    --blau-weich: #d9d9d9;
+    --blau-dunkel:#000;
+    --auf-blau:   #fff;
+    --amber:      #000;
+    --amber-weich:#fff;
+    --rot:        #000;
+    --rot-weich:  #d9d9d9;
+    --rot-linie:  #000;
+    --gruen:      #000;
+    --gruen-weich:#f2f2f2;
+    --kopf:       #000;
+    --kopf-2:     #000;
+  }
+
+  /* --- Ausstattung, die über Farben hinausgeht ----------------------- */
+
+  /* Feuerwehr: Warnband unter der Kopfleiste, Überschriften in
+     Versalien wie die Beschriftung am Fahrzeug (nur mit Standardschrift). */
+  [data-farbe="feuerwehr"] .topbar,
+  .vorschau[data-farbe="feuerwehr"] .vorschau-kopf {
+    border-bottom: 8px solid var(--fw-gelb);
+    border-image: repeating-linear-gradient(-45deg, var(--fw-gelb) 0 12px, var(--fw-rot) 12px 24px) 8;
+  }
+  :root[data-farbe="feuerwehr"][data-schrift="standard"] .kopf h1,
+  :root[data-farbe="feuerwehr"][data-schrift="standard"] .abschnitt {
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-weight: 700;
+  }
+  [data-farbe="feuerwehr"] .kopf h1 { color: var(--fw-rot); }
+
+  /* THW: blau-weißes Warnband, Überschriften in THW-Blau, Terminal-Knopf
+     in Orange – in Blau ginge er in der blauen Kopfleiste unter. */
+  [data-farbe="thw"] .topbar,
+  .vorschau[data-farbe="thw"] .vorschau-kopf {
+    border-bottom: 8px solid #fff;
+    border-image: repeating-linear-gradient(-45deg, #fff 0 12px, var(--thw-blau) 12px 24px) 8;
+  }
+  [data-farbe="thw"] .kopf h1,
+  [data-farbe="thw"] .abschnitt { color: var(--thw-blau); }
+  [data-farbe="thw"] .terminal-knopf,
+  .vorschau[data-farbe="thw"] .vorschau-knopf { background: var(--thw-orange); color: #fff; }
+  [data-farbe="thw"] .terminal-knopf:hover,
+  [data-farbe="thw"] .terminal-knopf:focus-visible { background: #8f3f00; }
+
+  /* Phosphor: leichtes Nachleuchten, feine Bildschirmzeilen und – mit
+     der Standardschrift – alles in Festbreitenschrift samt blinkendem
+     Cursor hinter der Überschrift. Wer Bewegung reduziert, sieht keinen
+     Cursor blinken (siehe prefers-reduced-motion). */
+  [data-farbe="phosphor"] body { text-shadow: 0 0 3px rgba(92, 255, 143, .35); }
+  [data-farbe="phosphor"] body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .18) 0 1px, transparent 1px 3px);
+  }
+  .vorschau[data-farbe="phosphor"] {
+    text-shadow: 0 0 3px rgba(92, 255, 143, .35);
+    background-image: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .25) 0 1px, transparent 1px 3px);
+  }
+  :root[data-farbe="phosphor"][data-schrift="standard"] { --sans: var(--mono); }
+  [data-farbe="phosphor"] .kopf h1::after {
+    content: '▌';
+    margin-left: 4px;
+    animation: phosphor-cursor 1.1s steps(1) infinite;
+  }
+  @keyframes phosphor-cursor { 50% { opacity: 0; } }
+
+  /* Rotes Plus: weiße Kopfleiste mit rotem Strich, Name der Anwendung in Rot,
+     Hauptknöpfe und Terminal-Knopf in DRK-Rot mit Dunkelrot beim
+     Darüberfahren, Überschriften rot in Merriweather, Fließtext in
+     Helvetica Neue – Ersatzschrift Arial, wie im Styleguide vorgesehen. */
+  [data-farbe="rotesplus"] .topbar { border-bottom: 4px solid var(--plus-rot); }
+  [data-farbe="rotesplus"] .brand-app { color: var(--plus-rot); }
+  [data-farbe="rotesplus"] .brand-mark { color: var(--plus-rot); border-color: var(--plus-rot); }
+  [data-farbe="rotesplus"] .btn--primaer,
+  [data-farbe="rotesplus"] .terminal-knopf { background: var(--plus-rot); border-color: var(--plus-rot); color: #fff; }
+  [data-farbe="rotesplus"] .btn--primaer:hover,
+  [data-farbe="rotesplus"] .terminal-knopf:hover,
+  [data-farbe="rotesplus"] .terminal-knopf:focus-visible { background: var(--plus-dunkelrot); border-color: var(--plus-dunkelrot); }
+  [data-farbe="rotesplus"] .kopf h1,
+  [data-farbe="rotesplus"] .abschnitt { color: var(--plus-rot); }
+  [data-farbe="rotesplus"] .scanfeld { background: var(--blau-weich); }
+  [data-farbe="rotesplus"] .scanfeld label { color: var(--blau); }
+  [data-farbe="rotesplus"] .ortknopf.is-active { background: var(--blau); border-color: var(--blau); color: #fff; }
+  [data-farbe="rotesplus"] .platz-kiste { color: #fff; }
+  [data-farbe="rotesplus"] .terminal-zeichen { opacity: 1; }
+  :root[data-farbe="rotesplus"][data-schrift="standard"] { --sans: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  :root[data-farbe="rotesplus"][data-schrift="standard"] .kopf h1,
+  :root[data-farbe="rotesplus"][data-schrift="standard"] .abschnitt {
+    font-family: "Merriweather", Georgia, serif;
+    font-weight: 700;
+  }
+  .vorschau[data-farbe="rotesplus"] .vorschau-kopf { border-bottom: 3px solid var(--plus-rot); }
+  .vorschau[data-farbe="rotesplus"] .vorschau-marke { color: var(--plus-rot); border-color: var(--plus-rot); }
+  .vorschau[data-farbe="rotesplus"] .vorschau-knopf { background: var(--plus-rot); color: #fff; }
+
+  /* Hoher Kontrast: kräftige Rahmen, unterstrichene Links im Inhalt,
+     ein deutlicher Fokusrahmen in Schwarz und Gelb. */
+  [data-farbe="kontrast"] .btn,
+  [data-farbe="kontrast"] input,
+  [data-farbe="kontrast"] select,
+  [data-farbe="kontrast"] textarea,
+  [data-farbe="kontrast"] .tabelle,
+  [data-farbe="kontrast"] .karte { border-width: 2px; border-color: #000; }
+  [data-farbe="kontrast"] .wrap a:not(.btn):not(.darstellung-karte) { text-decoration: underline; }
+  [data-farbe="kontrast"] .marke { border: 1.5px solid currentColor; }
+  [data-farbe="kontrast"] :focus-visible { outline: 3px solid #000; box-shadow: 0 0 0 6px #ffe600; }
+  [data-farbe="kontrast"] .seitenleiste a.is-active { color: #000; font-weight: 700; }
+
+  /* Rettungsdienst: Schachbrettband unter der Kopfleiste (zwei Reihen,
+     Leuchtrot und Gelb), Hauptknöpfe und Terminal-Knopf in Rot. */
+  [data-farbe="rettungsdienst"] .topbar,
+  .vorschau[data-farbe="rettungsdienst"] .vorschau-kopf { position: relative; margin-bottom: 20px; }
+  [data-farbe="rettungsdienst"] .topbar::after,
+  .vorschau[data-farbe="rettungsdienst"] .vorschau-kopf::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -20px;
+    height: 20px;
+    background: repeating-conic-gradient(var(--rd-rot) 0 25%, var(--rd-gelb) 0 50%) 0 0 / 20px 20px;
+  }
+  .vorschau[data-farbe="rettungsdienst"] .vorschau-kopf { margin-bottom: 12px; }
+  .vorschau[data-farbe="rettungsdienst"] .vorschau-kopf::after { bottom: -12px; height: 12px; background-size: 12px 12px; }
+  [data-farbe="rettungsdienst"] .brand-app,
+  [data-farbe="rettungsdienst"] .kopf h1 { color: var(--rd-rot); }
+  [data-farbe="rettungsdienst"] .btn--primaer,
+  [data-farbe="rettungsdienst"] .terminal-knopf,
+  .vorschau[data-farbe="rettungsdienst"] .vorschau-knopf { background: var(--rd-rot); border-color: var(--rd-rot); color: #fff; }
+  [data-farbe="rettungsdienst"] .btn--primaer:hover,
+  [data-farbe="rettungsdienst"] .terminal-knopf:hover { background: #a3140f; border-color: #a3140f; }
+  [data-farbe="rettungsdienst"] .scanfeld { background: var(--blau); }
+  [data-farbe="rettungsdienst"] .scanfeld label { color: #fff; }
+  [data-farbe="rettungsdienst"] .ortknopf.is-active { background: var(--blau); border-color: var(--blau); color: #fff; }
+  [data-farbe="rettungsdienst"] .platz-kiste { color: #fff; }
+
+  /* Warnweste: silberner Reflexstreifen mit orangen Kanten unter der
+     gelben Kopfleiste. */
+  [data-farbe="warnweste"] .topbar,
+  .vorschau[data-farbe="warnweste"] .vorschau-kopf {
+    border-bottom: 12px solid #d9d9d9;
+    border-image: linear-gradient(to bottom, #ff6a13 0 3px, #cfcfcf 3px 6px, #f7f7f7 6px 7px, #cfcfcf 7px 9px, #ff6a13 9px 12px) 12;
+  }
+  [data-farbe="warnweste"] .scanfeld { background: #1a1a1a; }
+  [data-farbe="warnweste"] .scanfeld label { color: #e3ff00; }
+  [data-farbe="warnweste"] .ortknopf.is-active { background: #1a1a1a; border-color: #1a1a1a; color: #e3ff00; }
+
+  /* Wasserwacht: Wellenkante unter der Kopfleiste. */
+  [data-farbe="wasserwacht"] .topbar,
+  .vorschau[data-farbe="wasserwacht"] .vorschau-kopf { position: relative; margin-bottom: 10px; }
+  [data-farbe="wasserwacht"] .topbar::after,
+  .vorschau[data-farbe="wasserwacht"] .vorschau-kopf::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -10px;
+    height: 10px;
+    background: radial-gradient(circle at 10px 0, var(--ww-kopf) 9px, transparent 10px) 0 0 / 20px 10px repeat-x;
+  }
+  [data-farbe="wasserwacht"] .kopf h1,
+  [data-farbe="wasserwacht"] .abschnitt { color: var(--ww-kopf); }
+
+  /* E-Ink: keine Bewegung, keine Schatten; Status ohne Farbe
+     unterscheidbar – Warnungen invertiert, "bald" umrandet. */
+  [data-farbe="eink"] *,
+  [data-farbe="eink"] *::before,
+  [data-farbe="eink"] *::after { transition: none !important; animation: none !important; }
+  [data-farbe="eink"] .karte { box-shadow: none; }
+  [data-farbe="eink"] .marke--rot { background: #000; color: #fff; }
+  [data-farbe="eink"] .marke--amber { border: 1.5px solid #000; }
+  [data-farbe="eink"] .wrap a:not(.btn):not(.darstellung-karte) { text-decoration: underline; }
+
+  /* Vorschauen anderer Designs nicht vom aktiven anstecken lassen:
+     Stempel (Lagerbuch) und Leuchten (Phosphor) gehören nur zu ihrem
+     eigenen Design. */
+  .vorschau:not([data-farbe="lagerbuch"]):not([data-farbe="kontrast"]):not([data-farbe="eink"]) .marke { border: 0; transform: none; }
+  .vorschau[data-farbe="kontrast"] .marke { border: 1.5px solid currentColor; transform: none; }
+  .vorschau[data-farbe="eink"] .marke { border: 0; transform: none; }
+  .vorschau[data-farbe="eink"] .marke--rot { background: #000; color: #fff; }
+  .vorschau[data-farbe="eink"] .marke--amber { border: 1.5px solid #000; }
+  .vorschau:not([data-farbe="eink"]) .marke--rot { background: var(--rot-weich); color: var(--rot); }
+  .vorschau:not([data-farbe="phosphor"]) { text-shadow: none; }
+
+  /* Wald: Sonnenflecken wie Licht durch Blätter, die Kopfleiste mit
+     leichtem Verlauf von Tanne zu Moos. */
+  [data-farbe="wald"] body,
+  .vorschau[data-farbe="wald"] {
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(214, 232, 150, .35) 0 120px, transparent 260px),
+      radial-gradient(circle at 78% 8%,  rgba(214, 232, 150, .28) 0 90px,  transparent 220px),
+      radial-gradient(circle at 60% 72%, rgba(190, 220, 140, .22) 0 140px, transparent 300px);
+  }
+  [data-farbe="wald"] body { background-attachment: fixed; }
+  [data-farbe="wald"] .topbar,
+  .vorschau[data-farbe="wald"] .vorschau-kopf {
+    background-image: linear-gradient(100deg, #163a2b, #1f4a37 60%, #2a5a3c);
+  }
+
+  /* Blaupause: Millimeterraster auf dem Papier, gestrichelte Linien,
+     Überschriften in Versalien der Schablonenschrift. Die Versalien nur
+     bei der Standardschrift – mit einer Leseschrift bleibt es lesbar. */
+  [data-farbe="blaupause"] body,
+  .vorschau[data-farbe="blaupause"] {
+    background-image:
+      linear-gradient(rgba(190, 220, 255, .08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(190, 220, 255, .08) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  [data-farbe="blaupause"] .tabelle td { border-bottom-style: dashed; }
+  [data-farbe="blaupause"] .seitenleiste { border-right-style: dashed; }
+  :root[data-farbe="blaupause"][data-schrift="standard"] .kopf h1,
+  :root[data-farbe="blaupause"][data-schrift="standard"] .abschnitt {
+    font-family: var(--mono);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+
+  /* Lagerbuch: linierte Seiten mit rotem Randstrich, Kopfzeilen der
+     Tabellen doppelt unterstrichen wie im Kassenbuch, Marken wie Stempel. */
+  [data-farbe="lagerbuch"] .inhalt,
+  .vorschau[data-farbe="lagerbuch"] .vorschau-flaeche {
+    background-image:
+      linear-gradient(90deg, transparent 13px, rgba(154, 36, 22, .28) 13px 14px, transparent 14px),
+      repeating-linear-gradient(to bottom, transparent 0 27px, rgba(31, 63, 122, .1) 27px 28px);
+  }
+  [data-farbe="lagerbuch"] .tabelle th { border-bottom: 3px double var(--line); }
+  [data-farbe="lagerbuch"] .marke {
+    border: 1.5px solid currentColor;
+    transform: rotate(-1.5deg);
+  }
+  :root[data-farbe="lagerbuch"][data-schrift="standard"] .kopf h1,
+  :root[data-farbe="lagerbuch"][data-schrift="standard"] .abschnitt,
+  :root[data-farbe="lagerbuch"][data-schrift="standard"] .brand-app {
+    font-family: Georgia, "Times New Roman", serif;
+  }
+}
+
+/* Leseschriften für Menschen mit LRS. OpenDyslexic liegt bei der
+   Anwendung (assets/fonts, SIL Open Font License), Lexend kommt von
+   Google Fonts. Dazu mehr Zeilenabstand und keine Versalien – reine
+   Großbuchstaben nehmen den Wörtern ihre Form, an der man sie erkennt. */
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("fonts/OpenDyslexic-Regular.woff2") format("woff2");
+  font-weight: 400 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("fonts/OpenDyslexic-Bold.woff2") format("woff2");
+  font-weight: 600 700;
+  font-display: swap;
+}
+
+:root[data-schrift="opendyslexic"] {
+  --sans: "OpenDyslexic", "Comic Sans MS", sans-serif;
+  --mono: "OpenDyslexic", "Comic Sans MS", sans-serif;
+}
+:root[data-schrift="lexend"] {
+  --sans: "Lexend", "IBM Plex Sans", sans-serif;
+  --mono: "Lexend", "IBM Plex Sans", sans-serif;
+}
+:root[data-schrift="opendyslexic"] body,
+:root[data-schrift="lexend"] body { line-height: 1.65; word-spacing: .06em; }
+:root[data-schrift="opendyslexic"] *,
+:root[data-schrift="lexend"] * { text-transform: none !important; }
 
 * { box-sizing: border-box; }
 
@@ -47,15 +838,15 @@ a { color: var(--blau); }
   align-items: center;
   gap: 8px 24px;
   padding: 10px 20px;
-  background: var(--ink);
-  color: #fff;
+  background: var(--kopf);
+  color: var(--auf-dunkel);
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: #fff;
+  color: var(--auf-dunkel);
   text-decoration: none;
 }
 
@@ -63,7 +854,7 @@ a { color: var(--blau); }
   font: 600 12px/1 var(--mono);
   letter-spacing: .12em;
   padding: 6px 7px;
-  border: 1.5px solid rgba(255, 255, 255, .55);
+  border: 1.5px solid var(--kopf-linie-stark);
   border-radius: var(--r);
 }
 
@@ -72,7 +863,7 @@ a { color: var(--blau); }
 .brand-org {
   font-size: 12px;
   font-weight: 400;
-  color: rgba(255, 255, 255, .62);
+  color: var(--auf-dunkel-leise);
   letter-spacing: .01em;
 }
 
@@ -85,15 +876,15 @@ a { color: var(--blau); }
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border: 1px solid rgba(255, 255, 255, .3);
+  border: 1px solid var(--kopf-linie);
   border-radius: var(--r);
   background: transparent;
-  color: #fff;
+  color: var(--auf-dunkel);
   font: 500 14px/1.2 var(--sans);
   cursor: pointer;
 }
 
-.menue-knopf:hover { background: rgba(255, 255, 255, .1); }
+.menue-knopf:hover { background: var(--kopf-hover); }
 
 /* --- Grundgerüst --------------------------------------------------- */
 
@@ -104,10 +895,18 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 .rahmen {
   flex: 1;
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
+  grid-template-columns: 180px minmax(0, 1fr);
 }
 
-.inhalt { min-width: 0; }
+/* Sicherheitsnetz: ist eine Tabelle zu breit – etwa mit der breiten
+   Leseschrift –, scrollt nur der Inhalt seitlich, nicht die ganze Seite
+   samt Kopf- und Seitenleiste. */
+.inhalt { min-width: 0; overflow-x: auto; }
+
+/* In Tabellen dürfen Lagerort-Pfad und Fälligkeitstext umbrechen; das
+   hält die Artikelliste neben der Seitenleiste in der Breite. */
+.tabelle .platz-pfad,
+.tabelle .faellig-typ { white-space: normal; }
 
 .wrap { max-width: 1180px; margin: 0 auto; padding: 22px 20px 56px; }
 
@@ -208,7 +1007,7 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 
 .kopf .anzahl { font: 500 13px/1 var(--mono); color: var(--muted); }
 
-.kopf .rechts { margin-left: auto; display: flex; gap: 8px; }
+.kopf .rechts { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 
 .foot {
   display: flex;
@@ -267,10 +1066,17 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
   color: var(--muted);
 }
 
+/* Häkchen, Optionsfelder und alle übrigen Felder in den Farben des
+   Designs statt in Systemfarben – sonst blitzt bei Nachtsicht Weiß auf. */
+input,
+select,
+textarea { accent-color: var(--blau); color: var(--ink); }
+
 input[type="text"],
 input[type="search"],
 input[type="number"],
 input[type="date"],
+input[type="password"],
 select,
 textarea {
   font: 400 15px/1.3 var(--sans);
@@ -313,12 +1119,12 @@ button:focus-visible {
 .btn--primaer {
   background: var(--blau);
   border-color: var(--blau);
-  color: #fff;
+  color: var(--auf-blau);
 }
 
-.btn--primaer:hover { background: #0f4676; border-color: #0f4676; }
+.btn--primaer:hover { background: var(--blau-dunkel); border-color: var(--blau-dunkel); }
 
-.btn--gefahr { color: var(--rot); border-color: #e6c9c6; background: var(--surface); }
+.btn--gefahr { color: var(--rot); border-color: var(--rot-linie); background: var(--surface); }
 .btn--gefahr:hover { background: var(--rot-weich); border-color: var(--rot); }
 
 .btn--klein { padding: 6px 10px; font-size: 13px; }
@@ -356,11 +1162,15 @@ button:focus-visible {
 }
 
 .tabelle tbody tr:last-child td { border-bottom: 0; }
-.tabelle tbody tr:hover { background: #fafbf9; }
+.tabelle tbody tr:hover { background: var(--surface-2); }
 
 .tabelle .name { font-weight: 500; }
 .tabelle .zahl { font: 500 14px/1 var(--mono); text-align: right; white-space: nowrap; }
-.tabelle .aktion { text-align: right; white-space: nowrap; }
+/* Knöpfe dürfen untereinander rutschen, sonst passt die Artikelliste
+   neben der Seitenleiste nicht mehr in die Breite. Jeder Knopf selbst
+   bricht nicht um. */
+.tabelle .aktion { text-align: right; }
+.tabelle .aktion .btn { margin: 2px 0 2px 4px; }
 .notiz { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
 
 /* --- Signaturelement: der Lagerplatz-Chip --------------------------- */
@@ -371,8 +1181,8 @@ button:focus-visible {
   font: 600 12px/1 var(--mono);
   letter-spacing: .08em;
   padding: 5px 7px;
-  color: #fff;
-  background: var(--ink-2);
+  color: var(--auf-dunkel);
+  background: var(--kopf-2);
   border-radius: 2px;
 }
 
@@ -382,7 +1192,7 @@ button:focus-visible {
   white-space: nowrap;
 }
 
-.platz-pfad i { font-style: normal; color: #b9bfb7; padding: 0 2px; }
+.platz-pfad i { font-style: normal; color: var(--gedimmt-2); padding: 0 2px; }
 
 /* --- Kategorie-Marke ------------------------------------------------ */
 
@@ -524,7 +1334,7 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
   border-radius: 2px;
 }
 
-.platz-leer { font-size: 13px; color: #a6aca5; font-style: italic; }
+.platz-leer { font-size: 13px; color: var(--gedimmt); font-style: italic; }
 
 .leihe {
   display: block;
@@ -547,9 +1357,9 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
 .grund--verschleiss { background: var(--line-2);      color: var(--muted); }
 .grund--defekt      { background: var(--rot-weich);   color: var(--rot); }
 .grund--abgelaufen  { background: var(--amber-weich); color: var(--amber); }
-.grund--verliehen   { background: #e6f0e9;            color: var(--gruen); }
+.grund--verliehen   { background: var(--gruen-weich);            color: var(--gruen); }
 
-.marke--gruen { background: #e6f0e9; color: var(--gruen); }
+.marke--gruen { background: var(--gruen-weich); color: var(--gruen); }
 
 /* --- v2: Abschnitte -------------------------------------------------- */
 
@@ -603,7 +1413,7 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: var(--r);
-  background: #fafbf9;
+  background: var(--surface-2);
 }
 
 .ortwahl legend {
@@ -619,7 +1429,7 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
 
 .hinweis--aktiv {
   padding: 10px 12px;
-  background: #e6f0e9;
+  background: var(--gruen-weich);
   border-left: 3px solid var(--gruen);
   border-radius: 0 var(--r) var(--r) 0;
   color: var(--ink);
@@ -694,7 +1504,7 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
 }
 
 .ortknopf:hover { border-color: var(--muted); }
-.ortknopf.is-active { background: var(--ink); border-color: var(--ink); color: #fff; }
+.ortknopf.is-active { background: var(--kopf); border-color: var(--kopf); color: var(--auf-dunkel); }
 
 .ortknopf-zahl {
   font: 500 12px/1 var(--mono);
@@ -704,8 +1514,8 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
   color: var(--amber);
 }
 
-.ortknopf-zahl.ist-fertig { background: #e6f0e9; color: var(--gruen); }
-.ortknopf.is-active .ortknopf-zahl { background: rgba(255,255,255,.2); color: #fff; }
+.ortknopf-zahl.ist-fertig { background: var(--gruen-weich); color: var(--gruen); }
+.ortknopf.is-active .ortknopf-zahl { background: var(--kopf-hover-stark); color: var(--auf-dunkel); }
 
 /* --- v2: Zählmaske --------------------------------------------------- */
 
@@ -759,11 +1569,11 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
   align-items: center;
   gap: 10px;
   padding-left: 16px;
-  border-left: 1px solid rgba(255, 255, 255, .18);
+  border-left: 1px solid var(--kopf-linie-leise);
   font-size: 13px;
 }
 
-.wer-name { color: #fff; text-decoration: none; font-weight: 500; }
+.wer-name { color: var(--auf-dunkel); text-decoration: none; font-weight: 500; }
 .wer-name:hover { text-decoration: underline; }
 
 .wer-rolle {
@@ -772,12 +1582,12 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
   text-transform: uppercase;
   padding: 4px 6px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, .12);
-  color: rgba(255, 255, 255, .8);
+  background: var(--kopf-hover);
+  color: var(--auf-dunkel-leise);
 }
 
-.wer-aus { color: rgba(255, 255, 255, .6); text-decoration: none; }
-.wer-aus:hover { color: #fff; }
+.wer-aus { color: var(--auf-dunkel-leise); text-decoration: none; }
+.wer-aus:hover { color: var(--auf-dunkel); }
 
 /* --- v3: Login-Seite -------------------------------------------------- */
 
@@ -846,7 +1656,7 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
   gap: 10px;
   padding: 16px;
   margin-bottom: 16px;
-  background: var(--ink);
+  background: var(--kopf);
   border-radius: var(--r);
 }
 
@@ -855,7 +1665,7 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
   font: 500 11px/1 var(--sans);
   letter-spacing: .07em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, .65);
+  color: var(--auf-dunkel-leise);
   margin-bottom: 2px;
 }
 
@@ -929,7 +1739,7 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
 .menge-plus  { color: var(--gruen); font-weight: 600; }
 .menge-minus { color: var(--ink); }
 
-.grund--beschaffung { background: #e6f0e9; color: var(--gruen); }
+.grund--beschaffung { background: var(--gruen-weich); color: var(--gruen); }
 .grund--spende      { background: var(--blau-weich); color: var(--blau); }
 .grund--ruecklauf   { background: var(--line-2); color: var(--muted); }
 .grund--korrektur   { background: var(--amber-weich); color: var(--amber); }
@@ -949,7 +1759,7 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
   border: 1px solid var(--line);
   border-left: 3px solid var(--blau);
   border-radius: var(--r);
-  background: #fafbfc;
+  background: var(--surface-2);
 }
 
 .zusatzfelder legend {
@@ -981,7 +1791,7 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
   border: 1px solid var(--line);
   border-left: 3px solid var(--gruen);
   border-radius: var(--r);
-  background: #fafbfa;
+  background: var(--surface-2);
 }
 
 .gebinde legend {
@@ -991,6 +1801,12 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
   text-transform: uppercase;
   color: var(--muted);
 }
+
+/* v12: MHD-Chargen – gleiche Box wie die Verpackungseinheit, aber in
+   Bernstein wie die Fälligkeitswarnung, weil es ums Ablaufen geht. */
+.chargen { border-left-color: var(--amber); }
+.chargen-tabelle { margin: 4px 0 12px; max-width: 420px; }
+.chargen-text { display: block; font: 400 12px/1.4 var(--mono); color: var(--muted); }
 
 #gebinde-rechnung {
   margin: 4px 0 8px;
@@ -1031,30 +1847,26 @@ small.je {
   color: var(--muted);
 }
 
-/* --- v8: Einsatzknopf -------------------------------------------------
-   Auf jeder Seite an derselben Stelle, in einer Farbe, die sonst
-   nirgends vorkommt. Im Einsatz soll niemand suchen müssen.
+/* --- Terminal-Knopf in der Kopfleiste ---------------------------------
+   Auf jeder Seite an derselben Stelle. Im Einsatz soll niemand suchen
+   müssen. (Bis v12 stand daneben ein roter Entnahme-Knopf; das Terminal
+   übernimmt seine Aufgabe.)
    --------------------------------------------------------------------- */
 
-/* Terminal und Entnahme stehen als Paar rechts in der Leiste. Nach
-   rechts schiebt sie das margin-right:auto der Marke – die Knöpfe
-   selbst haben kein Auto-Margin, sonst rissen sie auseinander. */
+/* Nach rechts schiebt den Knopf das margin-right:auto der Marke. */
 .kopf-aktionen {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
-/* Gemeinsame Form beider Knöpfe: gleiche Größe, damit sie als Paar
-   zusammengehören. Sie unterscheiden sich nur in der Farbe. */
-.terminal-knopf,
-.einsatz {
+.terminal-knopf {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 9px 18px 9px 14px;
   border-radius: var(--r);
-  color: #fff;
+  color: var(--auf-blau);
   font: 600 15px/1 var(--sans);
   letter-spacing: .02em;
   text-decoration: none;
@@ -1062,31 +1874,23 @@ small.je {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, .12) inset;
 }
 
-/* Terminal: das ruhige Blau des Hauses – öffnet die Buchungsstation. */
+/* Das ruhige Blau des Hauses – öffnet die Buchungsstation. */
 .terminal-knopf { background: var(--blau); }
 .terminal-knopf:hover,
-.terminal-knopf:focus-visible { background: #0f4676; }
+.terminal-knopf:focus-visible { background: var(--blau-dunkel); }
 
-/* Entnahme: Signalrot, kommt sonst nirgends vor. */
-.einsatz { background: #d4342a; }
-.einsatz:hover,
-.einsatz:focus-visible { background: #bc2b22; }
-
-.terminal-zeichen,
-.einsatz-zeichen {
+.terminal-zeichen {
   font: 700 18px/1 var(--mono);
   opacity: .9;
 }
 
 @media (max-width: 760px) {
-  /* Auf schmalen Geräten rückt das Paar nach oben und füllt die Breite,
-     die beiden Knöpfe teilen sich die Zeile. */
+  /* Auf schmalen Geräten rückt der Knopf nach oben und füllt die Breite. */
   .kopf-aktionen {
     order: -1;
     width: 100%;
   }
-  .terminal-knopf,
-  .einsatz {
+  .terminal-knopf {
     flex: 1;
     justify-content: center;
     padding: 12px;
@@ -1225,3 +2029,302 @@ a.orte-eintrag:hover { border-color: var(--blau); background: var(--blau-weich);
    nebeneinander, auf schmalen Geräten untereinander. */
 .fachwahl { display: flex; gap: 8px; flex-wrap: wrap; }
 .fachwahl select { flex: 1 1 140px; min-width: 0; }
+
+
+/* --- Hell/Dunkel-Schalter in der Kopfleiste ---------------------------
+   Ein Link mit role="switch": geht ohne Skript, ein Klick schaltet um.
+   Die Spur zeigt den Zustand, der Text bleibt "Dunkel" – so ist klar,
+   was der Schalter tut, egal in welchem Zustand er steht.
+   --------------------------------------------------------------------- */
+
+.hell-dunkel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 5px 4px 10px;
+  border: 1px solid var(--kopf-linie);
+  border-radius: 999px;
+  color: var(--auf-dunkel);
+  font: 500 13px/1 var(--sans);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.hell-dunkel:hover { background: var(--kopf-hover); }
+.hell-dunkel-zeichen { font-size: 15px; }
+
+.hell-dunkel-spur {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--kopf-hover-stark);
+  transition: background .15s;
+}
+
+.hell-dunkel-spur::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--schalter-knopf);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+  transition: transform .15s;
+}
+
+.hell-dunkel[aria-checked="true"] .hell-dunkel-spur { background: var(--blau); }
+.hell-dunkel[aria-checked="true"] .hell-dunkel-spur::after { transform: translateX(14px); }
+
+@media (max-width: 760px) {
+  .topbar .hell-dunkel-text { display: none; }
+}
+
+/* Auf der Anmeldeseite steht der Schalter auf heller Fläche. */
+.login-darstellung { margin-top: 20px; display: flex; justify-content: flex-end; }
+.login-darstellung .hell-dunkel { border-color: var(--line); color: var(--ink); }
+.login-darstellung .hell-dunkel:hover { background: var(--line-2); }
+.login-darstellung .hell-dunkel-spur { background: var(--line); }
+.login-darstellung .hell-dunkel[aria-checked="true"] .hell-dunkel-spur { background: var(--blau); }
+
+/* --- Seite Verwaltung → Darstellung ----------------------------------- */
+
+.darstellung-wahl {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.darstellung-karte {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.darstellung-karte:hover { border-color: var(--muted); }
+
+.darstellung-karte.is-aktiv {
+  border-color: var(--blau);
+  box-shadow: 0 0 0 1px var(--blau) inset;
+}
+
+.darstellung-karte-titel {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-weight: 600;
+}
+
+.darstellung-karte.is-aktiv .darstellung-karte-titel::after {
+  content: '✓ aktiv';
+  font: 500 13px/1 var(--sans);
+  color: var(--blau);
+}
+
+.darstellung-karte-text { font-size: 13px; color: var(--muted); }
+
+/* Live-Vorschau: ein Stück Oberfläche im jeweiligen Design. Das trägt
+   ein eigenes data-farbe, die Designs oben gelten deshalb auch hier. Der
+   Rahmen drumherum setzt zuerst auf Hell zurück, damit Designs, die nur
+   einzelne Farben ändern (Rot-Grün-sicher), nicht vom aktiven erben. */
+.vorschau-rahmen { display: block; }
+
+.vorschau {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background-color: var(--paper);
+  color: var(--ink);
+}
+
+.vorschau-kopf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--kopf);
+  color: var(--auf-dunkel);
+  font: 600 12px/1 var(--sans);
+}
+
+.vorschau-marke {
+  padding: 3px 4px;
+  border: 1px solid var(--kopf-linie-stark);
+  border-radius: 2px;
+  font: 600 9px/1 var(--mono);
+  letter-spacing: .1em;
+}
+
+.vorschau-knopf {
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: var(--r);
+  background: var(--blau);
+  color: var(--auf-blau);
+  font-size: 11px;
+}
+
+.vorschau-flaeche { display: block; padding: 10px 10px 10px 22px; }
+
+.vorschau-zeile {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  font-size: 13px;
+}
+
+.vorschau-zeile small { color: var(--muted); font: 500 12px/1 var(--mono); }
+.vorschau-marken { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+.schriftprobe { font-size: 17px; line-height: 1.5; }
+
+/* Aktuell: was eingestellt ist, mit kleiner Vorschau. */
+.darstellung-aktuell {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.darstellung-aktuell-vorschau { flex: none; width: 220px; }
+.darstellung-aktuell-text { flex: 1 1 260px; min-width: 0; }
+.darstellung-aktuell-text .hinweis { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
+
+.darstellung-zeile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 26px 0 10px;
+}
+
+.darstellung-zeile .abschnitt { margin: 0; }
+
+/* Gruppen: aufklappbar, auch zugeklappt mit Farbpunkten je Design. */
+.darstellung-gruppe {
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.darstellung-gruppe > summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.darstellung-gruppe > summary::-webkit-details-marker { display: none; }
+
+.darstellung-gruppe > summary::before {
+  content: '▸';
+  flex: none;
+  width: 14px;
+  font-size: 15px;
+  line-height: 1;
+  text-align: center;
+  color: var(--muted);
+  transition: transform .15s;
+}
+
+.darstellung-gruppe[open] > summary::before { transform: rotate(90deg); }
+.darstellung-gruppe > summary:hover .darstellung-gruppe-titel { text-decoration: underline; }
+.darstellung-gruppe > summary:focus-visible { outline: 2px solid var(--blau); outline-offset: -2px; border-radius: 6px; }
+
+.darstellung-gruppe-titel { font-weight: 600; }
+
+.darstellung-gruppe-anzahl {
+  min-width: 22px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 500 12px/1.2 var(--mono);
+  text-align: center;
+}
+
+.darstellung-gruppe-punkte { display: flex; gap: 5px; }
+.punkt-rahmen { display: block; }
+
+/* Ein Punkt je Design: Kopfleiste, Akzent und (als Ring) Grund. Die
+   Farben kommen aus dem data-farbe des Punkts selbst. Wo Kopf oder
+   Akzent wenig hergeben, stehen die Kennfarben drin. */
+.farbpunkt {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--paper);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--punkt-1, var(--kopf)) 0 50%, var(--punkt-2, var(--blau)) 50% 100%);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .3);
+}
+
+.farbpunkt[data-farbe="kontrast"]       { --punkt-2: var(--blau-weich); }
+.farbpunkt[data-farbe="eink"]           { --punkt-2: #8a8a8a; }
+.farbpunkt[data-farbe="rotesplus"]      { --punkt-1: var(--plus-rot); }
+.farbpunkt[data-farbe="rettungsdienst"] { --punkt-1: var(--rd-rot); --punkt-2: var(--rd-gelb); }
+.farbpunkt[data-farbe="feuerwehr"]      { --punkt-2: var(--fw-gelb); }
+.farbpunkt[data-farbe="thw"]            { --punkt-2: var(--thw-orange); }
+.farbpunkt[data-farbe="warnweste"]      { --punkt-2: var(--kopf-2); }
+
+.darstellung-gruppe-aktiv { margin-left: auto; color: var(--blau); font-size: 13px; font-weight: 600; }
+
+.darstellung-gruppe-text {
+  flex-basis: 100%;
+  padding-left: 24px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.darstellung-gruppe .darstellung-wahl {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0 14px 14px;
+}
+
+.darstellung-gruppe + .abschnitt { margin-top: 28px; }
+
+/* Kompakte Karten in den Gruppen. */
+.darstellung-gruppe .darstellung-karte { gap: 8px; padding: 10px; }
+.darstellung-gruppe .vorschau-kopf { padding: 5px 8px; }
+.darstellung-gruppe .vorschau-flaeche { padding: 8px 8px 8px 14px; }
+.darstellung-gruppe .vorschau-zeile { padding: 5px 8px; font-size: 12px; }
+.darstellung-gruppe .vorschau-marken { margin-top: 6px; }
+
+.darstellung-gruppe .darstellung-karte-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+@media (max-width: 560px) {
+  .darstellung-aktuell-vorschau { width: 100%; }
+  .darstellung-gruppe .darstellung-wahl { grid-template-columns: 1fr; }
+}

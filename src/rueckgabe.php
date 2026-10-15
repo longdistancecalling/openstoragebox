@@ -21,7 +21,7 @@ function entnahme_laden(PDO $pdo, int $eid): ?array
 {
     $stmt = $pdo->prepare(
         'SELECT e.*, a.artikelname, a.inventar_nr, a.ve_inhalt, a.ve_einheit,
-                a.gebinde_einheit, b.anzeigename AS gebucht_von
+                a.gebinde_einheit, a.mit_chargen, b.anzeigename AS gebucht_von
          FROM v_entnahme e
          JOIN artikel a ON a.artikel_id = e.artikel_id
          LEFT JOIN benutzer b ON b.benutzer_id = e.erfasst_von
@@ -49,7 +49,13 @@ $daten = [
     'einheit' => $alsGebinde ? 'gebinde' : 'einzeln',
     'datum'   => date('Y-m-d'),
     'notiz'   => '',
+    // MHD-Chargen: zurück in die Charge, aus der entnommen wurde. Nur
+    // wenn die Entnahme keine kennt (vor den Chargen gebucht), wird
+    // das MHD abgefragt.
+    'mhd'     => '',
 ];
+$mhdBekannt = $e['mhd'] !== null;
+$mhdNoetig  = (int) $e['mit_chargen'] === 1 && !$mhdBekannt;
 
 /* ===================================================================
    POST
@@ -84,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare('SELECT entnahme_id FROM entnahme WHERE entnahme_id = ? FOR UPDATE')
                 ->execute([$eid]);
             $stmt = $pdo->prepare(
-                'SELECT artikelname, menge, lose, ve_inhalt, ve_einheit, gebinde_einheit
+                'SELECT artikelname, menge, lose, ve_inhalt, ve_einheit, gebinde_einheit, mit_chargen
                  FROM artikel WHERE artikel_id = ? FOR UPDATE'
             );
             $stmt->execute([(int) $e['artikel_id']]);
@@ -112,6 +118,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             [$neueMenge, $neueLose] = bestand_rechnen($art, $menge, $einheit, true);
             $pdo->prepare('UPDATE artikel SET menge = ?, lose = ? WHERE artikel_id = ?')
                 ->execute([$neueMenge, $neueLose, (int) $e['artikel_id']]);
+
+            chargen_mitbuchen($pdo, $art, (int) $e['artikel_id'], $stueck, true,
+                              $e['mhd'] ?? mhd_aus_eingabe($daten['mhd']));
 
             $pdo->prepare(
                 'INSERT INTO rueckgabe (entnahme_id, menge, einheit, datum, notiz, erfasst_von)
@@ -241,7 +250,16 @@ require __DIR__ . '/inc/header.php';
       <input type="date" id="datum" name="datum" required
              min="<?= h($e['entnommen_am']) ?>" value="<?= h($daten['datum']) ?>">
     </div>
+    <?php if ($mhdNoetig): ?>
+      <div class="zeile">
+        <label for="mhd">MHD der Ware</label>
+        <input type="date" id="mhd" name="mhd" required value="<?= h($daten['mhd']) ?>">
+      </div>
+    <?php endif; ?>
   </div>
+  <?php if ((int) $e['mit_chargen'] === 1 && $mhdBekannt): ?>
+    <p class="hinweis">Geht zurück in die Charge mit MHD <?= h(datum_de($e['mhd'])) ?>.</p>
+  <?php endif; ?>
 
   <div class="zeile">
     <label for="notiz">Notiz</label>

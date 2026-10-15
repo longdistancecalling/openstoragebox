@@ -15,28 +15,8 @@ require __DIR__ . '/inc/config.php';
  * das, was bald ansteht.
  */
 
-// Überfällige Prüfungen und abgelaufene Artikel
-$ueberfaellig = $pdo->query(
-    'SELECT * FROM v_artikel
-      WHERE faellig_am IS NOT NULL AND tage_bis_faellig < 0
-      ORDER BY faellig_am'
-)->fetchAll();
-
-// Unterdeckung
-$unterdeckung = $pdo->query(
-    'SELECT * FROM v_artikel
-      WHERE unter_soll = 1
-      ORDER BY (fehlmenge / NULLIF(soll_bestand,0)) DESC, artikelname'
-)->fetchAll();
-
-// Bald fällig – Zeitraum aus den Einstellungen
-$stmt = $pdo->prepare(
-    'SELECT * FROM v_artikel
-      WHERE faellig_am IS NOT NULL AND tage_bis_faellig >= 0 AND tage_bis_faellig <= ?
-      ORDER BY faellig_am'
-);
-$stmt->execute([WARNUNG_TAGE]);
-$bald = $stmt->fetchAll();
+// Die drei Listen kommen aus bedarf_laden() – das Terminal zeigt dieselben.
+['ueberfaellig' => $ueberfaellig, 'unterdeckung' => $unterdeckung, 'bald' => $bald] = bedarf_laden($pdo);
 
 $gesamt = count($ueberfaellig) + count($unterdeckung) + count($bald);
 
@@ -62,6 +42,7 @@ function bedarfstabelle(array $zeilen, string $art): void
           <td data-label="Artikel">
             <span class="name"><?= h($a['artikelname']) ?></span>
             <?php if ($a['notiz']): ?><span class="notiz"><?= h($a['notiz']) ?></span><?php endif; ?>
+            <?php if ($a['chargen_text']): ?><span class="chargen-text">MHD <?= h($a['chargen_text']) ?></span><?php endif; ?>
           </td>
           <td data-label="Lagerort"><?= lagerort($a) ?></td>
           <td class="zahl" data-label="Bestand">

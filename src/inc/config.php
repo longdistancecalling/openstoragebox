@@ -143,6 +143,39 @@ const ZUGANG_GRUENDE = [
 /** Präfix der automatisch vergebenen Inventarnummern. */
 const INVENTAR_PREFIX = 'A-';
 
+/**
+ * Darstellung, pro Gerät wählbar (Cookie, siehe darstellung.php).
+ * Farben und Schrift sind unabhängig voneinander: wer dunkel UND mit
+ * Leseschrift arbeiten will, kann beides haben. Der erste Eintrag ist
+ * jeweils der Standard.
+ */
+const DARSTELLUNG_FARBEN = [
+    'hell'       => 'Hell',
+    'dunkel'     => 'Dunkel',
+    'rotgruen'   => 'Rot-Grün-sicher',
+    'nachtsicht' => 'Nachtsicht',
+    'blaupause'  => 'Blaupause',
+    'lagerbuch'  => 'Lagerbuch',
+    'wald'       => 'Wald',
+    'phosphor'   => 'Phosphor',
+    'rotesplus'  => 'Rotes Plus',
+    'feuerwehr'  => 'Feuerwehr',
+    'thw'        => 'THW',
+    'kontrast'   => 'Hoher Kontrast',
+    'rettungsdienst' => 'Rettungsdienst',
+    'warnweste'  => 'Warnweste',
+    'wasserwacht'=> 'Wasserwacht',
+    'eink'       => 'E-Ink',
+];
+/** Designs mit dunklem Grund: Schalter steht auf "Dunkel", Browser-Elemente dunkel. */
+const DARSTELLUNG_DUNKLE = ['dunkel', 'nachtsicht', 'blaupause', 'phosphor'];
+const DARSTELLUNG_SCHRIFTEN = [
+    'standard'     => 'Standard',
+    'opendyslexic' => 'OpenDyslexic',
+    'lexend'       => 'Lexend',
+];
+const DARSTELLUNG_COOKIE = 'osb_darstellung';
+
 /* -------------------------------------------------------------------
    Hilfsfunktionen und Anmeldung.
    Ab hier ist auf jeder Seite außer login.php ein angemeldeter

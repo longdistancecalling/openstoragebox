@@ -81,6 +81,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         AND p.ist_menge IS NOT NULL
                         AND (p.ist_menge <> p.soll_menge OR IFNULL(p.ist_lose,0) <> p.soll_lose)'
                 )->execute([$id]);
+
+                // MHD-Chargen der geänderten Artikel an den gezählten
+                // Bestand angleichen: Fehlmengen von den ältesten Chargen,
+                // Mehrmengen zur jüngsten (siehe chargen_angleichen).
+                $stmt = $pdo->prepare(
+                    'SELECT p.artikel_id FROM inventur_position p
+                       JOIN artikel a ON a.artikel_id = p.artikel_id
+                      WHERE p.inventur_id = ? AND a.mit_chargen = 1 AND p.ist_menge IS NOT NULL'
+                );
+                $stmt->execute([$id]);
+                foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $artId) {
+                    if ($h = chargen_angleichen($pdo, (int) $artId)) {
+                        $chargenHinweise[] = $h;
+                    }
+                }
             }
 
             $pdo->prepare('UPDATE inventur SET abgeschlossen_am = CURDATE() WHERE inventur_id = ?')
@@ -90,6 +105,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash($uebernehmen
                 ? 'Inventur abgeschlossen, die Bestände wurden auf die Zählwerte gesetzt.'
                 : 'Inventur abgeschlossen. Die Bestände blieben unverändert.');
+            foreach ($chargenHinweise ?? [] as $h) {
+                flash($h, 'fehler');
+            }
         } catch (PDOException $e) {
             $pdo->rollBack();
             error_log('Inventur abschließen: ' . $e->getMessage());

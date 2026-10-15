@@ -111,6 +111,7 @@ require __DIR__ . '/inc/header.php';
       <td data-label="Artikel">
         <span class="name"><?= h($z['artikelname']) ?></span>
         <?php if ($z['notiz']): ?><span class="notiz"><?= h($z['notiz']) ?></span><?php endif; ?>
+        <?php if ($z['chargen_text']): ?><span class="chargen-text">MHD <?= h($z['chargen_text']) ?></span><?php endif; ?>
       </td>
       <td data-label="Lagerplatz"><?= lagerplatz($z) ?></td>
       <td data-label="Art">

@@ -22,6 +22,7 @@ $daten = [
     'person' => benutzer()['anzeigename'],
     'bezug'  => '',
     'notiz'  => '',
+    'mhd'    => '',   // Pflicht bei Artikeln mit MHD-Chargen
 ];
 
 /* ===================================================================
@@ -57,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->beginTransaction();
 
             $stmt = $pdo->prepare(
-                'SELECT artikelname, menge, lose, ve_inhalt, ve_einheit, gebinde_einheit
+                'SELECT artikelname, menge, lose, ve_inhalt, ve_einheit, gebinde_einheit, mit_chargen
                  FROM artikel WHERE artikel_id = ? FOR UPDATE'
             );
             $stmt->execute([$artikelId]);
@@ -74,11 +75,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare('UPDATE artikel SET menge = ?, lose = ? WHERE artikel_id = ?')
                 ->execute([$neueMenge, $neueLose, $artikelId]);
 
+            // MHD-Chargen: die Ware kommt mit ihrem MHD ins Lager; gleiches
+            // MHD wird zur vorhandenen Charge gezählt.
+            $mhd = chargen_mitbuchen($pdo, $art, $artikelId, stueckzahl($art, $menge, $einheit),
+                                     true, mhd_aus_eingabe($daten['mhd']));
+
             $pdo->prepare(
-                'INSERT INTO zugang (artikel_id, menge, einheit, grund, datum, person, bezug, notiz, erfasst_von)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO zugang (artikel_id, menge, einheit, mhd, grund, datum, person, bezug, notiz, erfasst_von)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             )->execute([
-                $artikelId, $menge, $einheit, $daten['grund'], $daten['datum'],
+                $artikelId, $menge, $einheit, $mhd, $daten['grund'], $daten['datum'],
                 $daten['person'] !== '' ? $daten['person'] : null,
                 $daten['bezug']  !== '' ? $daten['bezug']  : null,
                 $daten['notiz']  !== '' ? $daten['notiz']  : null,
@@ -88,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->commit();
 
             flash(einheit_text($art, $einheit, $menge) . ' ' . $art['artikelname']
+                . ($mhd !== null ? ' mit MHD ' . datum_de($mhd) : '')
                 . ' eingebucht (' . zugang_label($daten['grund']) . ').');
             redirect('entnahmen.php?richtung=zugang');
 
@@ -205,6 +212,7 @@ require __DIR__ . '/inc/header.php';
           data-suchtext="<?= h(mb_strtolower($a['inventar_nr'] . ' ' . $a['artikelname'] . ' ' . ($a['kategorie'] ?? '') . ' ' . ($a['lagerort_text'] ?? ''))) ?>"
           data-gebinde="<?= h((string) ($a['gebinde_einheit'] ?? '')) ?>"
           data-einzeln="<?= h((string) ($a['ve_einheit'] ?? '')) ?>"
+          data-chargen="<?= (int) $a['mit_chargen'] ?>"
           <?= $artikelId === (int) $a['artikel_id'] ? ' selected' : '' ?>>
           <?= h($a['inventar_nr']) ?> — <?= h($a['artikelname']) ?>
           (<?= h(bestand_text($a)) ?><?= $a['lagerort_text'] ? ', ' . h($a['lagerort_text']) : '' ?>)
@@ -241,7 +249,15 @@ require __DIR__ . '/inc/header.php';
       <label for="datum">Datum</label>
       <input type="date" id="datum" name="datum" required value="<?= h($daten['datum']) ?>">
     </div>
+    <div class="zeile" id="feld-mhd"<?= $gewaehlt && (int) $gewaehlt['mit_chargen'] === 1 ? '' : ' hidden' ?>>
+      <label for="mhd">MHD der Ware</label>
+      <input type="date" id="mhd" name="mhd" value="<?= h($daten['mhd']) ?>"
+             <?= $gewaehlt && (int) $gewaehlt['mit_chargen'] === 1 ? 'required' : '' ?>>
+    </div>
   </div>
+  <?php if ($gewaehlt && $gewaehlt['chargen_text']): ?>
+    <p class="hinweis">Vorhandene Chargen: <?= h($gewaehlt['chargen_text']) ?>. Gleiches MHD wird dazugezählt.</p>
+  <?php endif; ?>
 
   <div class="paar">
     <div class="zeile">
@@ -297,6 +313,12 @@ require __DIR__ . '/inc/header.php';
       eSel.options[0].textContent = g || 'Gebinde';
       eSel.options[1].textContent = e || 'Einzelstücke';
     }
+    // MHD-Feld nur bei Artikeln mit Chargen, dort ist es Pflicht.
+    const mhdZeile = document.getElementById('feld-mhd');
+    const mhdFeld  = document.getElementById('mhd');
+    const chargen  = o ? o.dataset.chargen === '1' : false;
+    mhdZeile.hidden  = !chargen;
+    mhdFeld.required = chargen;
   }
   sel.addEventListener('change', anpassen);
   anpassen();

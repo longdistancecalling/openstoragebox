@@ -28,7 +28,7 @@ const EXPORT_VERSION = 4;
 // Umzug verloren und wird beim Import trotzdem nicht geleert, sodass
 // verwaiste Zeilen zurückbleiben.
 const EXPORT_TABELLEN = [
-    'kategorie', 'lager', 'regal', 'fach', 'kiste', 'artikel',
+    'kategorie', 'lager', 'regal', 'fach', 'kiste', 'artikel', 'charge',
     'feld', 'artikel_feldwert',
     'entnahme', 'rueckgabe', 'zugang',
     'inventur', 'inventur_position',
@@ -253,6 +253,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     unset($_SESSION['csv_import']);
                     flash("{$n['neu']} Artikel angelegt, {$n['aktualisiert']} aktualisiert, "
                         . "{$n['kisten']} Kisten und {$n['kategorien']} Kategorien neu.");
+                    foreach ($n['hinweise'] as $h) {
+                        flash($h, 'fehler');
+                    }
                     redirect('index.php');
                 } catch (Throwable $e) {
                     $pdo->rollBack();
@@ -434,7 +437,7 @@ function csv_analysieren(PDO $pdo, string $pfad): array
 /** Schreibt geprüfte Zeilen. Muss in einer Transaktion laufen. */
 function csv_schreiben(PDO $pdo, array $zeilen, int $benutzerId): array
 {
-    $n = ['neu' => 0, 'aktualisiert' => 0, 'kisten' => 0, 'kategorien' => 0];
+    $n = ['neu' => 0, 'aktualisiert' => 0, 'kisten' => 0, 'kategorien' => 0, 'hinweise' => []];
 
     $kisten     = array_column($pdo->query('SELECT kiste_id, kiste_nr FROM kiste')->fetchAll(), 'kiste_id', 'kiste_nr');
     $kategorien = array_column($pdo->query('SELECT kategorie_id, bezeichnung FROM kategorie')->fetchAll(), 'kategorie_id', 'bezeichnung');
@@ -482,6 +485,12 @@ function csv_schreiben(PDO $pdo, array $zeilen, int $benutzerId): array
 
         if ($z['artikel_id'] !== null) {
             $updArt->execute([...$werte, $z['artikel_id']]);
+            // Artikel mit MHD-Chargen: die Chargen an den neuen Bestand
+            // angleichen. Das Datum aus der CSV wird dabei wieder durch
+            // das früheste MHD ersetzt.
+            if ($h = chargen_angleichen($pdo, (int) $z['artikel_id'])) {
+                $n['hinweise'][] = $h;
+            }
             $n['aktualisiert']++;
         } else {
             $insArt->execute($werte);
@@ -592,7 +601,7 @@ require __DIR__ . '/inc/header.php';
 
   <section class="kachel">
     <h2>Gesamtexport</h2>
-    <p>Alle Bestandsdaten in einer JSON-Datei – Kategorien, Lagerorte, Kisten, Artikel mit Zusatzfeldern, Entnahmen, Rückgaben, Zugänge, Inventuren.
+    <p>Alle Bestandsdaten in einer JSON-Datei – Kategorien, Lagerorte, Kisten, Artikel mit Zusatzfeldern und MHD-Chargen, Entnahmen, Rückgaben, Zugänge, Inventuren.
        Zum Umziehen auf einen anderen Server oder als Sicherung, die auch ohne Datenbankzugriff lesbar ist.</p>
     <p class="hinweis">
       <?php foreach ($anz as $t => $n): ?><?= $n ?> <?= h($t) ?><?= $t !== 'inventur_position' ? ' · ' : '' ?><?php endforeach; ?>

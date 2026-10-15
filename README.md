@@ -17,6 +17,7 @@ PHP 8.3 + MariaDB 11, als Docker-Compose-Stack.
 ```
 kategorie 1 ─── n  artikel  n ─── 1 kiste        (Kiste optional)
                      │ 1
+                     ├──── n charge                    (nur bei MHD-Chargen)
                      ├──── n entnahme 1 ─── n rueckgabe
                      └──── n inventur_position n ─── 1 inventur
 ```
@@ -33,6 +34,7 @@ einziges UPDATE, alle Artikel wandern mit.
 | Lagerorte als Tabellen `lager`/`regal`/`fach` | Feste Hierarchie Lager→Regal→Fach. Vorher klebten die Namen als Text an der Kiste – jetzt eigene Struktur, auf die Kiste **und** Artikel zeigen. Umbenennen wirkt überall |
 | `inventar_nr` getrennt von `artikel_id` | die Datenbank-ID ist ein technisches Detail, die Inventarnummer klebt am Material und darf eigenen Konventionen folgen |
 | Rückgaben als eigene Tabelle `rueckgabe` | eine Entnahme kann in mehreren Teilen zurückkommen; der offene Rest ist `SUM(rueckgabe)` gegenüber der Entnahme, gerechnet in Einzelstücken (View `v_entnahme`) |
+| MHD-Chargen als Aufteilung, nicht als eigener Bestand | `artikel.menge`/`lose` bleiben der Gesamtbestand, `charge` teilt ihn nur nach MHD auf (in Einzelstücken). Alles, was mit dem Gesamtbestand rechnet, bleibt unverändert; `faellig_am` ist bei Chargen-Artikeln automatisch das früheste MHD |
 | Snapshot-Spalten in `inventur_position` | eine abgeschlossene Inventur ist ein Beleg und muss lesbar bleiben, auch wenn Artikel später umbenannt werden |
 | `faellig_am` + `faellig_typ` | "Was ist in 30 Tagen fällig?" ist eine WHERE-Klausel statt eines UNION |
 | View `v_artikel` | Join und die Berechnung von `lagerort_text` und `verliehen_offen` stehen an einer Stelle |
@@ -63,6 +65,30 @@ und 13 tatsächlich verbraucht wurden.
 | Defekt | nein | kaputt, entsorgt |
 | Abgelaufen | nein | Haltbarkeit überschritten |
 | Verliehen | **ja** – offen, bis alles zurück ist, auch in Teilen | an anderen Ortsverband oder Person |
+
+### MHD-Chargen
+
+Gleiche Lebensmittel aus verschiedenen Lieferungen haben verschiedene
+Mindesthaltbarkeitsdaten. Ein Artikel mit dem Häkchen **Mehrere MHDs führen**
+(*Artikel bearbeiten → MHD-Chargen*) teilt seinen Bestand deshalb nach MHD auf:
+
+- **Zugang** fragt das MHD der Ware ab; gleiches MHD wird zur vorhandenen
+  Charge gezählt.
+- **Entnahme** wählt die Charge aus, die älteste ist vorausgewählt. Scan-Seite
+  und Terminal zeigen dieselbe Auswahl.
+- **Rückgabe** geht in die Charge zurück, aus der entnommen wurde.
+- **Inventur und CSV-Import** kennen nur den Gesamtbestand. Weicht der ab,
+  gleicht `chargen_angleichen()` die Chargen an: Fehlmengen von den ältesten
+  Chargen, Mehrmengen zur jüngsten.
+- Das Datum des Artikels ist immer das **früheste MHD**, von dem noch etwas da
+  ist – *Bedarf* und *Fälligkeiten* warnen damit ohne weitere Logik. Listen
+  zeigen die einzelnen Chargen zusätzlich als Text (`v_artikel.chargen_text`).
+
+Alle Chargen liegen am Lagerort des Artikels. Solange ein Chargen-Artikel
+Bestand hat, sind Bestand, Datum und Gebindeinhalt im Artikelformular
+gesperrt – sie ändern sich nur über Buchungen, sonst liefen Chargen und
+Gesamtbestand auseinander. Wird das Häkchen entfernt, verschwinden die
+Chargen, der Bestand bleibt.
 
 ## 2. Inbetriebnahme
 
@@ -121,7 +147,7 @@ docker compose exec -T db mariadb -u root -p"$(grep DB_ROOT_PASS .env | cut -d= 
   lager < db/02_v2.sql
 ```
 
-Für die weiteren Versionen ebenso `db/03_v3.sql` bis `db/11_v11.sql`, der Reihe nach. Beide Skripte sind wiederholbar – ein zweiter
+Für die weiteren Versionen ebenso `db/03_v3.sql` bis `db/12_v12.sql`, der Reihe nach. Beide Skripte sind wiederholbar – ein zweiter
 Durchlauf richtet keinen Schaden an. Bei einer **Neuinstallation** werden alle
 Dateien im Init-Verzeichnis alphabetisch eingespielt, du musst nichts migrieren.
 
@@ -246,8 +272,7 @@ Ersterfassung meist eine Kiste oder ein Regal am Stück befüllt.
 ### Navigation
 
 Die Navigation steht in einer Seitenleiste links; in der Kopfleiste bleiben
-nur die Knöpfe Terminal und Entnahme (siehe unten) und der angemeldete
-Benutzer.
+nur der Knopf **Terminal** (siehe unten) und der angemeldete Benutzer.
 
 Oben in der Seitenleiste steht, was im Lageralltag gebraucht wird: Artikel,
 Scannen, Bewegungen, Bedarf, Kisten, Inventur, Export. Alles, was man selten
@@ -267,12 +292,90 @@ Tastatur bedienbar.
 Am Handy steht die Seitenleiste nicht neben, sondern über dem Inhalt und ist
 zugeklappt; der Knopf **☰ Menü** in der Kopfleiste öffnet sie.
 
-### Der Einsatzknopf
+### Startseite und Terminal-Knopf
 
-Oben rechts steht auf jeder Seite ein roter **Entnahme**-Knopf, erreichbar auch
-über Alt+E. Er sitzt bewusst außerhalb der Navigation und in einer Farbe, die
-sonst nirgends vorkommt: Im Einsatz zählt, dass jemand unter Zeitdruck den Weg
-zum Buchen findet, ohne die Leiste zu lesen. Leser sehen ihn nicht.
+Die Anwendung startet im **Terminal** (`touch.php`): nach der Anmeldung und
+beim Aufruf der Adresse ohne Seitenangabe. Dort sind Entnahme, Einlagern,
+Übersicht und Bedarf mit einem Fingertipp erreichbar. Die Vollansicht mit
+Seitenleiste öffnet *Vollansicht* im Terminal oder *Artikel* in der
+Seitenleiste – `index.php` selbst zeigt weiter die Artikelliste. Wer nur
+lesen darf, startet in der Artikelliste, das Terminal ist ihm nicht
+freigegeben (`startseite()` in `inc/auth.php`).
+
+Oben rechts steht auf jeder Seite der blaue Knopf **Terminal**, immer an
+derselben Stelle: Im Einsatz zählt, dass jemand unter Zeitdruck den Weg zum
+Buchen findet, ohne die Leiste zu lesen. Bis v12 stand daneben ein roter
+Entnahme-Knopf (Alt+E); seine Aufgabe übernimmt die Entnahme im Terminal.
+
+Wer sich anmelden muss, landet danach auf der Seite, die er ursprünglich
+aufrufen wollte.
+
+### Darstellung: Farben und Schrift
+
+In der Kopfleiste – Vollansicht, Terminal und Anmeldeseite – steht ein
+**Hell/Dunkel-Schalter**: ein Klick schaltet um, aus Dunkel geht es zurück
+zu Hell. Alles Weitere steht auf der Seite **Verwaltung → Darstellung**
+(`darstellung.php`, für alle Rollen), mit Farbmuster und Schriftprobe je
+Option. Farben und Schrift sind unabhängig voneinander wählbar:
+
+| Farben | |
+|---|---|
+| **Hell** | Standard |
+| **Dunkel** | helle Schrift auf dunklem Grund, z. B. fürs Tablet im dunklen Lager |
+| **Rot-Grün-sicher** | für Rot-Grün-Sehschwäche: Zinnober statt Rot, Blau statt Grün, Gelbbraun für „bald“ (nach Okabe/Ito); im Terminal ist die Übersicht neutral grau, damit sich die vier Bereiche unterscheiden |
+| **Nachtsicht** | nur rotes Licht auf Schwarz – Rot stört die Dunkelanpassung der Augen am wenigsten. Für Nachteinsätze und dunkle Zelte; auch Kopfleiste, Formularfelder und Rollbalken sind rot |
+| **Blaupause** | wie ein technischer Bauplan: tiefes Blau mit Millimeterraster, gestrichelte Linien, Überschriften in Schablonenschrift |
+| **Lagerbuch** | wie ein altes Bestandsbuch: liniertes Papier mit rotem Randstrich, braune Tinte, Füllerblau, Marken wie Stempel, Überschriften mit Serifen |
+| **Wald** | ruhiges Grün für den Alltag: Salbeipapier, Tannengrün in der Kopfleiste (mit leichtem Verlauf), Tannentürkis für Links, Moos für „in Ordnung“, Rost für Warnungen, Ocker für „bald“, dazu Sonnenflecken im Hintergrund |
+| **Phosphor** | wie ein alter Grün-Monitor: leuchtende grüne Schrift auf Schwarz, feine Bildschirmzeilen, mit Standardschrift alles in Festbreitenschrift und ein blinkender Cursor hinter der Überschrift; Warnungen bleiben rot und gelb |
+| **Rotes Plus** | nach dem [DRK-Styleguide](https://styleguide.drk.de/deutsches-rotes-kreuz/basiselemente/farben): viel Weiß, Fließtext in DRK-Dunkelgrau, Überschriften in DRK-Rot und Merriweather, Fließtext in Helvetica Neue (Ersatz Arial), Links und Auswahl in DRK-Dunkelblau, Formularflächen in Hellblau, Hover in Dunkelrot, weiße Kopfleiste mit rotem Strich. Statusfarben nur aus der DRK-Palette; der leise Text ist dunkler als das optionale DRK-Grau, das auf Weiß keine 4,5:1 erreicht. Das Rotkreuz-Zeichen ist ein Schutzzeichen und kommt bewusst nicht vor |
+| **Feuerwehr** | Kopfleiste in Feuerrot (RAL 3000, Grundfarbe der Fahrzeuge nach DIN 14502-3), darunter ein schräges Warnband in Rot und Leuchtgelb wie die Heckmarkierung; Links und Knöpfe in Nachtblau wie die Uniform, Überschriften in Versalien wie die Fahrzeugbeschriftung. Im Terminal ist die Bereichsleiste nachtblau, damit die aktive rote Entnahme sichtbar bleibt |
+| **THW** | Kopfleiste in THW-Blau (RAL 5002, RGB 0/62/144 – Werte aus den Gestaltungsrichtlinien der THW-Jugend, öffentliche Vorgaben der Bundesanstalt waren nicht auffindbar) mit blau-weißem Warnband, Orange als Akzent für Terminal-Knopf und „bald“. Kein Logo, kein Zahnrad |
+| **Hoher Kontrast** | für Sehschwäche und pralles Sonnenlicht: Schwarz auf Weiß, schwarze Kopfleiste, kräftige Rahmen und Fokusringe, Links immer unterstrichen, Hervorhebungen in Gelb, Marken mit Rahmen |
+| **Rettungsdienst** | weiß wie ein Rettungswagen, unter der Kopfleiste ein Schachbrettband in Rot und Leuchtgelb wie die Warnmarkierung am Fahrzeug; Rot für Terminal-Knopf und Überschriften. Im Terminal ist die Bereichsleiste dunkel, der aktive Bereich gelb unterstrichen |
+| **Warnweste** | Kopfleiste in Leuchtgelb mit Reflexstreifen (grau mit orangen Kanten), Akzente in Schwarz und Orange – auffällig, eher fürs Auge als für den Dauerbetrieb. Im Terminal dunkle Schrift auf den hellen Kacheln |
+| **Wasserwacht** | Wasserblau und Weiß, unter der Kopfleiste eine Wellenkante; Links und Knöpfe in tieferem Blau. Kein Logo |
+| **E-Ink** | für E-Paper-Displays: nur Schwarz, Weiß und Grau, keine Verläufe, Schatten, Übergänge oder Animationen (die auf E-Paper flackern). Status ohne Farbe: „abgelaufen“ invertiert, „bald“ umrandet |
+
+Dunkel, Nachtsicht, Blaupause und Phosphor gelten als dunkle Designs: Der
+Hell/Dunkel-Schalter steht dort auf „an“ und führt zu Hell.
+
+Damit sechzehn Designs übersichtlich bleiben, ordnet die Seite sie in
+aufklappbare Gruppen: *Standard* (Hell, Dunkel), *Barrierefrei* (Hoher
+Kontrast, Rot-Grün-sicher), *Besondere Lagen* (Nachtsicht, E-Ink),
+*Hilfsorganisationen* (Rotes Plus, Rettungsdienst, Feuerwehr, THW,
+Wasserwacht) und *Stimmungen* (Wald, Lagerbuch, Blaupause, Phosphor,
+Warnweste). Offen ist nur die Gruppe mit dem aktiven Design, zugeklappte
+Gruppen zeigen je Design einen Farbpunkt; „Alle aufklappen“ öffnet alle.
+Ganz oben steht, was gerade eingestellt ist, mit „Auf Standard
+zurücksetzen“. Ein neues Design, das in `darstellung.php` keiner Gruppe
+zugeordnet ist, erscheint unter „Weitere“.
+
+Jedes Design erscheint als kleine Live-Vorschau – ein Ausschnitt
+der Oberfläche mit eigenem `data-farbe`, deshalb hängen die Designs in
+`style.css` am Attribut und nicht nur an `:root`. Schmuck wie Raster,
+Linien und Serifenschrift steht mit im Design; die Versalien und
+Serifen der Überschriften gibt es nur mit der Standardschrift, damit
+eine gewählte Leseschrift Vorrang hat. Alle Designs erreichen in der
+automatischen Prüfung mindestens 4,5:1 Kontrast (WCAG AA).
+
+| Schrift | |
+|---|---|
+| **Standard** | IBM Plex Sans und Mono |
+| **OpenDyslexic** | Schrift für Menschen mit LRS/Legasthenie, liegt in `src/assets/fonts` (SIL Open Font License, siehe `OpenDyslexic-OFL.txt`) |
+| **Lexend** | für flüssigeres Lesen entwickelt, kommt von Google Fonts |
+
+Mit beiden Leseschriften gibt es mehr Zeilenabstand und keine Versalien –
+Wörter in reinen Großbuchstaben verlieren ihre Form, an der man sie erkennt.
+
+Die Wahl gilt **pro Gerät**: `darstellung.php` setzt ein Cookie
+(`osb_darstellung`, ein Jahr gültig), und die Seiten setzen daraus
+`data-farbe` und `data-schrift` am `<html>`-Element – serverseitig, damit
+nichts kurz im falschen Design aufblitzt. So gilt die Wahl schon auf der
+Anmeldeseite, und ein Terminal-Tablet behält sein Design, egal wer
+angemeldet ist. Technisch hängt alles an CSS-Variablen; die Designs
+schalten nur diese um (`style.css`, `touch.css`). Ausdrucke bleiben immer
+schwarz auf weiß.
 
 ### Anmeldung und Rollen
 
@@ -327,6 +430,7 @@ db/01_schema.sql            Grundschema (v1)
 db/02_v2.sql                Migration auf v2, wiederholbar
 db/10_v10.sql               Migration auf v10: Lagerort-Hierarchie
 db/11_v11.sql               Migration auf v11: Rückgaben (auch in Teilen, auch nach Einsatz)
+db/12_v12.sql               Migration auf v12: MHD-Chargen
 src/inc/config.php          PDO-Verbindung, Sortierkonstanten, Entnahmegründe
 src/inc/helpers.php         Escaping, CSRF, Flash, Lagerort-Chip, CSV-Ausgabe
 src/inc/auth.php            Anmeldung, Rollen, Brute-Force-Sperre
@@ -361,6 +465,8 @@ ROADMAP.md                  offene Bausteine
 src/scan.php                Buchen per Barcode
 src/touch.php               Touch-Terminal fürs Lager-Tablet
 src/assets/touch.css        Stylesheet des Terminals
+src/darstellung.php         Verwaltung → Darstellung; speichert Farben und Schrift fürs Gerät (Cookie)
+src/assets/fonts/           OpenDyslexic (Leseschrift) mit Lizenz
 src/aushang.php             Lagerübersicht zum Aushängen
 src/regal.php               Regalschilder
 src/code.php                Klebeetiketten mit QR-Code
@@ -415,26 +521,36 @@ alles in einer Spalte.
 
 ### Touch-Terminal
 
-Für ein Tablet an der Lagerwand gibt es unter `touch.php` eine reduzierte
-Oberfläche: großes Scanfeld mit Dauerfokus, fingergerechte Knöpfe ab 64 px,
-keine Navigation. Der Ablauf ist auf das Nötigste eingedampft – scannen,
-Menge mit Plus/Minus einstellen, mit einem breiten roten oder grünen Knopf
-entnehmen oder einbuchen. Nach der Buchung erscheint eine große Quittung mit
-dem neuen Bestand.
+Für ein Tablet an der Lagerwand gibt es unter `touch.php` eine eigene
+Oberfläche für Fingerbedienung. Die Startseite zeigt vier große Kacheln, in
+jedem Bereich steht dieselbe Auswahl als Leiste oben – jeder Bereich ist mit
+einem Tipp erreichbar:
+
+| Bereich | Was er tut |
+|---|---|
+| **Entnahme** | scannen oder suchen, Menge, Grund (Einsatz, Verschleiß, Defekt, Abgelaufen), bei MHD-Chargen die Charge – dann ein breiter roter Knopf |
+| **Einlagern** | dasselbe als Zugang (Beschaffung, Rücklauf, Spende, Korrektur), bei Chargen mit MHD |
+| **Übersicht** | Bestand nach Kategorie; ein Tipp zeigt den Artikel mit Entnehmen und Einlagern |
+| **Bedarf** | abgelaufen, unter Sollbestand, läuft bald ab – dieselben Listen wie die Seite *Bedarf* (`bedarf_laden()`). Ein abgelaufener Artikel öffnet die Entnahme mit Grund *Abgelaufen*, ein fehlender das Einlagern |
+
+Bedient wird nur mit großen Flächen: Auswahl über Knöpfe statt Klapplisten,
+Menge mit Plus, Minus und +10, alles ab 60 px Höhe. Der aktive Bereich in
+der Leiste trägt neben seiner Farbe einen Unterstrich, damit er in jedem
+Design zu erkennen ist. Nach einer Buchung leitet
+das Terminal zurück in den Bereich und zeigt eine große Quittung – der nächste
+Artikel lässt sich sofort scannen, und ein Neuladen bucht nichts doppelt.
+Nach zwei Minuten ohne Bedienung springt es zurück auf die Startseite, damit
+die nächste Person nicht in einer halb ausgefüllten Buchung landet.
 
 Neben dem Scanfeld gibt es ein zweites für die **Namenssuche** – Artikel
 ohne Barcode fallen so nicht durchs Raster. Der Scanner tippt weiter ins
-obere Feld, die Suche braucht die Tastatur; beide stören sich nicht.
+obere Feld, die Suche braucht die Tastatur; beide stören sich nicht. Ein
+Scan auf der Startseite zeigt den Artikel in der Übersicht.
 
-Das Terminal bucht nur die beiden Fälle, die im Lager unter Zeitdruck
-vorkommen: Entnahme als *Einsatz*, Zugang als *Rücklauf*. Alles Weitere –
-Leihen, andere Gründe, Notizen – läuft über die normale Oberfläche. Es setzt
-auf dieselbe Buchungslogik wie die reguläre Scan-Seite auf, ist also kein
-zweiter Code, sondern nur eine andere Ansicht.
-
-Gebucht wird per Barcode-Scan **oder** über ein Textsuchfeld darunter – so
-sind auch Artikel ohne eigenen Code erreichbar. Das Terminal steht in der
-Hauptnavigation.
+Leihen brauchen den Namen des Entleihers und laufen deshalb weiter über die
+normale Oberfläche. Das Terminal setzt auf dieselbe Buchungslogik wie die
+reguläre Scan-Seite auf, ist also kein zweiter Code, sondern nur eine andere
+Ansicht. Es steht in der Kopfleiste der Hauptansicht.
 
 Gedacht ist es für den angemeldeten Betrieb: Wer das Tablet fest einloggt,
 hat den bequemen Kiosk-Effekt, und trotzdem steht bei jeder Buchung ein
@@ -655,7 +771,7 @@ zusätzlich Kategorie und den buchenden Benutzer.
 Unter *Daten* gibt es drei Funktionen:
 
 **Gesamtexport (JSON)** – alle Bestandsdaten in einer Datei: Kategorien,
-Lagerorte, Kisten, Artikel mit Zusatzfeldern, Entnahmen, Rückgaben, Zugänge,
+Lagerorte, Kisten, Artikel mit Zusatzfeldern und MHD-Chargen, Entnahmen, Rückgaben, Zugänge,
 Inventuren. Zum Umzug auf einen anderen Server oder als
 Sicherung, die man auch ohne Datenbankzugriff lesen kann. Benutzerkonten sind
 bewusst nicht enthalten – Passwort-Hashes gehören nicht in eine Datei, die per

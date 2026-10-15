@@ -2,6 +2,16 @@
 declare(strict_types=1);
 require __DIR__ . '/inc/config.php';
 
+/*
+ * Startseite ist das Terminal: wer die Anwendung ohne Seitenangabe
+ * aufruft ("/"), landet dort. Ausdrücklich aufgerufen – "Artikel" in der
+ * Seitenleiste, "Vollansicht" im Terminal – zeigt index.php weiter die
+ * Artikelliste.
+ */
+if (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) === '/' && startseite() !== 'index.php') {
+    redirect(startseite());
+}
+
 /* -------------------------------------------------------------------
    Sortierung
    Der Sortierparameter kommt aus der URL und darf niemals direkt in
@@ -241,6 +251,9 @@ require __DIR__ . '/inc/header.php';
               elseif ($stufe === 'bald') { echo ' · in ' . (int) $tage . ' Tagen'; }
             ?></span>
           </span>
+          <?php if ((int) $a['anzahl_chargen'] > 1): ?>
+            <span class="chargen-text" title="<?= h($a['chargen_text']) ?>">+<?= (int) $a['anzahl_chargen'] - 1 ?> weitere MHD</span>
+          <?php endif; ?>
         <?php endif; ?>
       </td>
       <td class="aktion" data-label="">

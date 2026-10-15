@@ -1,6 +1,6 @@
 # OpenStorageBox – Handbuch für die Administration
 
-DRK KV Eisenach · Stand Version 11
+DRK KV Eisenach · Stand Version 12
 
 Dieses Heft richtet sich an die Person, die die Lagerverwaltung betreibt:
 Installation, Sicherung, Benutzer, Updates. Für die tägliche Arbeit gibt es
@@ -95,7 +95,7 @@ Braucht Docker auf dem System Root-Rechte, kommt `sudo` davor:
 `sudo docker compose up -d --build`. Alle drei Container müssen laufen,
 `lager-db` auf `healthy`. Beim allerersten Start mit leerem Volume spielt
 MariaDB automatisch **alle** SQL-Dateien aus `db/` der Reihe nach ein – von
-`01_schema.sql` bis `11_v11.sql`. Man muss nichts migrieren.
+`01_schema.sql` bis `12_v12.sql`. Man muss nichts migrieren.
 
 ### Ersten Administrator anlegen
 

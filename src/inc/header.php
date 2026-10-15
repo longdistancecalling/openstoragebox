@@ -14,8 +14,10 @@ $aktiv = $aktiv ?? '';
  * untereinander findet niemand mehr durch, und die täglich genutzten
  * gehen darin unter.
  *
- * In der Kopfleiste bleiben nur Terminal und Entnahme – die beiden
- * Knöpfe, die im Einsatz sofort gefunden werden müssen.
+ * In der Kopfleiste bleiben der Knopf zum Terminal – dort sind
+ * Entnahme, Einlagern, Übersicht und Bedarf mit einem Fingertipp
+ * erreichbar – und der Hell/Dunkel-Schalter. Alle übrigen Einstellungen
+ * zur Darstellung stehen unter Verwaltung → Darstellung.
  */
 $nav = [
     'index'     => ['Artikel',      'index.php'],
@@ -39,6 +41,8 @@ if (darf('admin')) {
     $verwaltung['benutzer']      = ['Benutzer',      'benutzer.php'];
     $verwaltung['einstellungen'] = ['Einstellungen', 'einstellungen.php'];
 }
+// Darstellung gilt pro Gerät – jeder darf sie für sich einstellen.
+$verwaltung['darstellung'] = ['Darstellung', 'darstellung.php'];
 
 // Ist gerade eine Verwaltungsseite offen? Dann den Abschnitt
 // aufgeklappt zeigen, sonst bleibt er zu.
@@ -46,7 +50,7 @@ $inVerwaltung = isset($verwaltung[$aktiv]);
 $ich = benutzer();
 ?>
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de"<?= darstellung_attribute() ?>>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -54,6 +58,7 @@ $ich = benutzer();
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<?= darstellung_kopf() ?>
 <link rel="stylesheet" href="assets/style.css">
 <!-- Ohne Skript bleibt die Seitenleiste am Handy einfach offen;
      erst mit Skript wird sie zum Klappmenü. -->
@@ -76,24 +81,19 @@ $ich = benutzer();
   </a>
   <?php if (darf('bearbeiter')): ?>
     <!--
-      Terminal und Entnahme stehen als Paar rechts in der Leiste, in
-      Signalfarben: im Einsatz zählt, dass jemand mit nassen Händen und
-      unter Zeitdruck den Weg zum Buchen findet, ohne die Leiste zu
-      lesen. Beide Knöpfe sind auf jeder Seite an derselben Stelle.
-      Terminal (blau) öffnet die Buchungsstation fürs Lager-Tablet,
-      Entnahme (rot) das normale Entnahmeformular.
+      Der Terminal-Knopf steht auf jeder Seite an derselben Stelle rechts
+      in der Leiste. Das Terminal ist der schnelle Weg zum Buchen – im
+      Einsatz zählt, dass jemand unter Zeitdruck dorthin findet, ohne die
+      Leiste zu lesen.
     -->
     <div class="kopf-aktionen">
       <a class="terminal-knopf" href="touch.php" title="Buchungsterminal öffnen">
         <span class="terminal-zeichen" aria-hidden="true">▭</span>
         <span class="terminal-text">Terminal</span>
       </a>
-      <a class="einsatz" href="entnahme.php" accesskey="e" title="Entnahme buchen (Alt+E)">
-        <span class="einsatz-zeichen" aria-hidden="true">−</span>
-        <span class="einsatz-text">Entnahme</span>
-      </a>
     </div>
   <?php endif; ?>
+  <?php hell_dunkel_schalter(); ?>
   <?php if ($ich): ?>
   <div class="wer">
     <a href="profil.php" class="wer-name" title="Passwort ändern"><?= h($ich['anzeigename']) ?></a>

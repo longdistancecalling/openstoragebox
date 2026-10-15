@@ -1,9 +1,9 @@
 # Roadmap
 
-Stand: 14.10.2026 · aktuelle Version v11
+Stand: 14.10.2026 · aktuelle Version v12
 
-Ein größerer offener Punkt (Chargen mit MHD), dazu die Einsatzauswertung
-und Kleinigkeiten. Keiner blockiert den Betrieb.
+Offen sind die Einsatzauswertung, zwei Ausbaustufen der MHD-Chargen und
+Kleinigkeiten. Keiner blockiert den Betrieb.
 
 ---
 
@@ -22,6 +22,7 @@ und Kleinigkeiten. Keiner blockiert den Betrieb.
 | v9 | Sollbestand je Artikel, Seite „Handlungsbedarf" |
 | v10 | Lagerorte als eigene Hierarchie (Lager→Regal→Fach), Artikel direkt im Fach |
 | v11 | Rückgaben als eigene Buchungen: Teilrückgaben bei Leihen, Rückläufer aus dem Einsatz, Rückgabemaske `rueckgabe.php` |
+| v12 | MHD-Chargen: gleiche Artikel mit verschiedenen MHD, MHD beim Zugang, Chargenwahl bei der Entnahme, frühestes MHD als Fälligkeit |
 
 Zuletzt ohne eigene Migration: Scan-Seite versteht die eigenen QR-Codes
 (`K:` und `A:`) und bucht Gebinde korrekt; Blanko-Scheine zum Ausdrucken;
@@ -33,7 +34,17 @@ Seitenleiste mit aufklappbarem Abschnitt „Verwaltung“, in der Kopfleiste
 nur noch Terminal und Entnahme (ersetzt das geplante Umsortieren der
 Kopfleiste); JSON-Gesamtexport vollständig (jetzt auch Zugänge,
 Zusatzfelder und Feldwerte), und der Import überführt Kistenorte aus
-Dateien von vor v10 in die Ort-Hierarchie.
+Dateien von vor v10 in die Ort-Hierarchie; Touch-Terminal neu aufgebaut
+mit vier Bereichen (Entnahme, Einlagern, Übersicht, Bedarf), Auswahl per
+Fingertipp und Rücksprung zur Startseite nach zwei Minuten; das Terminal
+ist die Startseite, der rote Entnahme-Knopf in der Kopfleiste entfällt;
+nach der Anmeldung geht es wieder zur ursprünglich aufgerufenen Seite;
+Hell/Dunkel-Schalter in der Kopfleiste und Seite Verwaltung →
+Darstellung mit den Designs Dunkel, Hoher Kontrast, Rot-Grün-sicher,
+Nachtsicht, E-Ink, Rotes Plus, Rettungsdienst, Feuerwehr, THW, Wasserwacht,
+Wald, Lagerbuch, Blaupause, Phosphor und Warnweste (in Gruppen, je mit
+Live-Vorschau) sowie den Leseschriften
+OpenDyslexic und Lexend, pro Gerät gespeichert.
 
 Dazu quer über die Versionen: Regalschilder, Lagerübersicht zum Aushängen,
 Entnahme- und Leihscheine, QR-Code auf dem Kistenetikett, Backup und Restore.
@@ -46,45 +57,25 @@ nachgezogen. Lokale Ordnernamen und der Docker-Mount blieben unberührt.
 
 ---
 
-## 1. Gleiche Artikel mit unterschiedlichem MHD
+## 1. MHD-Chargen ausbauen
 
-**Das Problem:** Ein Artikel hat genau ein Fälligkeitsdatum. Wer zwei
-Lieferungen Trinkwasser im Regal hat – eine mit MHD 01/2027, eine mit
-06/2027 – kann das heute nicht sauber abbilden. Betrifft vor allem
-Verpflegung, Sanitätsmaterial und Batterien, also genau das, was im
-Einsatz gebraucht wird.
+v12 hat die schlanke Variante umgesetzt: Chargen teilen den Bestand eines
+Artikels nach MHD auf, alle liegen am Lagerort des Artikels, und
+`artikel.menge` bleibt der Gesamtbestand. Zwei Ausbaustufen liegen nahe,
+beide erst sinnvoll, wenn der Betrieb danach fragt:
 
-**Was heute geht:** Zwei Artikelzeilen mit gleichem Namen und gleicher EAN
-anlegen. Das funktioniert, weil die EAN bewusst nicht eindeutig ist, und
-der Lagerort trennt beide. Nachteile: Der Bestand steht an zwei Stellen,
-die Gesamtzahl muss jemand im Kopf addieren, und beim Scannen erscheinen
-beide Zeilen – man muss selbst wissen, welche die ältere ist.
+- **Inventur je Charge.** Die Inventur zählt heute den Gesamtbestand;
+  Abweichungen verteilt `chargen_angleichen()` (Fehlmenge von den
+  ältesten, Mehrmenge zur jüngsten Charge). Das ist meist richtig, aber
+  geraten. Genauer wäre eine Zählzeile je MHD bei Chargen-Artikeln – in
+  `inventur_position` eine Spalte `mhd` und eine Position je Charge.
+- **Chargen mit eigenem Lagerort.** Wenn eine neue Palette Wasser in
+  Halle B steht und die alte im Keller, bräuchte die Charge einen eigenen
+  Ort. Das berührt Scan, Kisteninhalt, Etiketten und Aushang – eine
+  Version für sich.
 
-**Zwei Wege:**
-
-*a) Beim Workaround bleiben, ihn aber abfedern.* In der Artikelliste und
-beim Scannen Artikel mit gleichem Namen zusammenfassen und die Summe
-zeigen, das früheste MHD hervorheben. Kein Eingriff ins Datenmodell,
-eine Abfrage mehr und etwas Anzeigelogik. Löst das Problem nicht, macht
-es aber erträglich.
-
-*b) Chargen als eigene Ebene.* Neue Tabelle `charge` mit MHD, Menge,
-losen Stücken und Lagerort; der Artikel wird zur Stammdatenzeile ohne
-eigenen Bestand. Fachlich richtig und die Grundlage für FIFO – bei der
-Entnahme automatisch die älteste Charge zuerst, was bei Verpflegung
-genau das ist, was man will.
-
-Der Preis ist hoch: Bestand, Entnahme, Zugang, Scan, Inventur,
-Gebindelogik und alle Exporte rechnen heute mit `artikel.menge`. Jede
-dieser Stellen müsste auf Chargen umgestellt werden. Das ist kein
-kleiner Punkt, sondern eine Version für sich – vergleichbar mit den
-Verpackungseinheiten, eher größer.
-
-**Bevor das entschieden wird,** wäre eine Zahl aus dem Betrieb nützlich:
-Bei wie vielen Artikeln liegen tatsächlich mehrere MHD gleichzeitig im
-Regal? Sind es drei, reicht Weg a. Sind es dreißig und jemand sortiert
-regelmäßig aus, lohnt sich b. Diese Zahl lässt sich nach ein paar
-Monaten Betrieb ablesen, vorher wäre sie geraten.
+Kleiner, aber nützlich: beim Entnehmen warnen, wenn bewusst nicht die
+älteste Charge gewählt wird.
 
 ---
 

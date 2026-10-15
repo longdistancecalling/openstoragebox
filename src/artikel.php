@@ -45,6 +45,10 @@ $daten = [
     'faellig_am'   => '',
     'faellig_typ'  => '',
     'notiz'        => '',
+    // MHD-Chargen (v12): Häkchen und das MHD für Bestand, der noch
+    // keiner Charge zugeordnet ist (beim Einschalten der ganze Bestand).
+    'mit_chargen'  => '',
+    'mhd_rest'     => '',
 ];
 
 /* ===================================================================
@@ -68,6 +72,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     /* ---- Speichern ------------------------------------------------ */
     foreach (array_keys($daten) as $feld) {
         $daten[$feld] = trim((string) ($_POST[$feld] ?? ''));
+    }
+
+    /*
+     * Bei einem Artikel, der schon Chargen führt, ändert sich der Bestand
+     * nur über Buchungen – sonst stimmten Chargen und Gesamtbestand nicht
+     * mehr überein. Bestand und Datum kommen deshalb aus der Datenbank,
+     * egal was im Formular steht. Das Datum pflegt chargen_mhd_setzen().
+     */
+    $vorher = null;
+    if ($id !== null) {
+        $stmt = $pdo->prepare(
+            'SELECT menge, lose, ve_inhalt, faellig_am, faellig_typ, mit_chargen FROM artikel WHERE artikel_id = ?'
+        );
+        $stmt->execute([$id]);
+        $vorher = $stmt->fetch() ?: null;
+    }
+    $warChargen = $vorher !== null && (int) $vorher['mit_chargen'] === 1;
+    $mitChargen = $daten['mit_chargen'] === '1';
+    if ($warChargen) {
+        $daten['menge']       = (string) $vorher['menge'];
+        $daten['lose']        = (string) $vorher['lose'];
+        $daten['faellig_am']  = (string) ($vorher['faellig_am'] ?? '');
+        $daten['faellig_typ'] = (string) ($vorher['faellig_typ'] ?? '');
+        $bestandVorher = (int) $vorher['menge'] * max(1, (int) $vorher['ve_inhalt']) + (int) $vorher['lose'];
+        if ($bestandVorher > 0 && (string) ($vorher['ve_inhalt'] ?? '') !== $daten['ve_inhalt']) {
+            $fehler[] = 'Bei einem Artikel mit MHD-Chargen lässt sich der Gebindeinhalt nicht ändern, '
+                      . 'solange Bestand da ist – die Chargen zählen Einzelstücke.';
+        }
     }
 
     $daten['ean'] = ean_saeubern($daten['ean']);
@@ -164,6 +196,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fehler[] = 'Unbekannte Art der Fälligkeit.';
     }
 
+    // Chargen einschalten: der vorhandene Bestand braucht ein MHD.
+    if ($mitChargen && !$warChargen) {
+        if ($daten['faellig_typ'] === 'pruefung') {
+            $fehler[] = 'Bei MHD-Chargen ist das Datum immer das Mindesthaltbarkeitsdatum – '
+                      . 'ein Prüfdatum passt dazu nicht.';
+        }
+        $bestandNeu = (int) $daten['menge'] * max(1, (int) $daten['ve_inhalt']) + (int) $daten['lose'];
+        if ($bestandNeu > 0 && mhd_aus_eingabe($daten['mhd_rest']) === null) {
+            $fehler[] = 'Für den vorhandenen Bestand fehlt das MHD (Feld „MHD für den Bestand“).';
+        }
+    } elseif ($mitChargen && $daten['mhd_rest'] !== '' && mhd_aus_eingabe($daten['mhd_rest']) === null) {
+        $fehler[] = 'Das MHD für den Bestand ohne Charge ist kein gültiges Datum.';
+    }
+
     /*
      * Zusatzfelder prüfen – aber nur die, die zur gewählten Kategorie
      * gehören. Ein Pflichtfeld der Kategorie Elektro darf das Speichern
@@ -201,7 +247,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $daten['faellig_am']  !== '' ? $daten['faellig_am']  : null,
             $daten['faellig_typ'] !== '' ? $daten['faellig_typ'] : null,
             $daten['notiz'] !== '' ? $daten['notiz'] : null,
+            $mitChargen ? 1 : 0,
         ];
+
+        /**
+         * Chargen nach dem Speichern nachziehen: beim Einschalten bekommt
+         * der Bestand ohne Charge das angegebene MHD, beim Ausschalten
+         * verschwinden die Chargen (der Gesamtbestand bleibt).
+         */
+        $chargenNachziehen = function (int $artikelId) use ($pdo, $mitChargen, $warChargen, $daten): void {
+            if (!$mitChargen) {
+                if ($warChargen) {
+                    $pdo->prepare('DELETE FROM charge WHERE artikel_id = ?')->execute([$artikelId]);
+                }
+                return;
+            }
+            $stmt = $pdo->prepare('SELECT * FROM artikel WHERE artikel_id = ?');
+            $stmt->execute([$artikelId]);
+            $art    = $stmt->fetch();
+            $gesamt = (int) $art['menge'] * max(1, (int) $art['ve_inhalt']) + (int) $art['lose'];
+            $ohne   = $gesamt - array_sum(array_map('intval', array_column(chargen_laden($pdo, $artikelId), 'menge')));
+            $mhd    = mhd_aus_eingabe($daten['mhd_rest']);
+            if ($ohne > 0 && $mhd !== null) {
+                charge_buchen($pdo, $art, $artikelId, $mhd, $ohne);
+            }
+            chargen_mhd_setzen($pdo, $artikelId);
+        };
 
         try {
             if ($id === null) {
@@ -217,8 +288,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'INSERT INTO artikel
                        (ean, artikelname, kiste_id, fach_id, standort_frei, kategorie_id, menge,
                         ve_inhalt, ve_einheit, gebinde_einheit, lose, soll_bestand,
-                        faellig_am, faellig_typ, notiz)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                        faellig_am, faellig_typ, notiz, mit_chargen)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
                 );
                 $stmt->execute($werte);
                 $neueId = (int) $pdo->lastInsertId();
@@ -231,6 +302,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ->execute([$nummer, $neueId]);
 
                 feldwerte_speichern($pdo, $neueId, $zuSpeichern);
+                $chargenNachziehen($neueId);
 
                 $pdo->commit();
                 flash("Artikel $nummer angelegt." . (isset($hinweisVE) ? ' ' . $hinweisVE : ''));
@@ -239,15 +311,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ? $daten['inventar_nr']
                         : inventar_nr_aus_id($id);
 
+                // Transaktion, weil die Chargen mit dem Artikel zusammen
+                // stimmen müssen.
+                $pdo->beginTransaction();
                 $stmt = $pdo->prepare(
                     'UPDATE artikel SET
                         ean = ?, artikelname = ?, kiste_id = ?, fach_id = ?, standort_frei = ?, kategorie_id = ?,
                         menge = ?, ve_inhalt = ?, ve_einheit = ?, gebinde_einheit = ?, lose = ?,
-                        soll_bestand = ?, faellig_am = ?, faellig_typ = ?, notiz = ?, inventar_nr = ?
+                        soll_bestand = ?, faellig_am = ?, faellig_typ = ?, notiz = ?, mit_chargen = ?,
+                        inventar_nr = ?
                      WHERE artikel_id = ?'
                 );
                 $stmt->execute([...$werte, $nummer, $id]);
                 feldwerte_speichern($pdo, $id, $zuSpeichern);
+                $chargenNachziehen($id);
+                $pdo->commit();
                 flash('Änderungen gespeichert.' . (isset($hinweisVE) ? ' ' . $hinweisVE : ''));
             }
             // "Speichern und weiter": nur beim Neuanlegen sinnvoll. Lagerort
@@ -313,8 +391,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $id !== null) {
         'faellig_am'   => (string) ($vorhanden['faellig_am'] ?? ''),
         'faellig_typ'  => (string) ($vorhanden['faellig_typ'] ?? ''),
         'notiz'        => (string) ($vorhanden['notiz'] ?? ''),
+        'mit_chargen'  => (int) $vorhanden['mit_chargen'] === 1 ? '1' : '',
+        'mhd_rest'     => '',
     ];
 }
+
+/*
+ * Chargenstand fürs Formular. $istChargen meint den gespeicherten Stand:
+ * nur dann sind Bestand und Datum gesperrt und die Chargen sichtbar.
+ */
+$istChargen = false;
+$chargen    = [];
+$ohneMhd    = 0;
+$artDb      = null;
+if ($id !== null) {
+    $stmt = $pdo->prepare('SELECT * FROM v_artikel WHERE artikel_id = ?');
+    $stmt->execute([$id]);
+    $artDb = $stmt->fetch() ?: null;
+    if ($artDb && (int) $artDb['mit_chargen'] === 1) {
+        $istChargen = true;
+        $chargen    = chargen_laden($pdo, $id);
+        $ohneMhd    = (int) $artDb['gesamt_einzeln']
+                    - array_sum(array_map('intval', array_column($chargen, 'menge')));
+    }
+}
+// Vorschlag für das MHD des vorhandenen Bestands beim Einschalten: das
+// bisherige Ablaufdatum. Bei einem Chargen-Artikel bleibt das Feld leer –
+// sonst landete Bestand ohne Charge beim nächsten Speichern ungefragt
+// beim frühesten MHD.
+$mhdVorschlag = $daten['mhd_rest'] !== '' ? $daten['mhd_rest']
+              : (!$istChargen && $daten['faellig_typ'] === 'ablauf' ? $daten['faellig_am'] : '');
 
 $kisten = $pdo->query('SELECT kiste_id, kiste_nr, lager, regal, fach FROM v_kiste ORDER BY ' . ORDER_LAGERPLATZ)->fetchAll();
 $faecher = faecher_liste($pdo);
@@ -500,7 +606,11 @@ require __DIR__ . '/inc/header.php';
     </div>
     <div class="zeile">
       <label for="menge">Bestand<span class="hinweis-inline" id="menge-einheit"></span></label>
-      <input type="number" id="menge" name="menge" min="0" step="1" value="<?= h($daten['menge']) ?>">
+      <input type="number" id="menge" name="menge" min="0" step="1" value="<?= h($daten['menge']) ?>"
+             <?= $istChargen ? 'readonly' : '' ?>>
+      <?php if ($istChargen): ?>
+        <p class="hinweis">Bei MHD-Chargen ändert sich der Bestand nur über Zugang, Entnahme und Inventur.</p>
+      <?php endif; ?>
     </div>
   </div>
 
@@ -554,7 +664,8 @@ require __DIR__ . '/inc/header.php';
       </div>
       <div class="zeile">
         <label for="lose">Lose Einzelstücke</label>
-        <input type="number" id="lose" name="lose" min="0" step="1" value="<?= h($daten['lose']) ?>">
+        <input type="number" id="lose" name="lose" min="0" step="1" value="<?= h($daten['lose']) ?>"
+               <?= $istChargen ? 'readonly' : '' ?>>
       </div>
     </div>
     <p class="hinweis" id="gebinde-rechnung"></p>
@@ -562,18 +673,73 @@ require __DIR__ . '/inc/header.php';
 
   <div class="paar">
     <div class="zeile">
-      <label for="faellig_am">Datum</label>
-      <input type="date" id="faellig_am" name="faellig_am" value="<?= h($daten['faellig_am']) ?>">
+      <label for="faellig_am">Datum<?= $istChargen ? ' <span class="hinweis-inline">frühestes MHD, automatisch</span>' : '' ?></label>
+      <input type="date" id="faellig_am" name="faellig_am" value="<?= h($daten['faellig_am']) ?>"
+             <?= $istChargen ? 'readonly' : '' ?>>
     </div>
     <div class="zeile">
       <label for="faellig_typ">Art des Datums</label>
-      <select id="faellig_typ" name="faellig_typ">
+      <select id="faellig_typ" name="faellig_typ" <?= $istChargen ? 'disabled' : '' ?>>
         <option value="">– keins –</option>
         <option value="ablauf"   <?= $daten['faellig_typ'] === 'ablauf'   ? 'selected' : '' ?>>Ablaufdatum</option>
         <option value="pruefung" <?= $daten['faellig_typ'] === 'pruefung' ? 'selected' : '' ?>>Nächste Prüfung</option>
       </select>
     </div>
   </div>
+
+  <fieldset class="gebinde chargen">
+    <legend>MHD-Chargen</legend>
+    <label class="radio">
+      <input type="checkbox" name="mit_chargen" value="1" id="mit_chargen"
+             <?= $daten['mit_chargen'] === '1' ? 'checked' : '' ?>>
+      <span>Mehrere MHDs führen – jede Lieferung behält ihr eigenes Mindesthaltbarkeitsdatum</span>
+    </label>
+    <p class="hinweis">
+      Für Lebensmittel, Sanitätsmaterial, Batterien. Beim Einbuchen wird dann das MHD abgefragt,
+      bei der Entnahme die Charge gewählt. Das Datum oben ist automatisch das früheste MHD.
+      <?php if ($istChargen): ?>
+        Wird das Häkchen entfernt, verschwinden die Chargen; der Bestand bleibt.
+      <?php endif; ?>
+    </p>
+
+    <?php if ($chargen): ?>
+      <table class="tabelle chargen-tabelle">
+        <thead><tr><th>MHD</th><th style="text-align:right">Menge</th></tr></thead>
+        <tbody>
+        <?php foreach ($chargen as $c):
+            $tage = (int) (new DateTimeImmutable('today'))->diff(new DateTimeImmutable($c['mhd']))->format('%r%a');
+            $stufe = faellig_stufe($tage);
+        ?>
+          <tr>
+            <td data-label="MHD">
+              <span class="faellig stufe-<?= h((string) $stufe) ?>">
+                <span class="faellig-datum"><?= h(datum_de($c['mhd'])) ?></span>
+              </span>
+            </td>
+            <td class="zahl" data-label="Menge"><?= h(einzeln_text($artDb, (int) $c['menge'])) ?></td>
+          </tr>
+        <?php endforeach; ?>
+        </tbody>
+      </table>
+    <?php endif; ?>
+
+    <?php
+      // Das MHD-Feld braucht es beim Einschalten (für den ganzen Bestand)
+      // und wenn ein Teil des Bestands noch keiner Charge zugeordnet ist.
+      $zeigeRest = $istChargen ? $ohneMhd > 0 : $daten['mit_chargen'] === '1';
+    ?>
+    <div class="zeile" id="feld-mhd-rest"<?= $zeigeRest ? '' : ' hidden' ?>
+         data-immer="<?= $istChargen ? '1' : '0' ?>">
+      <label for="mhd_rest">MHD für den Bestand
+        <?php if ($istChargen): ?>
+          <span class="hinweis-inline"><?= h(einzeln_text($artDb, $ohneMhd)) ?> ohne Charge</span>
+        <?php else: ?>
+          <span class="hinweis-inline">der vorhandene Bestand bekommt dieses MHD</span>
+        <?php endif; ?>
+      </label>
+      <input type="date" id="mhd_rest" name="mhd_rest" value="<?= h($mhdVorschlag) ?>" style="max-width:200px">
+    </div>
+  </fieldset>
 
   <div class="zeile">
     <label for="notiz">Notiz</label>
@@ -780,6 +946,15 @@ require __DIR__ . '/inc/header.php';
       fuelleFaecher(f.lager_id, f.regal_id, f.fach_id);
     }
   }
+})();
+
+// MHD-Feld beim Einschalten der Chargen einblenden. Bei einem Artikel,
+// der schon Chargen führt, entscheidet der Server (Bestand ohne Charge).
+(function () {
+  const haken = document.getElementById('mit_chargen');
+  const feld  = document.getElementById('feld-mhd-rest');
+  if (!haken || !feld || feld.dataset.immer === '1') return;
+  haken.addEventListener('change', () => { feld.hidden = !haken.checked; });
 })();
 </script>
 

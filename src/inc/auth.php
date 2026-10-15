@@ -27,13 +27,18 @@ const LOGIN_MAX_FEHLVERSUCHE = 5;
 const LOGIN_SPERRE_MINUTEN   = 15;
 
 /** Seiten, die ohne Anmeldung erreichbar sind. */
-const OHNE_LOGIN = ['login.php'];
+// darstellung.php setzt nur ein Cookie für Farben und Schrift – auch die
+// Anmeldeseite soll sich umstellen lassen.
+const OHNE_LOGIN = ['login.php', 'darstellung.php'];
 
-/** Der angemeldete Benutzer aus der Datenbank, oder null. Wird pro Request einmal geladen. */
-function benutzer(): ?array
+/**
+ * Der angemeldete Benutzer aus der Datenbank, oder null. Wird pro Request
+ * einmal geladen; $neuLaden verwirft den gemerkten Stand (nach login()).
+ */
+function benutzer(bool $neuLaden = false): ?array
 {
     static $cache = false;
-    if ($cache !== false) {
+    if ($cache !== false && !$neuLaden) {
         return $cache;
     }
 
@@ -68,6 +73,17 @@ function darf(string $rolle): bool
         return false;
     }
     return ROLLEN[$b['rolle']] >= ROLLEN[$rolle];
+}
+
+/**
+ * Die Startseite: wohin es nach der Anmeldung geht und was die Adresse
+ * ohne Seitenangabe zeigt. Das Terminal für alle, die buchen dürfen;
+ * Leser landen in der Artikelliste, das Terminal ist ihnen nicht
+ * freigegeben.
+ */
+function startseite(): string
+{
+    return darf('bearbeiter') ? 'touch.php' : 'index.php';
 }
 
 /** Bricht mit 403 ab, wenn die Rolle fehlt. Für POST-Handler und geschützte Seiten. */
@@ -149,6 +165,9 @@ function login(string $benutzername, string $passwort): ?string
     // nach dessen Login in einer angemeldeten Session.
     session_regenerate_id(true);
     $_SESSION['benutzer_id'] = (int) $b['benutzer_id'];
+    // Die Login-Seite hat vorher schon "niemand angemeldet" gemerkt; ohne
+    // Auffrischen hielten darf() und startseite() den Benutzer für Gast.
+    benutzer(true);
 
     $pdo->prepare('UPDATE benutzer SET fehlversuche = 0, gesperrt_bis = NULL, letzter_login = NOW() WHERE benutzer_id = ?')
         ->execute([$b['benutzer_id']]);

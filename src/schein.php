@@ -288,7 +288,8 @@ function schein_nr(int $entnahmeId): string
           <strong><?= h($s['artikelname']) ?></strong>
           <span class="e-datum">
             <?= h($s['lagerort_text'] ?? 'ohne Lagerort') ?><?php
-            if ($s['kategorie']) { echo ' · ' . h($s['kategorie']); } ?>
+            if ($s['kategorie']) { echo ' · ' . h($s['kategorie']); }
+            if ($s['mhd'])       { echo ' · MHD ' . h(datum_de($s['mhd'])); } ?>
           </span>
         </td>
         <td class="e-nr"><?= h($s['inventar_nr']) ?></td>

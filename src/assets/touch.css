@@ -1,8 +1,10 @@
 /* =====================================================================
    Touch-Terminal – eigenständiges Stylesheet
    Bewusst getrennt vom Haupt-CSS: hier zählen große Flächen und hoher
-   Kontrast, nicht Informationsdichte. Alle Bedienelemente ab 64 px, weil
-   sie mit dem Finger im Stehen getroffen werden müssen.
+   Kontrast, nicht Informationsdichte. Alle Bedienelemente ab 60 px,
+   weil sie mit dem Finger im Stehen getroffen werden müssen. Keine
+   Hover-Effekte – auf einem Touchscreen gibt es kein Darüberfahren,
+   Rückmeldung kommt über :active.
    ===================================================================== */
 
 :root {
@@ -15,10 +17,637 @@
   --t-rein:   #2c7a44;
   --t-rein-d: #226235;
   --t-blau:   #14568f;
-  --t-muted:  #6a716b;
+  --t-blau-d: #0f4676;
+  --t-amber:  #946000;
+  --t-amber-d:#7a4f00;
+  --t-muted:  #5b625c;
+  /* Rollen statt Farbwerte – die Designs unten schalten nur diese um. */
+  --t-kopf:        #14181b;  /* Kopfleiste, Bereichsleiste, Kistenkopf */
+  --t-auf:         #fff;     /* Text auf farbigen und dunklen Flächen */
+  --t-feld:        #fff;     /* Eingabefelder, Knöpfe, Listenzeilen */
+  --t-stark-bg:    #14181b;  /* gewählte Option, Los-Knopf */
+  --t-stark-text:  #fff;
+  --t-aus:         #b8bcb6;  /* abgeschalteter Knopf */
+  --t-raus-weich:  #fbe4e2;
+  --t-rein-weich:  #dff0e4;
+  --t-amber-weich: #fbf1dd;
+  --t-raus-text:   #b3271e;  /* Warntext auf hellem Rot */
+  --t-amber-text:  #8a5700;
+  /* Kopf- und Bereichsleiste: leiser Text, Linien, Hover, Schalterknopf.
+     Als Variablen, damit Nachtsicht auch hier kein weißes Licht hat. */
+  --t-auf-leise:       rgba(255,255,255,.78);
+  --t-kopf-linie:      rgba(255,255,255,.25);
+  --t-kopf-hover:      rgba(255,255,255,.1);
+  --t-kopf-hover-stark:rgba(255,255,255,.22);
+  --t-schalter-knopf:  #fff;
+  --t-auf-kopf:        #fff;   /* Text in Kopfleiste und Kistenkopf */
   --t-sans: "IBM Plex Sans", system-ui, sans-serif;
   --t-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
+
+/* --- Darstellungen (data-farbe/data-schrift, siehe darstellung.php) --- */
+
+/* Dunkel: für ein Tablet im dunklen Lager oder nachts im Einsatz. Die
+   Buchungsfarben bleiben kräftig, damit Rot und Grün sofort lesbar sind. */
+:root[data-farbe="dunkel"] {
+  color-scheme: dark;
+  --t-ink:         #e6e8e5;
+  --t-paper:       #0f1214;
+  --t-flaeche:     #181c1f;
+  --t-feld:        #1f2427;
+  --t-linie:       #353c41;
+  --t-muted:       #9ea69f;
+  --t-kopf:        #07090a;
+  --t-stark-bg:    #e6e8e5;
+  --t-stark-text:  #101315;
+  --t-aus:         #3d4449;
+  --t-raus-weich:  #3c1d1b;
+  --t-rein-weich:  #173020;
+  --t-amber-weich: #36290f;
+  --t-raus-text:   #f2807a;
+  --t-amber-text:  #e5a945;
+}
+
+/* Rot-Grün-sicher: Entnahme in Zinnober, Einlagern in Blau, Bedarf in
+   Gelbbraun, Übersicht neutral in Schiefer – so bleiben alle vier
+   Bereiche auch bei Rot-Grün-Sehschwäche unterscheidbar. Die Zeichen
+   − und + tragen die Richtung zusätzlich, nicht nur die Farbe. */
+:root[data-farbe="rotgruen"] {
+  --t-raus:        #b34700;
+  --t-raus-d:      #8f3900;
+  --t-rein:        #0067a6;
+  --t-rein-d:      #00517f;
+  --t-blau:        #3d4852;
+  --t-blau-d:      #2c353d;
+  --t-amber:       #8a6a00;
+  --t-amber-d:     #6e5400;
+  --t-raus-weich:  #fbe5d6;
+  --t-rein-weich:  #dcecf8;
+  --t-amber-weich: #fbf0c2;
+  --t-raus-text:   #8f3900;
+  --t-amber-text:  #6e5400;
+}
+
+/* Nachtsicht: nur rotes Licht. Die Kacheln werden dunkelrot bis
+   dunkelbraun mit blassroter Schrift – unterscheidbar über Helligkeit,
+   Zeichen (− + ≡ !) und Beschriftung, ohne die Augen zu blenden. */
+:root[data-farbe="nachtsicht"] {
+  color-scheme: dark;
+  --t-ink:         #ff9282;
+  --t-paper:       #050000;
+  --t-flaeche:     #130404;
+  --t-feld:        #1c0606;
+  --t-linie:       #43120d;
+  --t-muted:       #e2685a;
+  --t-kopf:        #000;
+  --t-raus:        #8c1a0e;
+  --t-raus-d:      #6e1208;
+  --t-rein:        #6a3a06;
+  --t-rein-d:      #552e04;
+  --t-blau:        #3d100c;
+  --t-blau-d:      #2c0b08;
+  --t-amber:       #7a4a00;
+  --t-amber-d:     #5e3900;
+  --t-auf:         #ffd6cc;
+  --t-stark-bg:    #ff9282;
+  --t-stark-text:  #120000;
+  --t-aus:         #2a0a08;
+  --t-raus-weich:  #3a0805;
+  --t-rein-weich:  #2e1504;
+  --t-amber-weich: #2e1a04;
+  --t-raus-text:   #ff6a55;
+  --t-amber-text:  #ffa860;
+  --t-auf-leise:       #e07a6a;
+  --t-kopf-linie:      rgba(255,90,70,.35);
+  --t-kopf-hover:      rgba(255,80,60,.14);
+  --t-kopf-hover-stark:rgba(255,80,60,.28);
+  --t-schalter-knopf:  #ff9282;
+  --t-auf-kopf:        #ff9282;
+}
+
+/* Blaupause: Bauplan-Blau mit Raster, die Kacheln mit gestricheltem
+   Innenrand wie Felder in einer technischen Zeichnung. */
+:root[data-farbe="blaupause"] {
+  color-scheme: dark;
+  --t-ink:         #eef5ff;
+  --t-paper:       #0d3b6f;
+  --t-flaeche:     #11467f;
+  --t-feld:        #15508f;
+  --t-linie:       #4f7fb5;
+  --t-muted:       #bcd4f0;
+  --t-kopf:        #082a52;
+  --t-raus:        #b8321f;
+  --t-raus-d:      #962715;
+  --t-rein:        #1a7a4c;
+  --t-rein-d:      #136038;
+  --t-blau:        #1f63ab;
+  --t-blau-d:      #174f8a;
+  --t-amber:       #946000;
+  --t-amber-d:     #7a4f00;
+  --t-stark-bg:    #eef5ff;
+  --t-stark-text:  #0b2f59;
+  --t-aus:         #3a5f8a;
+  --t-raus-weich:  #5a3445;
+  --t-rein-weich:  #1f5a52;
+  --t-amber-weich: #4b4733;
+  --t-raus-text:   #ffb8ad;
+  --t-amber-text:  #ffd98a;
+}
+:root[data-farbe="blaupause"] .t-body {
+  background-image:
+    linear-gradient(rgba(190,220,255,.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(190,220,255,.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+:root[data-farbe="blaupause"] .t-kachel { outline: 2px dashed rgba(220,236,255,.45); outline-offset: -9px; }
+:root[data-farbe="blaupause"] .t-zeile { border-style: dashed; }
+
+/* Lagerbuch: Papier, brauner Ledereinband, Stempelrot und Füllerblau. */
+:root[data-farbe="lagerbuch"] {
+  --t-ink:         #2b1d0e;
+  --t-paper:       #efe4cc;
+  --t-flaeche:     #fbf5e6;
+  --t-feld:        #fffaf0;
+  --t-linie:       #d4c09a;
+  --t-muted:       #6a5238;
+  --t-kopf:        #3a2816;
+  --t-raus:        #9a2416;
+  --t-raus-d:      #7d1c10;
+  --t-rein:        #2f5a28;
+  --t-rein-d:      #234520;
+  --t-blau:        #1f3f7a;
+  --t-blau-d:      #152d58;
+  --t-amber:       #7a5000;
+  --t-amber-d:     #5f3e00;
+  --t-auf:         #fff8ec;
+  --t-stark-bg:    #3a2816;
+  --t-stark-text:  #f6ead0;
+  --t-aus:         #cbbd9f;
+  --t-raus-weich:  #f5dcd0;
+  --t-rein-weich:  #dfe7cc;
+  --t-amber-weich: #f3e2b5;
+  --t-raus-text:   #8a2014;
+  --t-amber-text:  #6b4600;
+  --t-auf-leise:       rgba(246,234,208,.75);
+  --t-kopf-linie:      rgba(246,234,208,.3);
+  --t-kopf-hover:      rgba(246,234,208,.12);
+  --t-kopf-hover-stark:rgba(246,234,208,.24);
+  --t-schalter-knopf:  #f6ead0;
+  --t-auf-kopf:        #f6ead0;
+}
+:root[data-farbe="lagerbuch"] .t-main {
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, rgba(31,63,122,.08) 31px 32px);
+}
+:root[data-farbe="lagerbuch"][data-schrift="standard"] .t-kachel-titel,
+:root[data-farbe="lagerbuch"][data-schrift="standard"] .t-name,
+:root[data-farbe="lagerbuch"][data-schrift="standard"] .t-abschnitt {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+/* Wald: Salbeipapier, Tannengrün, Kacheln in Rost, Moos, Tannentürkis
+   und Ocker – vier Farbtöne, die sich auch in der Helligkeit trennen. */
+:root[data-farbe="wald"] {
+  --t-ink:         #1b2a1f;
+  --t-paper:       #e9efe4;
+  --t-flaeche:     #fbfdf8;
+  --t-feld:        #fff;
+  --t-linie:       #c5d3bf;
+  --t-muted:       #4e6152;
+  --t-kopf:        #163a2b;
+  --t-raus:        #a3361a;
+  --t-raus-d:      #84290f;
+  --t-rein:        #2e6a1e;
+  --t-rein-d:      #225316;
+  --t-blau:        #1d5a4a;
+  --t-blau-d:      #144236;
+  --t-amber:       #7a5800;
+  --t-amber-d:     #5f4400;
+  --t-stark-bg:    #163a2b;
+  --t-stark-text:  #fff;
+  --t-aus:         #b9c8b3;
+  --t-raus-weich:  #f8e0d6;
+  --t-rein-weich:  #dcebd0;
+  --t-amber-weich: #f4e9c4;
+  --t-raus-text:   #8a2c14;
+  --t-amber-text:  #6a4c00;
+}
+:root[data-farbe="wald"] .t-body {
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(214,232,150,.35) 0 140px, transparent 300px),
+    radial-gradient(circle at 85% 60%, rgba(190,220,140,.25) 0 160px, transparent 340px);
+  background-attachment: fixed;
+}
+:root[data-farbe="wald"] .t-topbar,
+:root[data-farbe="wald"] .t-nav { background-image: linear-gradient(100deg, #163a2b, #1f4a37 60%, #2a5a3c); }
+
+/* Phosphor: Grün-Monitor. Kacheln dunkel getönt mit hellgrüner Schrift,
+   Entnahme rötlich, Bedarf gelblich – damit sie auch hier auffallen. */
+:root[data-farbe="phosphor"] {
+  color-scheme: dark;
+  --t-ink:         #5cff8f;
+  --t-paper:       #020a04;
+  --t-flaeche:     #04140a;
+  --t-feld:        #072012;
+  --t-linie:       #11502a;
+  --t-muted:       #2fcc66;
+  --t-kopf:        #000;
+  --t-raus:        #6b1a12;
+  --t-raus-d:      #531208;
+  --t-rein:        #0d5a2a;
+  --t-rein-d:      #08451f;
+  --t-blau:        #0b4a3a;
+  --t-blau-d:      #073a2d;
+  --t-amber:       #5a4400;
+  --t-amber-d:     #463500;
+  --t-auf:         #d4ffe2;
+  --t-stark-bg:    #5cff8f;
+  --t-stark-text:  #021006;
+  --t-aus:         #0f2a18;
+  --t-raus-weich:  #2a0806;
+  --t-rein-weich:  #06251a;
+  --t-amber-weich: #2a2104;
+  --t-raus-text:   #ff7b6e;
+  --t-amber-text:  #ffcc33;
+  --t-auf-leise:       #3ccc6e;
+  --t-kopf-linie:      rgba(92,255,143,.35);
+  --t-kopf-hover:      rgba(92,255,143,.1);
+  --t-kopf-hover-stark:rgba(92,255,143,.22);
+  --t-schalter-knopf:  #5cff8f;
+  --t-auf-kopf:        #5cff8f;
+}
+:root[data-farbe="phosphor"] .t-body { text-shadow: 0 0 3px rgba(92,255,143,.35); }
+:root[data-farbe="phosphor"] .t-body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(0,0,0,.18) 0 1px, transparent 1px 3px);
+}
+:root[data-farbe="phosphor"][data-schrift="standard"] { --t-sans: var(--t-mono); }
+
+/* Rotes Plus, nach dem DRK-Styleguide: weiße Kopfleiste mit rotem Strich, Name
+   in DRK-Rot, Kacheln in DRK-Rot (Entnahme), Dunkelblau (Einlagern),
+   Volltonblau (Übersicht) und Dunkelgrau (Bedarf). Gewählte Optionen in
+   Dunkelblau, Formularflächen hellblau. Kein Rotkreuz-Zeichen. */
+:root[data-farbe="rotesplus"] {
+  --t-ink:         #554f4a;
+  --t-paper:       #efeeea;
+  --t-flaeche:     #fff;
+  --t-feld:        #fff;
+  --t-linie:       #b4b4b4;
+  --t-muted:       #6e6862;
+  --t-kopf:        #fff;
+  --t-raus:        #e60005;
+  --t-raus-d:      #a51e0f;
+  --t-rein:        #002d55;
+  --t-rein-d:      #001a33;
+  --t-blau:        #2275d0;
+  --t-blau-d:      #1a5ca6;
+  --t-amber:       #554f4a;
+  --t-amber-d:     #3d3834;
+  --t-stark-bg:    #002d55;
+  --t-stark-text:  #fff;
+  --t-aus:         #b4b4b4;
+  --t-raus-weich:  #fac3af;
+  --t-rein-weich:  #ebf5ff;
+  --t-amber-weich: #efeeea;
+  --t-raus-text:   #a51e0f;
+  --t-amber-text:  #554f4a;
+  --t-auf-leise:       #6e6862;
+  --t-kopf-linie:      rgba(85,79,74,.3);
+  --t-kopf-hover:      rgba(85,79,74,.08);
+  --t-kopf-hover-stark:rgba(85,79,74,.2);
+  --t-schalter-knopf:  #fff;
+  --t-auf-kopf:        #e60005;
+}
+/* Roter Strich unter der Kopfleiste – auf der Startseite, und in den
+   Bereichen unter der Bereichsleiste. */
+:root[data-farbe="rotesplus"] .t-body:not(:has(.t-nav)) .t-topbar,
+:root[data-farbe="rotesplus"] .t-nav { border-bottom: 4px solid #e60005; }
+:root[data-farbe="rotesplus"] .t-nav-link { color: #554f4a; }
+:root[data-farbe="rotesplus"] .t-nav-link.is-aktiv { color: #fff; }
+:root[data-farbe="rotesplus"] .t-scan input { border-color: #002d55; background: #ebf5ff; }
+:root[data-farbe="rotesplus"] .t-scan-btn { background: #e60005; color: #fff; }
+:root[data-farbe="rotesplus"] .t-kistenkopf { border: 2px solid #b4b4b4; }
+:root[data-farbe="rotesplus"][data-schrift="standard"] { --t-sans: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+:root[data-farbe="rotesplus"][data-schrift="standard"] .t-kachel-titel,
+:root[data-farbe="rotesplus"][data-schrift="standard"] .t-name,
+:root[data-farbe="rotesplus"][data-schrift="standard"] .t-abschnitt {
+  font-family: "Merriweather", Georgia, serif;
+}
+:root[data-farbe="rotesplus"] .t-name,
+:root[data-farbe="rotesplus"] .t-abschnitt { color: #e60005; }
+
+/* Feuerwehr: Kopfleiste Feuerrot mit Warnband in Rot und Leuchtgelb,
+   Bereichsleiste in Nachtblau – sonst verschwände die aktive rote
+   Entnahme in einer roten Leiste. Kacheln: Feuerrot (Entnahme), Grün
+   (Einlagern), Nachtblau (Übersicht), Ocker (Bedarf). */
+:root[data-farbe="feuerwehr"] {
+  --t-ink:         #1b2130;
+  --t-paper:       #f1f0ed;
+  --t-flaeche:     #fff;
+  --t-feld:        #fff;
+  --t-linie:       #d3d0c8;
+  --t-muted:       #565b66;
+  --t-kopf:        #a72920;
+  --t-raus:        #a72920;
+  --t-raus-d:      #861f17;
+  --t-rein:        #2c6b3f;
+  --t-rein-d:      #225530;
+  --t-blau:        #1f3a6e;
+  --t-blau-d:      #142749;
+  --t-amber:       #8a5a00;
+  --t-amber-d:     #6e4800;
+  --t-stark-bg:    #1f3a6e;
+  --t-stark-text:  #fff;
+  --t-aus:         #c9c6be;
+  --t-raus-weich:  #f9dcd8;
+  --t-rein-weich:  #e3efe6;
+  --t-amber-weich: #fdf1b3;
+  --t-raus-text:   #9c1d14;
+  --t-amber-text:  #6e5200;
+}
+:root[data-farbe="feuerwehr"] .t-topbar {
+  border-bottom: 10px solid #ffd400;
+  border-image: repeating-linear-gradient(-45deg, #ffd400 0 14px, #a72920 14px 28px) 10;
+}
+:root[data-farbe="feuerwehr"] .t-nav { background: #1b2130; }
+:root[data-farbe="feuerwehr"][data-schrift="standard"] .t-kachel-titel,
+:root[data-farbe="feuerwehr"][data-schrift="standard"] .t-abschnitt {
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+/* THW: Kopfleiste THW-Blau mit blau-weißem Warnband, Bereichsleiste
+   dunkelblau, damit das aktive blaue Einlagern sichtbar bleibt.
+   Kacheln: Rot (Entnahme), THW-Blau (Einlagern), Mittelblau
+   (Übersicht), Orange (Bedarf). */
+:root[data-farbe="thw"] {
+  --t-ink:         #14213a;
+  --t-paper:       #eef2f8;
+  --t-flaeche:     #fff;
+  --t-feld:        #fff;
+  --t-linie:       #c9d3e3;
+  --t-muted:       #4c5a72;
+  --t-kopf:        #003e90;
+  --t-raus:        #a3241b;
+  --t-raus-d:      #831c15;
+  --t-rein:        #003e90;
+  --t-rein-d:      #002c68;
+  --t-blau:        #00679f;
+  --t-blau-d:      #005280;
+  --t-amber:       #a14a00;
+  --t-amber-d:     #833c00;
+  --t-stark-bg:    #003e90;
+  --t-stark-text:  #fff;
+  --t-aus:         #c3cddd;
+  --t-raus-weich:  #f8dcd9;
+  --t-rein-weich:  #dde7f6;
+  --t-amber-weich: #ffe6cc;
+  --t-raus-text:   #a3241b;
+  --t-amber-text:  #8a4500;
+}
+:root[data-farbe="thw"] .t-topbar {
+  border-bottom: 10px solid #fff;
+  border-image: repeating-linear-gradient(-45deg, #fff 0 14px, #003e90 14px 28px) 10;
+}
+:root[data-farbe="thw"] .t-nav { background: #0b1b33; }
+:root[data-farbe="thw"] .t-name,
+:root[data-farbe="thw"] .t-abschnitt { color: #003e90; }
+
+/* Hoher Kontrast: Schwarz auf Weiß, dicke schwarze Rahmen, gewählte
+   Optionen schwarz mit gelber Schrift. */
+:root[data-farbe="kontrast"] {
+  --t-ink:         #000;
+  --t-paper:       #fff;
+  --t-flaeche:     #fff;
+  --t-feld:        #fff;
+  --t-linie:       #000;
+  --t-muted:       #262626;
+  --t-kopf:        #000;
+  --t-raus:        #b00000;
+  --t-raus-d:      #800000;
+  --t-rein:        #005a00;
+  --t-rein-d:      #004000;
+  --t-blau:        #0033b8;
+  --t-blau-d:      #001f80;
+  --t-amber:       #5c4300;
+  --t-amber-d:     #3f2e00;
+  --t-stark-bg:    #000;
+  --t-stark-text:  #ffe600;
+  --t-aus:         #8a8a8a;
+  --t-raus-weich:  #ffe0e0;
+  --t-rein-weich:  #dcffdc;
+  --t-amber-weich: #ffe600;
+  --t-raus-text:   #a00000;
+  --t-amber-text:  #000;
+  --t-auf-leise:   #fff;
+  --t-kopf-linie:  #fff;
+}
+:root[data-farbe="kontrast"] .t-artikel,
+:root[data-farbe="kontrast"] .t-zeile,
+:root[data-farbe="kontrast"] .t-chip span,
+:root[data-farbe="kontrast"] .t-chip-link,
+:root[data-farbe="kontrast"] .t-step,
+:root[data-farbe="kontrast"] .t-menge,
+:root[data-farbe="kontrast"] .t-datum,
+:root[data-farbe="kontrast"] .t-suche input,
+:root[data-farbe="kontrast"] .t-suche-btn { border-width: 3px; border-color: #000; }
+:root[data-farbe="kontrast"] .t-kachel { outline: 3px solid #000; outline-offset: 2px; }
+
+/* Rettungsdienst: weiße Kopfleiste mit Schachbrettband in Leuchtrot und
+   Gelb, Bereichsleiste dunkel. Kacheln: Rot (Entnahme), Grün
+   (Einlagern), Petrol (Übersicht), Ocker (Bedarf). */
+:root[data-farbe="rettungsdienst"] {
+  --t-ink:         #1d1f24;
+  --t-paper:       #f6f6f4;
+  --t-flaeche:     #fff;
+  --t-feld:        #fff;
+  --t-linie:       #d6d6d2;
+  --t-muted:       #575b63;
+  --t-kopf:        #fff;
+  --t-raus:        #c4161c;
+  --t-raus-d:      #a3140f;
+  --t-rein:        #2c6b3f;
+  --t-rein-d:      #225530;
+  --t-blau:        #0b4f6c;
+  --t-blau-d:      #083a50;
+  --t-amber:       #8a5a00;
+  --t-amber-d:     #6e4800;
+  --t-stark-bg:    #0b4f6c;
+  --t-stark-text:  #fff;
+  --t-aus:         #c9c9c4;
+  --t-raus-weich:  #fde0dd;
+  --t-rein-weich:  #e3efe6;
+  --t-amber-weich: #fff1b0;
+  --t-raus-text:   #a3140f;
+  --t-amber-text:  #6e5200;
+  --t-auf-leise:       #575b63;
+  --t-kopf-linie:      rgba(29,31,36,.3);
+  --t-kopf-hover:      rgba(29,31,36,.07);
+  --t-kopf-hover-stark:rgba(29,31,36,.2);
+  --t-auf-kopf:        #c4161c;
+}
+:root[data-farbe="rettungsdienst"] .t-topbar { position: relative; margin-bottom: 24px; }
+:root[data-farbe="rettungsdienst"] .t-topbar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -24px;
+  height: 24px;
+  background: repeating-conic-gradient(#c4161c 0 25%, #ffd100 0 50%) 0 0 / 24px 24px;
+}
+/* Dunkle Bereichsleiste unter dem Schachbrett, aktiver Bereich gelb unterstrichen. */
+:root[data-farbe="rettungsdienst"] .t-nav { background: #1d1f24; }
+:root[data-farbe="rettungsdienst"] .t-nav-link:not(.is-aktiv) { background: rgba(255,255,255,.08); color: #e4e5e8; }
+:root[data-farbe="rettungsdienst"] .t-nav-link:not(.is-aktiv):active { background: rgba(255,255,255,.2); }
+:root[data-farbe="rettungsdienst"] .t-nav-link.is-aktiv { box-shadow: inset 0 -5px 0 #ffd100; }
+:root[data-farbe="rettungsdienst"] .t-scan-btn { background: #c4161c; color: #fff; }
+
+/* Warnweste: Kopfleiste leuchtgelb mit Reflexstreifen, Kacheln in
+   Signalfarben mit dunkler Schrift – auf Gelb und Orange ist Weiß nicht
+   lesbar. Gewählte Optionen schwarz mit gelber Schrift. */
+:root[data-farbe="warnweste"] {
+  --t-ink:         #1a1a1a;
+  --t-paper:       #f7f7ef;
+  --t-flaeche:     #fff;
+  --t-feld:        #fff;
+  --t-linie:       #c8c8b4;
+  --t-muted:       #4d4d40;
+  --t-kopf:        #dfff00;
+  --t-raus:        #ff6a13;
+  --t-raus-d:      #e25500;
+  --t-rein:        #dfff00;
+  --t-rein-d:      #c4e000;
+  --t-blau:        #c8c8c8;
+  --t-blau-d:      #b0b0b0;
+  --t-amber:       #ffb000;
+  --t-amber-d:     #e09a00;
+  --t-auf:         #111;
+  --t-stark-bg:    #1a1a1a;
+  --t-stark-text:  #e3ff00;
+  --t-aus:         #d6d6c8;
+  --t-raus-weich:  #ffe0cc;
+  --t-rein-weich:  #f6ffb3;
+  --t-amber-weich: #fff0c2;
+  --t-raus-text:   #a33a00;
+  --t-amber-text:  #6b4a00;
+  --t-auf-leise:       #2a2a2a;
+  --t-kopf-linie:      rgba(0,0,0,.35);
+  --t-kopf-hover:      rgba(0,0,0,.08);
+  --t-kopf-hover-stark:rgba(0,0,0,.18);
+  --t-auf-kopf:        #111;
+}
+:root[data-farbe="warnweste"] .t-topbar {
+  border-bottom: 14px solid #d9d9d9;
+  border-image: linear-gradient(to bottom, #ff6a13 0 3px, #cfcfcf 3px 7px, #f7f7f7 7px 8px, #cfcfcf 8px 11px, #ff6a13 11px 14px) 14;
+}
+:root[data-farbe="warnweste"] .t-nav { background: #1a1a1a; }
+:root[data-farbe="warnweste"] .t-nav-link:not(.is-aktiv) { background: rgba(255,255,255,.08); color: #ececec; }
+:root[data-farbe="warnweste"] .t-nav-link:not(.is-aktiv):active { background: rgba(255,255,255,.2); }
+:root[data-farbe="warnweste"] .t-nav-link.is-aktiv { box-shadow: inset 0 -5px 0 #fff; }
+:root[data-farbe="warnweste"] .t-kachel { border: 2px solid rgba(0,0,0,.25); }
+
+/* Wasserwacht: Wasserblau mit Wellenkante, Bereichsleiste in tiefem
+   Blau. Kacheln: Rot (Entnahme), Wasserblau (Einlagern), Seegrün
+   (Übersicht), Ocker (Bedarf). */
+:root[data-farbe="wasserwacht"] {
+  --t-ink:         #0d2a3a;
+  --t-paper:       #eaf6fb;
+  --t-flaeche:     #fff;
+  --t-feld:        #fff;
+  --t-linie:       #b9dbe9;
+  --t-muted:       #3f6273;
+  --t-kopf:        #005a85;
+  --t-raus:        #b3261e;
+  --t-raus-d:      #921f18;
+  --t-rein:        #0067a3;
+  --t-rein-d:      #004f7d;
+  --t-blau:        #1e6b4f;
+  --t-blau-d:      #16533d;
+  --t-amber:       #8a5a00;
+  --t-amber-d:     #6e4800;
+  --t-stark-bg:    #005a85;
+  --t-stark-text:  #fff;
+  --t-aus:         #bcd6e2;
+  --t-raus-weich:  #fde2df;
+  --t-rein-weich:  #d6eef9;
+  --t-amber-weich: #fff0c2;
+  --t-raus-text:   #b3261e;
+  --t-amber-text:  #7a5400;
+}
+:root[data-farbe="wasserwacht"] .t-topbar { position: relative; margin-bottom: 12px; }
+:root[data-farbe="wasserwacht"] .t-topbar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -12px;
+  height: 12px;
+  background: radial-gradient(circle at 12px 0, #005a85 11px, transparent 12px) 0 0 / 24px 12px repeat-x;
+}
+:root[data-farbe="wasserwacht"] .t-nav { background: #003a55; }
+
+/* E-Ink: Graustufen, keine Bewegung, keine Schatten. Die Kacheln
+   unterscheiden sich in der Helligkeit und durch ihr Zeichen. */
+:root[data-farbe="eink"] {
+  --t-ink:         #000;
+  --t-paper:       #fff;
+  --t-flaeche:     #fff;
+  --t-feld:        #fff;
+  --t-linie:       #000;
+  --t-muted:       #333;
+  --t-kopf:        #000;
+  --t-raus:        #000;
+  --t-raus-d:      #000;
+  --t-rein:        #404040;
+  --t-rein-d:      #404040;
+  --t-blau:        #595959;
+  --t-blau-d:      #595959;
+  --t-amber:       #262626;
+  --t-amber-d:     #262626;
+  --t-stark-bg:    #000;
+  --t-stark-text:  #fff;
+  --t-aus:         #bfbfbf;
+  --t-raus-weich:  #d9d9d9;
+  --t-rein-weich:  #f2f2f2;
+  --t-amber-weich: #e6e6e6;
+  --t-raus-text:   #000;
+  --t-amber-text:  #000;
+}
+:root[data-farbe="eink"] *,
+:root[data-farbe="eink"] *::before,
+:root[data-farbe="eink"] *::after { transition: none !important; animation: none !important; }
+:root[data-farbe="eink"] .t-kachel { box-shadow: none; }
+:root[data-farbe="eink"] .t-quittung { transition: none; }
+
+/* Leseschriften (LRS), wie im Haupt-Stylesheet. */
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("fonts/OpenDyslexic-Regular.woff2") format("woff2");
+  font-weight: 400 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("fonts/OpenDyslexic-Bold.woff2") format("woff2");
+  font-weight: 600 700;
+  font-display: swap;
+}
+:root[data-schrift="opendyslexic"] {
+  --t-sans: "OpenDyslexic", "Comic Sans MS", sans-serif;
+  --t-mono: "OpenDyslexic", "Comic Sans MS", sans-serif;
+}
+:root[data-schrift="lexend"] {
+  --t-sans: "Lexend", "IBM Plex Sans", sans-serif;
+  --t-mono: "Lexend", "IBM Plex Sans", sans-serif;
+}
+:root[data-schrift="opendyslexic"] .t-body,
+:root[data-schrift="lexend"] .t-body { line-height: 1.6; word-spacing: .06em; }
+:root[data-schrift="opendyslexic"] *,
+:root[data-schrift="lexend"] * { text-transform: none !important; }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
@@ -30,6 +659,8 @@
   font: 400 18px/1.4 var(--t-sans);
   /* Kein Textmarkieren am Terminal – stört nur bei Fingerbedienung. */
   user-select: none;
+  /* Doppeltipp soll nicht zoomen, Wischen nur senkrecht scrollen. */
+  touch-action: manipulation;
 }
 
 /* --- Kopfleiste ------------------------------------------------------- */
@@ -39,38 +670,167 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 22px;
-  background: var(--t-ink);
-  color: #fff;
+  background: var(--t-kopf);
+  color: var(--t-auf-kopf);
 }
 
-.t-marke { color: #fff; text-decoration: none; font-weight: 600; font-size: 18px; }
+/* Kopfzeilen-Links bewusst kleiner als die Bereichsknöpfe, aber mit
+   mindestens 48 px Höhe noch sicher zu treffen. */
+.t-marke {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  color: var(--t-auf-kopf);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 18px;
+}
 
 .t-topbar-rechts { display: flex; align-items: center; gap: 18px; }
-.t-wer { font-size: 16px; color: rgba(255,255,255,.8); }
+.t-wer { font-size: 16px; color: var(--t-auf-leise); }
 
 .t-verlassen {
-  color: rgba(255,255,255,.6);
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  color: var(--t-auf-leise);
   text-decoration: none;
   font-size: 15px;
-  padding: 8px 12px;
-  border: 1px solid rgba(255,255,255,.25);
+  padding: 0 14px;
+  border: 1px solid var(--t-kopf-linie);
   border-radius: 8px;
 }
 
-.t-main { max-width: 720px; margin: 0 auto; padding: 22px 18px 40px; }
+/* --- Bereichsleiste: immer sichtbar, ein Tipp wechselt den Bereich ----- */
 
-/* --- Scanfeld: das ständig präsente Eingabeelement -------------------- */
+.t-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  /* minmax(0, …): Spalten dürfen schmaler werden als ihr längstes Wort,
+     sonst schiebt "Übersicht" die Leiste auf dem Handy über den Rand. */
+  grid-template-columns: 72px repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px 12px 10px;
+  background: var(--t-kopf);
+}
 
-.t-scan { display: flex; gap: 12px; margin-bottom: 22px; }
+.t-nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  padding: 0 6px;
+  border-radius: 12px;
+  background: var(--t-kopf-hover);
+  color: var(--t-auf-leise);
+  font: 600 19px/1.1 var(--t-sans);
+  text-align: center;
+  text-decoration: none;
+}
+
+.t-nav-link:active { background: var(--t-kopf-hover-stark); }
+.t-nav-link--start { font-size: 28px; }
+
+/* Der aktive Bereich trägt seine Farbe – dieselbe wie seine Kachel. */
+/* Der aktive Bereich trägt zusätzlich einen Unterstrich – so ist er auch
+   zu erkennen, wenn sich seine Farbe kaum von der Leiste abhebt. */
+.t-nav-link.is-aktiv { color: var(--t-auf); box-shadow: inset 0 -5px 0 var(--t-auf-kopf); }
+.t-nav-link--entnahme.is-aktiv   { background: var(--t-raus); }
+.t-nav-link--einlagern.is-aktiv  { background: var(--t-rein); }
+.t-nav-link--uebersicht.is-aktiv { background: var(--t-blau); }
+.t-nav-link--bedarf.is-aktiv     { background: var(--t-amber); }
+
+.t-zaehler {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  min-width: 26px;
+  padding: 3px 7px;
+  border-radius: 13px;
+  background: var(--t-raus);
+  color: var(--t-auf);
+  font: 700 14px/1.2 var(--t-mono);
+}
+
+.t-main { max-width: 760px; margin: 0 auto; padding: 22px 18px 60px; }
+
+/* --- Startseite: vier große Kacheln ----------------------------------- */
+
+.t-kacheln {
+  display: grid;
+  /* minmax(0, …): mit breiter Leseschrift dürfen die Spalten schmaler
+     werden als ihr längstes Wort – das wird dann getrennt. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.t-kachel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 6px;
+  min-height: 190px;
+  padding: 22px 24px;
+  border-radius: 20px;
+  color: var(--t-auf);
+  text-decoration: none;
+  box-shadow: 0 2px 0 rgba(0,0,0,.12);
+}
+
+.t-kachel:active { transform: translateY(1px); box-shadow: none; }
+
+.t-kachel--entnahme   { background: var(--t-raus); }
+.t-kachel--entnahme:active   { background: var(--t-raus-d); }
+.t-kachel--einlagern  { background: var(--t-rein); }
+.t-kachel--einlagern:active  { background: var(--t-rein-d); }
+.t-kachel--uebersicht { background: var(--t-blau); }
+.t-kachel--uebersicht:active { background: var(--t-blau-d); }
+.t-kachel--bedarf     { background: var(--t-amber); }
+.t-kachel--bedarf:active     { background: var(--t-amber-d); }
+
+.t-kachel-zeichen {
+  position: absolute;
+  top: 16px;
+  left: 22px;
+  font: 700 46px/1 var(--t-mono);
+  opacity: .85;
+}
+
+.t-kachel-titel { font: 700 32px/1.1 var(--t-sans); hyphens: auto; overflow-wrap: anywhere; }
+.t-kachel-sub   { font: 400 17px/1.3 var(--t-sans); hyphens: auto; overflow-wrap: anywhere; }
+
+.t-zaehler--gross {
+  top: 16px;
+  right: 18px;
+  min-width: 44px;
+  padding: 6px 12px;
+  border-radius: 22px;
+  background: var(--t-auf);
+  color: var(--t-amber-d);
+  font-size: 22px;
+  text-align: center;
+}
+
+/* --- Scanfeld und Suche ----------------------------------------------- */
+
+.t-eingabe { margin-bottom: 22px; }
+
+.t-scan { display: flex; gap: 12px; }
 
 .t-scan input {
   flex: 1 1 auto;
-  font: 600 28px/1 var(--t-mono);
+  min-width: 0;
+  font: 600 26px/1 var(--t-mono);
   letter-spacing: .04em;
-  padding: 20px 22px;
+  padding: 18px 22px;
   border: 3px solid var(--t-ink);
   border-radius: 14px;
-  background: #fff;
+  background: var(--t-feld);
   min-height: 72px;
 }
 
@@ -82,12 +842,38 @@
   padding: 0 28px;
   border: 0;
   border-radius: 14px;
-  background: var(--t-ink);
-  color: #fff;
+  background: var(--t-stark-bg);
+  color: var(--t-stark-text);
   min-height: 72px;
 }
 
-/* --- Artikelblock ----------------------------------------------------- */
+.t-suche { display: flex; gap: 12px; margin-top: 12px; }
+
+.t-suche input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: 400 22px/1 var(--t-sans);
+  padding: 16px 20px;
+  border: 2px solid var(--t-linie);
+  border-radius: 12px;
+  background: var(--t-feld);
+  min-height: 64px;
+}
+
+.t-suche input:focus { outline: none; border-color: var(--t-blau); }
+
+.t-suche-btn {
+  flex: 0 0 auto;
+  font: 500 18px/1 var(--t-sans);
+  padding: 0 24px;
+  border: 2px solid var(--t-linie);
+  border-radius: 12px;
+  background: var(--t-feld);
+  color: var(--t-ink);
+  min-height: 64px;
+}
+
+/* --- Artikelkarte ----------------------------------------------------- */
 
 .t-artikel {
   background: var(--t-flaeche);
@@ -97,7 +883,12 @@
   margin-bottom: 16px;
 }
 
-.t-kopf { margin-bottom: 14px; }
+/* In Entnahme und Einlagern zeigt ein farbiger Rand, in welche Richtung
+   gebucht wird – auch für jemanden, der nur kurz hinschaut. */
+.t-artikel--raus { border-top: 6px solid var(--t-raus); }
+.t-artikel--rein { border-top: 6px solid var(--t-rein); }
+
+.t-kopf { margin-bottom: 12px; }
 .t-name { font: 700 26px/1.15 var(--t-sans); }
 
 .t-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 8px; }
@@ -108,28 +899,57 @@
   display: flex;
   align-items: baseline;
   gap: 14px;
-  padding: 14px 0 18px;
-  border-bottom: 1px solid var(--t-linie);
-  margin-bottom: 18px;
+  padding: 10px 0 12px;
 }
 
 .t-bestand-zahl { font: 700 44px/1 var(--t-mono); }
 .t-bestand-txt  { font: 400 18px/1.3 var(--t-sans); color: var(--t-muted); }
 
-/* --- Mengeneingabe mit dicken Plus/Minus ----------------------------- */
+.t-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--t-linie);
+}
 
-.t-mengenzeile { display: flex; gap: 12px; margin-bottom: 18px; align-items: stretch; }
+.t-flags:empty { padding-bottom: 0; }
+
+.t-flag {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--t-paper);
+  font: 500 15px/1.3 var(--t-mono);
+  color: var(--t-muted);
+}
+
+.t-flag--rot   { background: var(--t-raus-weich); color: var(--t-raus-text); }
+.t-flag--amber { background: var(--t-amber-weich); color: var(--t-amber-text); }
+
+/* --- Formular: Menge, Auswahlknöpfe, Buchungsknopf -------------------- */
+
+.t-feldname {
+  margin: 4px 0 8px;
+  font: 600 14px/1 var(--t-sans);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--t-muted);
+}
+
+.t-mengenzeile { display: flex; gap: 10px; margin-bottom: 14px; align-items: stretch; }
 
 .t-step {
   flex: 0 0 72px;
   font: 600 34px/1 var(--t-sans);
   border: 2px solid var(--t-linie);
   border-radius: 12px;
-  background: #fff;
+  background: var(--t-feld);
   color: var(--t-ink);
   min-height: 72px;
 }
 
+.t-step--zehn { font-size: 22px; flex-basis: 84px; }
 .t-step:active { background: var(--t-paper); }
 
 .t-menge {
@@ -140,19 +960,64 @@
   border: 2px solid var(--t-linie);
   border-radius: 12px;
   min-height: 72px;
+  background: var(--t-feld);
+  color: var(--t-ink);
 }
 
-.t-einheit {
-  flex: 0 0 auto;
-  font: 500 20px/1 var(--t-sans);
-  padding: 0 18px;
+/* Auswahlknöpfe statt Klapplisten: jede Option ist eine große Fläche,
+   die gewählte ist dunkel hinterlegt. Das Radio selbst ist unsichtbar,
+   bleibt aber für Tastatur und Vorlesehilfen erreichbar. */
+.t-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.t-chips--spalte { flex-direction: column; }
+
+.t-chip { position: relative; display: block; }
+.t-chips--spalte .t-chip { width: 100%; }
+
+.t-chip input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.t-chip span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 62px;
+  padding: 0 22px;
   border: 2px solid var(--t-linie);
   border-radius: 12px;
-  background: #fff;
-  min-height: 72px;
+  background: var(--t-feld);
+  font: 500 20px/1.2 var(--t-sans);
 }
 
-/* --- die zwei großen Buchungsknöpfe ---------------------------------- */
+.t-chips--spalte .t-chip span { justify-content: space-between; }
+.t-chip strong { font: 600 20px/1.2 var(--t-mono); }
+.t-chip em { font-style: normal; font-size: 17px; color: var(--t-muted); }
+
+.t-chip input:checked + span {
+  background: var(--t-stark-bg);
+  border-color: var(--t-stark-bg);
+  color: var(--t-stark-text);
+}
+
+.t-chip input:checked + span em { color: inherit; opacity: .75; }
+.t-chip input:focus-visible + span { outline: 3px solid var(--t-blau); outline-offset: 2px; }
+.t-chip:active span { background: var(--t-paper); }
+
+.t-datum {
+  display: block;
+  width: 100%;
+  margin: -6px 0 18px;
+  font: 500 22px/1 var(--t-mono);
+  padding: 14px 18px;
+  border: 2px solid var(--t-linie);
+  border-radius: 12px;
+  min-height: 64px;
+  background: var(--t-feld);
+}
 
 .t-knoepfe { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
@@ -165,9 +1030,12 @@
   padding: 24px;
   border: 0;
   border-radius: 14px;
-  color: #fff;
+  color: var(--t-auf);
   min-height: 84px;
+  text-decoration: none;
 }
+
+.t-btn--breit { width: 100%; min-height: 96px; font-size: 28px; margin-top: 4px; }
 
 .t-btn-zeichen { font: 700 30px/1 var(--t-mono); }
 
@@ -176,13 +1044,72 @@
 .t-btn--rein { background: var(--t-rein); }
 .t-btn--rein:active { background: var(--t-rein-d); }
 
-.t-btn:disabled { background: #b8bcb6; }
+.t-btn:disabled,
+.t-btn[aria-disabled="true"] { background: var(--t-aus); pointer-events: none; }
 
-/* Kompaktvariante für Kisteninhalt und Trefferlisten */
-.t-artikel--kompakt { padding: 16px 18px; }
-.t-artikel--kompakt .t-name { font-size: 21px; }
-.t-artikel--kompakt .t-bestand { padding: 10px 0 12px; margin-bottom: 12px; }
-.t-artikel--kompakt .t-bestand-zahl { font-size: 32px; }
+/* --- Listen: antippbare Zeilen ---------------------------------------- */
+
+.t-abschnitt {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 26px 0 12px;
+  font: 700 22px/1.2 var(--t-sans);
+}
+
+.t-abschnitt span { font: 600 16px/1 var(--t-mono); color: var(--t-muted); }
+
+.t-zeile {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 80px;
+  padding: 14px 20px;
+  margin-bottom: 10px;
+  background: var(--t-feld);
+  border: 1px solid var(--t-linie);
+  border-left: 6px solid var(--t-linie);
+  border-radius: 14px;
+  color: var(--t-ink);
+  text-decoration: none;
+}
+
+.t-zeile:active { background: var(--t-paper); }
+.t-zeile--rot   { border-left-color: var(--t-raus); }
+.t-zeile--amber { border-left-color: var(--t-amber); }
+
+.t-zeile-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.t-zeile-name { font: 600 21px/1.2 var(--t-sans); }
+.t-zeile-info { font: 400 16px/1.3 var(--t-mono); color: var(--t-muted); }
+
+.t-zeile-zahl {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font: 700 28px/1 var(--t-mono);
+}
+
+.t-zeile-zahl small { margin-top: 4px; font: 400 14px/1 var(--t-sans); color: var(--t-muted); }
+
+/* Kategorie-Filter in der Übersicht: Links im Look der Auswahlknöpfe. */
+.t-chips--filter { margin-bottom: 10px; }
+
+.t-chip-link {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 20px;
+  border: 2px solid var(--t-linie);
+  border-radius: 12px;
+  background: var(--t-feld);
+  color: var(--t-ink);
+  font: 500 18px/1 var(--t-sans);
+  text-decoration: none;
+}
+
+.t-chip-link.is-aktiv { background: var(--t-blau); border-color: var(--t-blau); color: var(--t-auf); }
+.t-chip-link:active { background: var(--t-paper); }
 
 /* --- Kistenkopf ------------------------------------------------------- */
 
@@ -193,14 +1120,14 @@
   gap: 10px 18px;
   padding: 18px 22px;
   margin-bottom: 16px;
-  background: var(--t-ink);
-  color: #fff;
+  background: var(--t-kopf);
+  color: var(--t-auf-kopf);
   border-radius: 16px;
 }
 
 .t-kiste-nr   { font: 700 26px/1 var(--t-mono); letter-spacing: .06em; }
-.t-kiste-ort  { font: 400 18px/1 var(--t-mono); color: rgba(255,255,255,.75); }
-.t-kiste-zahl { margin-left: auto; font-size: 16px; color: rgba(255,255,255,.7); }
+.t-kiste-ort  { font: 400 18px/1 var(--t-mono); color: var(--t-auf-leise); }
+.t-kiste-zahl { margin-left: auto; font-size: 16px; color: var(--t-auf-leise); }
 
 /* --- Quittung, Fehler, Leerzustände ---------------------------------- */
 
@@ -216,15 +1143,15 @@
   transition: opacity .6s ease;
 }
 
-.t-quittung--rein { background: #dff0e4; border: 2px solid var(--t-rein); }
-.t-quittung--raus { background: #fbe4e2; border: 2px solid var(--t-raus); }
+.t-quittung--rein { background: var(--t-rein-weich); border: 2px solid var(--t-rein); }
+.t-quittung--raus { background: var(--t-raus-weich); border: 2px solid var(--t-raus); }
 
 .t-quittung-zeichen {
   font: 700 40px/1 var(--t-mono);
   width: 64px; height: 64px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 50%;
-  color: #fff;
+  color: var(--t-auf);
 }
 .t-quittung--rein .t-quittung-zeichen { background: var(--t-rein); }
 .t-quittung--raus .t-quittung-zeichen { background: var(--t-raus); }
@@ -235,17 +1162,17 @@
 .t-fehler {
   padding: 18px 22px;
   margin-bottom: 18px;
-  background: #fbe4e2;
+  background: var(--t-raus-weich);
   border: 2px solid var(--t-raus);
   border-radius: 14px;
   font: 500 19px/1.4 var(--t-sans);
-  color: var(--t-raus-d);
+  color: var(--t-raus-text);
   text-align: center;
 }
 
 .t-start, .t-nichts {
   text-align: center;
-  padding: 50px 24px;
+  padding: 44px 24px;
   color: var(--t-muted);
 }
 
@@ -262,40 +1189,79 @@
 .t-nichts-sub { color: var(--t-muted); }
 
 .t-hinweis { font-size: 18px; color: var(--t-muted); margin: 0 0 14px; }
+.t-hinweis--mitte { text-align: center; }
 .t-leer { text-align: center; padding: 30px; color: var(--t-muted); font-size: 20px; }
 
-/* Auf einem kleinen Tablet quer die Knöpfe nicht zu breit werden lassen. */
-@media (max-width: 520px) {
+/* --- Schmale Geräte (Handy, kleines Tablet hochkant) ------------------ */
+
+@media (max-width: 560px) {
+  .t-nav { grid-template-columns: 48px repeat(4, minmax(0, 1fr)); gap: 5px; padding: 6px 6px 8px; }
+  .t-nav-link { font-size: 13px; min-height: 60px; padding: 0 2px; overflow-wrap: anywhere; }
+  .t-zaehler { top: 3px; right: 3px; min-width: 20px; padding: 2px 5px; font-size: 12px; }
+  .t-kacheln { gap: 12px; }
+  .t-kachel { min-height: 150px; padding: 18px; }
+  .t-kachel-titel { font-size: 24px; }
+  .t-kachel-sub { font-size: 15px; }
   .t-name { font-size: 22px; }
   .t-btn { font-size: 20px; padding: 20px; }
-  .t-einheit { font-size: 16px; padding: 0 12px; }
+  .t-btn--breit { font-size: 24px; }
+  .t-step { flex-basis: 60px; }
+  .t-step--zehn { flex-basis: 66px; }
 }
 
-/* --- Eingabebereich: Scan oben, Textsuche darunter ------------------- */
+/* Eingaben übernehmen die Textfarbe des Designs statt der Systemfarbe. */
+.t-body input,
+.t-body select { color: var(--t-ink); }
 
-.t-eingabe { margin-bottom: 22px; }
 
-.t-suche { display: flex; gap: 12px; margin-top: 12px; }
+/* --- Hell/Dunkel-Schalter in der Kopfleiste --------------------------
+   Wie in der Vollansicht, nur fingergerecht groß. Rot-Grün-sicher und
+   die Leseschriften stehen unter Vollansicht → Verwaltung → Darstellung.
+   --------------------------------------------------------------------- */
 
-.t-suche input {
-  flex: 1 1 auto;
-  font: 400 22px/1 var(--t-sans);
-  padding: 16px 20px;
-  border: 2px solid var(--t-linie);
-  border-radius: 12px;
-  background: #fff;
-  min-height: 60px;
+.t-topbar { flex-wrap: wrap; gap: 10px; }
+
+.t-hell-dunkel {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 8px 0 14px;
+  border: 1px solid var(--t-kopf-linie);
+  border-radius: 999px;
+  color: var(--t-auf-leise);
+  font: 500 15px/1 var(--t-sans);
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-.t-suche input:focus { outline: none; border-color: var(--t-blau); }
+.t-hell-dunkel:active { background: var(--t-kopf-hover); }
+.t-hell-dunkel-zeichen { font-size: 18px; }
 
-.t-suche-btn {
-  flex: 0 0 auto;
-  font: 500 18px/1 var(--t-sans);
-  padding: 0 24px;
-  border: 2px solid var(--t-linie);
-  border-radius: 12px;
-  background: #fff;
-  color: var(--t-ink);
-  min-height: 60px;
+.t-hell-dunkel-spur {
+  position: relative;
+  width: 46px;
+  height: 28px;
+  border-radius: 14px;
+  background: var(--t-kopf-hover-stark);
+}
+
+.t-hell-dunkel-spur::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--t-schalter-knopf);
+  box-shadow: 0 1px 2px rgba(0,0,0,.3);
+  transition: transform .15s;
+}
+
+.t-hell-dunkel[aria-checked="true"] .t-hell-dunkel-spur { background: var(--t-blau); }
+.t-hell-dunkel[aria-checked="true"] .t-hell-dunkel-spur::after { transform: translateX(18px); }
+
+@media (max-width: 560px) {
+  .t-wer, .t-hell-dunkel-text { display: none; }
 }

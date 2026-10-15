@@ -51,9 +51,66 @@ Links steht die Seitenleiste mit allen Bereichen (am Handy über den Knopf
 - **Verwaltung** – Stammdaten und Einstellungen (je nach Stufe); ein Klick
   auf die Überschrift klappt den Abschnitt auf und zu
 
-Oben rechts steht immer ein roter **Entnahme**-Knopf. Er ist im Einsatz
-gedacht, wenn es schnell gehen muss – er führt mit einem Klick zum
-Ausbuchen, egal wo man gerade ist. Tastenkürzel: Alt und E zusammen.
+Nach der Anmeldung öffnet sich das **Terminal** (siehe unten). Die
+Ansicht mit dieser Seitenleiste erreicht man dort über **Vollansicht**.
+Oben rechts steht immer der blaue Knopf **Terminal** – er führt mit einem
+Klick zurück, egal wo man gerade ist.
+
+### Farben und Schrift anpassen
+
+Oben rechts steht der Schalter **☾ Dunkel** – in der Vollansicht, im
+Terminal und schon auf der Anmeldeseite. Ein Klick schaltet zwischen hellem
+und dunklem Design um.
+
+Weitere Möglichkeiten stehen in der Seitenleiste unter **Verwaltung →
+Darstellung**. Dort lassen sich zwei Dinge wählen, auch zusammen – jede
+Option zeigt vorab, wie sie aussieht:
+
+- **Farben** – in Gruppen, die sich aufklappen lassen. Offen ist die
+  Gruppe mit dem Design, das gerade gilt; ganz oben steht, was eingestellt
+  ist, und ein Knopf führt zurück zum Standard.
+  - *Standard:* *Hell* oder *Dunkel*.
+  - *Barrierefrei:* *Hoher Kontrast* – Schwarz auf Weiß mit kräftigen
+    Rahmen, gut bei Sehschwäche und in der Sonne. *Rot-Grün-sicher* – bei
+    Rot-Grün-Sehschwäche erscheinen Warnungen in Orange und alles, was in
+    Ordnung ist, in Blau.
+  - *Besondere Lagen:* *Nachtsicht* – nur rotes Licht; wer nachts im
+    Einsatz aufs Tablet schaut, sieht danach im Dunkeln weiter. *E-Ink* –
+    nur Schwarz, Weiß und Grau, ohne Bewegung, für E-Paper-Displays.
+  - *Hilfsorganisationen:* *Rotes Plus* (viel Weiß, rote Überschriften),
+    *Rettungsdienst* (Weiß mit Schachbrettband in Rot und Gelb),
+    *Feuerwehr* (Feuerrot mit Warnband, Nachtblau), *THW* (Blau mit
+    blau-weißem Warnband, Orange) und *Wasserwacht* (Wasserblau mit
+    Wellenkante).
+  - *Stimmungen:* *Wald* (ruhiges Grün), *Lagerbuch* (liniertes Papier),
+    *Blaupause* (Bauplan mit Raster), *Phosphor* (alter Grün-Monitor) und
+    *Warnweste* (Leuchtgelb mit Reflexstreifen).
+- **Schrift:** *Standard*, *OpenDyslexic* oder *Lexend* – zwei Schriften,
+  die Menschen mit Lese-Rechtschreib-Schwäche das Lesen erleichtern.
+
+Die Wahl gilt für dieses Gerät und bleibt gespeichert. Am Terminal-Tablet
+gilt sie für alle, die dort buchen.
+
+### Am Tablet im Lager
+
+Der blaue Knopf **Terminal** öffnet die Ansicht fürs Tablet an der Wand. Sie
+zeigt vier große Kacheln:
+
+- **Entnahme** – Artikel scannen oder Namen eingeben, Menge mit Plus und
+  Minus, Grund antippen, dann der große rote Knopf
+- **Einlagern** – genauso für Nachschub und Rücklauf; bei Lebensmitteln mit
+  MHD die Charge antippen oder das neue MHD eintragen
+- **Übersicht** – was ist da, nach Kategorie; ein Tipp auf einen Artikel
+  zeigt Bestand und Lagerort
+- **Bedarf** – was abgelaufen ist, was fehlt, was bald abläuft; ein Tipp auf
+  einen abgelaufenen Artikel öffnet gleich die Entnahme mit Grund
+  *Abgelaufen*
+
+Oben steht in jedem Bereich dieselbe Leiste, das Haus-Zeichen führt zurück
+zum Start. Nach jeder Buchung erscheint eine große Bestätigung, und der
+nächste Artikel kann sofort gescannt werden. Wer das Tablet zwei Minuten
+nicht anfasst, landet wieder auf der Startseite. Leihen bitte weiter in der
+normalen Ansicht buchen – dort wird festgehalten, wer das Material hat.
 
 ---
 
@@ -81,8 +138,9 @@ Es gibt zwei Wege – beide landen am selben Ziel.
 
 ### Über die Liste
 
-Bei einem Artikel auf **Entnehmen** klicken, oder den roten Knopf oben
-nutzen und den Artikel suchen. Dann:
+In der Vollansicht bei einem Artikel auf **Entnehmen** klicken, oder unter
+*Bewegungen* auf **Entnahme buchen** und den Artikel suchen. Am schnellsten
+geht es im Terminal über die Kachel **Entnahme**. In der Vollansicht dann:
 
 1. **Menge** eingeben.
 2. Bei Ware in Kisten die **Einheit** wählen – ganze Kisten oder einzelne
@@ -136,6 +194,30 @@ Gründe: Beschaffung, Spende, Rücklauf, Korrektur. **Korrektur** ist für den
 Fall gedacht, dass im Regal mehr liegt als im System steht. Wenn das oft
 vorkommt, ist meist eine Inventur der bessere Weg.
 
+### Lebensmittel mit verschiedenen MHD
+
+Trinkwasser aus zwei Lieferungen hat oft zwei verschiedene
+Mindesthaltbarkeitsdaten. Damit beide getrennt bleiben, beim Artikel unter
+**Bearbeiten → MHD-Chargen** das Häkchen *Mehrere MHDs führen* setzen. Beim
+ersten Mal fragt das Formular nach dem MHD für den Bestand, der schon da ist.
+
+Danach gilt:
+
+- **Einbuchen** fragt nach dem MHD der Ware. Gleiches MHD wird zusammengezählt,
+  ein neues MHD wird eine eigene Charge.
+- **Entnehmen** zeigt die Chargen zur Auswahl, die älteste ist schon
+  ausgewählt. Wer bewusst eine andere nimmt, wählt sie um.
+- **Rückgaben** landen automatisch wieder in der Charge, aus der sie kamen.
+- Als **Datum** des Artikels steht immer das früheste MHD. *Bedarf* und
+  *Fälligkeiten* warnen deshalb rechtzeitig, und unter dem Artikel stehen alle
+  Chargen mit ihrer Menge.
+- Ist eine Charge abgelaufen: entnehmen mit Grund **Abgelaufen** und genau
+  diese Charge wählen.
+
+Bestand und Datum lassen sich bei solchen Artikeln nicht mehr direkt im
+Formular ändern, nur noch über Einbuchen, Entnehmen und Inventur. Zählt die
+Inventur weniger als erwartet, wird das bei den ältesten Chargen abgezogen.
+
 ---
 
 ## 6. Rückgaben buchen
@@ -176,6 +258,8 @@ ist optional:
 - **Sollbestand** – Mindestmenge; fällt der Bestand darunter, erscheint der
   Artikel unter *Bedarf*. Leer lassen, wenn nicht überwacht werden soll.
 - **Datum** – Ablauf- oder Prüfdatum.
+- **MHD-Chargen** – für Ware, die mit verschiedenen MHD im Regal liegt,
+  siehe „Lebensmittel mit verschiedenen MHD“ in Abschnitt 5.
 - **Zusatzangaben** – kategorieabhängige Felder wie Größe oder Leistung.
 
 Wer viele Artikel hintereinander erfasst, nutzt **Speichern & weiter**: Das

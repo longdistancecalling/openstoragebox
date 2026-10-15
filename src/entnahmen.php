@@ -252,6 +252,9 @@ require __DIR__ . '/inc/header.php';
         <?php elseif ($z['ve_inhalt']): ?>
           <span class="notiz"><?= h($z['ve_einheit'] ?: 'Stück') ?></span>
         <?php endif; ?>
+        <?php if ($z['mhd']): ?>
+          <span class="notiz">MHD <?= h(datum_de($z['mhd'])) ?></span>
+        <?php endif; ?>
       </td>
       <td data-label="Person / Bezug">
         <?= h($z['person'] ?? '') ?>
