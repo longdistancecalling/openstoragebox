@@ -64,7 +64,7 @@ $gruppen = [
     'standard'       => ['Standard', 'Das Gewohnte, hell oder dunkel.', ['hell', 'dunkel']],
     'barrierefrei'   => ['Barrierefrei', 'Für Sehschwäche, pralles Sonnenlicht und Rot-Grün-Schwäche.', ['kontrast', 'rotgruen']],
     'lagen'          => ['Besondere Lagen', 'Für Nachteinsätze und E-Paper-Displays.', ['nachtsicht', 'eink']],
-    'organisationen' => ['Hilfsorganisationen', 'Farben und Markierungen aus dem Einsatzalltag.', ['rotesplus', 'rettungsdienst', 'feuerwehr', 'thw', 'wasserwacht']],
+    'organisationen' => ['Hilfsorganisationen', 'Farben und Markierungen aus dem Einsatzalltag.', ['rotesplus', 'rettungsdienst', 'feuerwehr', 'zahnrad', 'wellenwacht']],
     'stimmungen'     => ['Stimmungen', 'Zum Wohlfühlen – oder einfach zum Spaß.', ['wald', 'lagerbuch', 'blaupause', 'phosphor', 'warnweste']],
 ];
 foreach ($gruppen as &$g) {
@@ -87,8 +87,8 @@ $farbText = [
     'rotesplus'      => 'Viel Weiß, rote Überschriften mit Serifen, Links in Dunkelblau.',
     'rettungsdienst' => 'Weiß wie ein Rettungswagen, Schachbrettband in Rot und Gelb.',
     'feuerwehr'      => 'Feuerrot (RAL 3000), Warnband in Rot und Gelb, Nachtblau.',
-    'thw'            => 'Blau (RAL 5002) mit blau-weißem Warnband, Orange als Akzent.',
-    'wasserwacht'    => 'Wasserblau und Weiß mit Wellenkante.',
+    'zahnrad'        => 'Blau (RAL 5002) mit blau-weißem Warnband, Orange als Akzent.',
+    'wellenwacht'    => 'Wasserblau und Weiß mit Wellenkante.',
     'wald'           => 'Salbeigrün, Tanne und Moos, ein Hauch Sonnenflecken.',
     'lagerbuch'      => 'Liniertes Papier, braune Tinte, Füllerblau, Stempelrot.',
     'blaupause'      => 'Bauplan-Blau mit Millimeterraster und Schablonenschrift.',

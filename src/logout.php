@@ -11,8 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="de"><head><meta charset="utf-8"><title>Abmelden</title>
-<link rel="stylesheet" href="assets/style.css"></head>
+<html lang="de"<?= darstellung_attribute() ?>><head><meta charset="utf-8"><title>Abmelden</title>
+<link rel="stylesheet" href="<?= asset('style.css') ?>"></head>
 <body class="login-body"><main class="login">
   <h1>Abmelden?</h1>
   <form method="post" action="logout.php" class="login-form">

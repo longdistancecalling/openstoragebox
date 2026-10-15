@@ -79,8 +79,8 @@ Option zeigt vorab, wie sie aussieht:
     nur Schwarz, Weiß und Grau, ohne Bewegung, für E-Paper-Displays.
   - *Hilfsorganisationen:* *Rotes Plus* (viel Weiß, rote Überschriften),
     *Rettungsdienst* (Weiß mit Schachbrettband in Rot und Gelb),
-    *Feuerwehr* (Feuerrot mit Warnband, Nachtblau), *THW* (Blau mit
-    blau-weißem Warnband, Orange) und *Wasserwacht* (Wasserblau mit
+    *Feuerwehr* (Feuerrot mit Warnband, Nachtblau), *Blaues Zahnrad* (Blau mit
+    blau-weißem Warnband, Orange) und *Wellenwacht* (Wasserblau mit
     Wellenkante).
   - *Stimmungen:* *Wald* (ruhiges Grün), *Lagerbuch* (liniertes Papier),
     *Blaupause* (Bauplan mit Raster), *Phosphor* (alter Grün-Monitor) und

@@ -60,8 +60,8 @@ $summe = array_sum(array_column($alle, 'menge'));
 <title>Lagerübersicht – <?= h(ORGANISATION) ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css">
-<link rel="stylesheet" href="assets/druck.css">
+<link rel="stylesheet" href="<?= asset('style.css') ?>">
+<link rel="stylesheet" href="<?= asset('druck.css') ?>">
 <style>
   @page { size: A4 portrait; margin: 12mm 10mm 14mm; }
 </style>

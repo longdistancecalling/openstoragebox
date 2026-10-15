@@ -330,11 +330,11 @@ Option. Farben und Schrift sind unabhängig voneinander wählbar:
 | **Phosphor** | wie ein alter Grün-Monitor: leuchtende grüne Schrift auf Schwarz, feine Bildschirmzeilen, mit Standardschrift alles in Festbreitenschrift und ein blinkender Cursor hinter der Überschrift; Warnungen bleiben rot und gelb |
 | **Rotes Plus** | nach dem [DRK-Styleguide](https://styleguide.drk.de/deutsches-rotes-kreuz/basiselemente/farben): viel Weiß, Fließtext in DRK-Dunkelgrau, Überschriften in DRK-Rot und Merriweather, Fließtext in Helvetica Neue (Ersatz Arial), Links und Auswahl in DRK-Dunkelblau, Formularflächen in Hellblau, Hover in Dunkelrot, weiße Kopfleiste mit rotem Strich. Statusfarben nur aus der DRK-Palette; der leise Text ist dunkler als das optionale DRK-Grau, das auf Weiß keine 4,5:1 erreicht. Das Rotkreuz-Zeichen ist ein Schutzzeichen und kommt bewusst nicht vor |
 | **Feuerwehr** | Kopfleiste in Feuerrot (RAL 3000, Grundfarbe der Fahrzeuge nach DIN 14502-3), darunter ein schräges Warnband in Rot und Leuchtgelb wie die Heckmarkierung; Links und Knöpfe in Nachtblau wie die Uniform, Überschriften in Versalien wie die Fahrzeugbeschriftung. Im Terminal ist die Bereichsleiste nachtblau, damit die aktive rote Entnahme sichtbar bleibt |
-| **THW** | Kopfleiste in THW-Blau (RAL 5002, RGB 0/62/144 – Werte aus den Gestaltungsrichtlinien der THW-Jugend, öffentliche Vorgaben der Bundesanstalt waren nicht auffindbar) mit blau-weißem Warnband, Orange als Akzent für Terminal-Knopf und „bald“. Kein Logo, kein Zahnrad |
+| **Blaues Zahnrad** | Kopfleiste in Ultramarinblau (RAL 5002, RGB 0/62/144) mit blau-weißem Warnband, Orange als Akzent für Terminal-Knopf und „bald“. Kein Logo |
 | **Hoher Kontrast** | für Sehschwäche und pralles Sonnenlicht: Schwarz auf Weiß, schwarze Kopfleiste, kräftige Rahmen und Fokusringe, Links immer unterstrichen, Hervorhebungen in Gelb, Marken mit Rahmen |
 | **Rettungsdienst** | weiß wie ein Rettungswagen, unter der Kopfleiste ein Schachbrettband in Rot und Leuchtgelb wie die Warnmarkierung am Fahrzeug; Rot für Terminal-Knopf und Überschriften. Im Terminal ist die Bereichsleiste dunkel, der aktive Bereich gelb unterstrichen |
 | **Warnweste** | Kopfleiste in Leuchtgelb mit Reflexstreifen (grau mit orangen Kanten), Akzente in Schwarz und Orange – auffällig, eher fürs Auge als für den Dauerbetrieb. Im Terminal dunkle Schrift auf den hellen Kacheln |
-| **Wasserwacht** | Wasserblau und Weiß, unter der Kopfleiste eine Wellenkante; Links und Knöpfe in tieferem Blau. Kein Logo |
+| **Wellenwacht** | Wasserblau und Weiß, unter der Kopfleiste eine Wellenkante; Links und Knöpfe in tieferem Blau. Kein Logo |
 | **E-Ink** | für E-Paper-Displays: nur Schwarz, Weiß und Grau, keine Verläufe, Schatten, Übergänge oder Animationen (die auf E-Paper flackern). Status ohne Farbe: „abgelaufen“ invertiert, „bald“ umrandet |
 
 Dunkel, Nachtsicht, Blaupause und Phosphor gelten als dunkle Designs: Der
@@ -343,8 +343,8 @@ Hell/Dunkel-Schalter steht dort auf „an“ und führt zu Hell.
 Damit sechzehn Designs übersichtlich bleiben, ordnet die Seite sie in
 aufklappbare Gruppen: *Standard* (Hell, Dunkel), *Barrierefrei* (Hoher
 Kontrast, Rot-Grün-sicher), *Besondere Lagen* (Nachtsicht, E-Ink),
-*Hilfsorganisationen* (Rotes Plus, Rettungsdienst, Feuerwehr, THW,
-Wasserwacht) und *Stimmungen* (Wald, Lagerbuch, Blaupause, Phosphor,
+*Hilfsorganisationen* (Rotes Plus, Rettungsdienst, Feuerwehr, Blaues Zahnrad,
+Wellenwacht) und *Stimmungen* (Wald, Lagerbuch, Blaupause, Phosphor,
 Warnweste). Offen ist nur die Gruppe mit dem aktiven Design, zugeklappte
 Gruppen zeigen je Design einen Farbpunkt; „Alle aufklappen“ öffnet alle.
 Ganz oben steht, was gerade eingestellt ist, mit „Auf Standard

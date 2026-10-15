@@ -7,6 +7,18 @@ function h(?string $s): string
     return htmlspecialchars($s ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+/**
+ * Adresse einer Datei unter assets/ mit Änderungszeit als Version. Ändert
+ * sich die Datei, ändert sich die Adresse, und der Browser lädt sie neu –
+ * sonst zeigt er nach einem Update noch die alte Fassung aus dem Cache,
+ * und z. B. neue Designs fehlen, bis jemand Strg+F5 drückt.
+ */
+function asset(string $datei): string
+{
+    $zeit = @filemtime(__DIR__ . '/../assets/' . $datei);
+    return 'assets/' . $datei . '?v=' . ($zeit ?: 0);
+}
+
 /** CSRF-Token der Session, wird beim ersten Aufruf erzeugt. */
 function csrf_token(): string
 {

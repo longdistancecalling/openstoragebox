@@ -59,7 +59,7 @@ $ich = benutzer();
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <?= darstellung_kopf() ?>
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="<?= asset('style.css') ?>">
 <!-- Ohne Skript bleibt die Seitenleiste am Handy einfach offen;
      erst mit Skript wird sie zum Klappmenü. -->
 <script>document.documentElement.classList.add('js');</script>

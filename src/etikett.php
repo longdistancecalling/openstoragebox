@@ -52,8 +52,8 @@ foreach ($stmt->fetchAll() as $z) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kistenetiketten</title>
-<link rel="stylesheet" href="assets/style.css">
-<link rel="stylesheet" href="assets/druck.css">
+<link rel="stylesheet" href="<?= asset('style.css') ?>">
+<link rel="stylesheet" href="<?= asset('druck.css') ?>">
 <style>
   /* @page gilt immer fürs ganze Dokument und lässt sich nicht über eine
      CSS-Klasse umschalten. Deshalb steht die A5-Regel hier auf der Seite,

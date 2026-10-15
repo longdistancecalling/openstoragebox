@@ -123,8 +123,8 @@ $artikelAlle = $pdo->query('SELECT artikel_id, inventar_nr, artikelname, lageror
 <title>Etiketten – <?= h(ORGANISATION) ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css">
-<link rel="stylesheet" href="assets/druck.css">
+<link rel="stylesheet" href="<?= asset('style.css') ?>">
+<link rel="stylesheet" href="<?= asset('druck.css') ?>">
 <style>
   /* Randlos: der Bogen bringt seine Ränder selbst mit. */
   @page { size: A4 portrait; margin: 0; }

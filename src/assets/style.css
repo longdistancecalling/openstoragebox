@@ -359,12 +359,11 @@
     --auf-dunkel-leise: rgba(255, 255, 255, .92);   /* auf Feuerrot sonst zu blass */
   }
 
-  /* THW: Kopfleiste in THW-Blau (RAL 5002, RGB 0/62/144 – Werte aus den
-     Gestaltungsrichtlinien der THW-Jugend) mit blau-weißem Warnband,
-     Orange als Akzent. Kein Logo, kein Zahnrad. */
-  [data-farbe="thw"] {
-    --thw-blau:   #003e90;
-    --thw-orange: #b14f00;
+  /* Blaues Zahnrad: Kopfleiste in Ultramarinblau (RAL 5002, RGB 0/62/144)
+     mit blau-weißem Warnband, Orange als Akzent. Kein Logo. */
+  [data-farbe="zahnrad"] {
+    --zahnrad-blau:   #003e90;
+    --zahnrad-orange: #b14f00;
     --ink:        #14213a;
     --ink-2:      #2a3a57;
     --paper:      #eef2f8;
@@ -499,10 +498,10 @@
     --schalter-knopf:   #fff;
   }
 
-  /* Wasserwacht: Wasserblau und Weiß, die Kopfleiste mit einer
+  /* Wellenwacht: Wasserblau und Weiß, die Kopfleiste mit einer
      Wellenkante, Rot nur für Warnungen. */
-  [data-farbe="wasserwacht"] {
-    --ww-kopf:    #005a85;
+  [data-farbe="wellenwacht"] {
+    --welle-kopf:    #005a85;
     --ink:        #0d2a3a;
     --ink-2:      #1d3e50;
     --paper:      #eaf6fb;
@@ -576,19 +575,19 @@
   }
   [data-farbe="feuerwehr"] .kopf h1 { color: var(--fw-rot); }
 
-  /* THW: blau-weißes Warnband, Überschriften in THW-Blau, Terminal-Knopf
+  /* Blaues Zahnrad: blau-weißes Warnband, Überschriften in Ultramarin, Terminal-Knopf
      in Orange – in Blau ginge er in der blauen Kopfleiste unter. */
-  [data-farbe="thw"] .topbar,
-  .vorschau[data-farbe="thw"] .vorschau-kopf {
+  [data-farbe="zahnrad"] .topbar,
+  .vorschau[data-farbe="zahnrad"] .vorschau-kopf {
     border-bottom: 8px solid #fff;
-    border-image: repeating-linear-gradient(-45deg, #fff 0 12px, var(--thw-blau) 12px 24px) 8;
+    border-image: repeating-linear-gradient(-45deg, #fff 0 12px, var(--zahnrad-blau) 12px 24px) 8;
   }
-  [data-farbe="thw"] .kopf h1,
-  [data-farbe="thw"] .abschnitt { color: var(--thw-blau); }
-  [data-farbe="thw"] .terminal-knopf,
-  .vorschau[data-farbe="thw"] .vorschau-knopf { background: var(--thw-orange); color: #fff; }
-  [data-farbe="thw"] .terminal-knopf:hover,
-  [data-farbe="thw"] .terminal-knopf:focus-visible { background: #8f3f00; }
+  [data-farbe="zahnrad"] .kopf h1,
+  [data-farbe="zahnrad"] .abschnitt { color: var(--zahnrad-blau); }
+  [data-farbe="zahnrad"] .terminal-knopf,
+  .vorschau[data-farbe="zahnrad"] .vorschau-knopf { background: var(--zahnrad-orange); color: #fff; }
+  [data-farbe="zahnrad"] .terminal-knopf:hover,
+  [data-farbe="zahnrad"] .terminal-knopf:focus-visible { background: #8f3f00; }
 
   /* Phosphor: leichtes Nachleuchten, feine Bildschirmzeilen und – mit
      der Standardschrift – alles in Festbreitenschrift samt blinkendem
@@ -696,21 +695,21 @@
   [data-farbe="warnweste"] .scanfeld label { color: #e3ff00; }
   [data-farbe="warnweste"] .ortknopf.is-active { background: #1a1a1a; border-color: #1a1a1a; color: #e3ff00; }
 
-  /* Wasserwacht: Wellenkante unter der Kopfleiste. */
-  [data-farbe="wasserwacht"] .topbar,
-  .vorschau[data-farbe="wasserwacht"] .vorschau-kopf { position: relative; margin-bottom: 10px; }
-  [data-farbe="wasserwacht"] .topbar::after,
-  .vorschau[data-farbe="wasserwacht"] .vorschau-kopf::after {
+  /* Wellenwacht: Wellenkante unter der Kopfleiste. */
+  [data-farbe="wellenwacht"] .topbar,
+  .vorschau[data-farbe="wellenwacht"] .vorschau-kopf { position: relative; margin-bottom: 10px; }
+  [data-farbe="wellenwacht"] .topbar::after,
+  .vorschau[data-farbe="wellenwacht"] .vorschau-kopf::after {
     content: '';
     position: absolute;
     left: 0;
     right: 0;
     bottom: -10px;
     height: 10px;
-    background: radial-gradient(circle at 10px 0, var(--ww-kopf) 9px, transparent 10px) 0 0 / 20px 10px repeat-x;
+    background: radial-gradient(circle at 10px 0, var(--welle-kopf) 9px, transparent 10px) 0 0 / 20px 10px repeat-x;
   }
-  [data-farbe="wasserwacht"] .kopf h1,
-  [data-farbe="wasserwacht"] .abschnitt { color: var(--ww-kopf); }
+  [data-farbe="wellenwacht"] .kopf h1,
+  [data-farbe="wellenwacht"] .abschnitt { color: var(--welle-kopf); }
 
   /* E-Ink: keine Bewegung, keine Schatten; Status ohne Farbe
      unterscheidbar – Warnungen invertiert, "bald" umrandet. */
@@ -942,24 +941,27 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
   font-weight: 500;
 }
 
-/* Aufklappbarer Abschnitt "Verwaltung". Der Titel im Stil der
-   Rollenmarke – ein Etikett, kein Link –, aber so hoch wie die Links,
-   damit er sich gut treffen lässt. Der Standardmarker wird durch ein
-   eigenes Dreieck ersetzt, weil er je nach Browser anders aussieht. */
-.seitenleiste-gruppe { margin-top: 12px; }
+/* Aufklappbarer Abschnitt "Verwaltung". Der Titel so groß wie die
+   Links, halbfett und durch eine Linie abgesetzt – gut lesbar und gut
+   zu treffen. Der Standardmarker wird durch ein eigenes Dreieck ersetzt,
+   weil er je nach Browser anders aussieht. Die Links darunter sind
+   eingerückt, damit sichtbar bleibt, was dazugehört. */
+.seitenleiste-gruppe {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
 
-.seitenleiste-gruppe a { display: block; margin-top: 2px; }
+.seitenleiste-gruppe a { display: block; margin-top: 2px; padding-left: 20px; }
 
 .seitenleiste-titel {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: var(--r);
-  font: 500 10px/1 var(--mono);
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--muted);
+  font: 600 14px/1.4 var(--sans);
+  color: var(--ink);
   cursor: pointer;
   list-style: none;
 }
@@ -1439,22 +1441,30 @@ tr.stufe-bald td:first-child    { box-shadow: inset 3px 0 0 var(--amber); }
 
 .kacheln {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
   gap: 14px;
 }
 
+/* min-width: 0 und Umbruch überall: nichts darf aus der Kachel ragen –
+   weder lange Wörter (Tabellennamen) noch Knöpfe noch das Dateifeld, das
+   im Browser eine feste Mindestbreite hat. */
 .kachel {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   padding: 18px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--r);
+  overflow-wrap: anywhere;
 }
 
 .kachel h2 { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
 .kachel p { margin: 0 0 14px; font-size: 14px; color: var(--muted); line-height: 1.45; }
 .kachel-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+.kachel-knoepfe .btn { justify-content: center; white-space: normal; text-align: center; line-height: 1.25; }
+.kachel input { min-width: 0; max-width: 100%; }
+.kachel input[type="file"] { width: 100%; }
 
 /* --- v2: Kennzahlen der Inventur ------------------------------------ */
 
@@ -2288,7 +2298,7 @@ a.orte-eintrag:hover { border-color: var(--blau); background: var(--blau-weich);
 .farbpunkt[data-farbe="rotesplus"]      { --punkt-1: var(--plus-rot); }
 .farbpunkt[data-farbe="rettungsdienst"] { --punkt-1: var(--rd-rot); --punkt-2: var(--rd-gelb); }
 .farbpunkt[data-farbe="feuerwehr"]      { --punkt-2: var(--fw-gelb); }
-.farbpunkt[data-farbe="thw"]            { --punkt-2: var(--thw-orange); }
+.farbpunkt[data-farbe="zahnrad"]            { --punkt-2: var(--zahnrad-orange); }
 .farbpunkt[data-farbe="warnweste"]      { --punkt-2: var(--kopf-2); }
 
 .darstellung-gruppe-aktiv { margin-left: auto; color: var(--blau); font-size: 13px; font-weight: 600; }

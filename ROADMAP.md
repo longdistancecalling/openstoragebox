@@ -41,7 +41,7 @@ ist die Startseite, der rote Entnahme-Knopf in der Kopfleiste entfällt;
 nach der Anmeldung geht es wieder zur ursprünglich aufgerufenen Seite;
 Hell/Dunkel-Schalter in der Kopfleiste und Seite Verwaltung →
 Darstellung mit den Designs Dunkel, Hoher Kontrast, Rot-Grün-sicher,
-Nachtsicht, E-Ink, Rotes Plus, Rettungsdienst, Feuerwehr, THW, Wasserwacht,
+Nachtsicht, E-Ink, Rotes Plus, Rettungsdienst, Feuerwehr, Blaues Zahnrad, Wellenwacht,
 Wald, Lagerbuch, Blaupause, Phosphor und Warnweste (in Gruppen, je mit
 Live-Vorschau) sowie den Leseschriften
 OpenDyslexic und Lexend, pro Gerät gespeichert.

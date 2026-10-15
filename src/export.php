@@ -160,8 +160,8 @@ if ($was === 'artikel' && $format === 'druck') {
     <head>
       <meta charset="utf-8">
       <title>Artikelliste <?= date('d.m.Y') ?></title>
-      <link rel="stylesheet" href="assets/style.css">
-      <link rel="stylesheet" href="assets/druck.css">
+      <link rel="stylesheet" href="<?= asset('style.css') ?>">
+      <link rel="stylesheet" href="<?= asset('druck.css') ?>">
     </head>
     <body class="druck druck--liste">
       <div class="druck-kopf">

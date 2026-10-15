@@ -69,8 +69,8 @@ if (!$baum) {
 <title>Regalschilder – <?= h(ORGANISATION) ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css">
-<link rel="stylesheet" href="assets/druck.css">
+<link rel="stylesheet" href="<?= asset('style.css') ?>">
+<link rel="stylesheet" href="<?= asset('druck.css') ?>">
 <style>
   /* Gleiches Blattformat wie das Kistenetikett. */
   @page { size: A5 landscape; margin: 8mm 10mm; }

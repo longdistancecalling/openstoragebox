@@ -160,11 +160,11 @@ const DARSTELLUNG_FARBEN = [
     'phosphor'   => 'Phosphor',
     'rotesplus'  => 'Rotes Plus',
     'feuerwehr'  => 'Feuerwehr',
-    'thw'        => 'THW',
+    'zahnrad'    => 'Blaues Zahnrad',
     'kontrast'   => 'Hoher Kontrast',
     'rettungsdienst' => 'Rettungsdienst',
     'warnweste'  => 'Warnweste',
-    'wasserwacht'=> 'Wasserwacht',
+    'wellenwacht' => 'Wellenwacht',
     'eink'       => 'E-Ink',
 ];
 /** Designs mit dunklem Grund: Schalter steht auf "Dunkel", Browser-Elemente dunkel. */

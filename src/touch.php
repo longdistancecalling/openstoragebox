@@ -432,7 +432,7 @@ function t_eingabe(string $m, string $eingabe, bool $istSuche, string $hinweis):
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <?= darstellung_kopf() ?>
-<link rel="stylesheet" href="assets/touch.css">
+<link rel="stylesheet" href="<?= asset('touch.css') ?>">
 </head>
 <body class="t-body" data-bereich="<?= h($m) ?>">
 

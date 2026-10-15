@@ -48,7 +48,7 @@ Abhängigkeiten.
   Einlagern, Übersicht und Bedarf; der Terminal-Knopf steht auf jeder Seite
 - **Darstellung pro Gerät**: 16 Farbdesigns in Gruppen – Hell, Dunkel;
   Hoher Kontrast, Rot-Grün-sicher; Nachtsicht (Rotlicht), E-Ink; Rotes Plus,
-  Rettungsdienst, Feuerwehr, THW, Wasserwacht; Wald, Lagerbuch, Blaupause,
+  Rettungsdienst, Feuerwehr, Blaues Zahnrad, Wellenwacht; Wald, Lagerbuch, Blaupause,
   Phosphor, Warnweste –, Schrift Standard, OpenDyslexic oder Lexend (für
   LRS), frei kombinierbar
 

@@ -95,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <?= darstellung_kopf() ?>
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="<?= asset('style.css') ?>">
 </head>
 <body class="login-body">
 

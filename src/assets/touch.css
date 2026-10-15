@@ -379,11 +379,11 @@
   letter-spacing: .04em;
 }
 
-/* THW: Kopfleiste THW-Blau mit blau-weißem Warnband, Bereichsleiste
+/* Blaues Zahnrad: Kopfleiste Ultramarinblau mit blau-weißem Warnband, Bereichsleiste
    dunkelblau, damit das aktive blaue Einlagern sichtbar bleibt.
-   Kacheln: Rot (Entnahme), THW-Blau (Einlagern), Mittelblau
+   Kacheln: Rot (Entnahme), Ultramarin (Einlagern), Mittelblau
    (Übersicht), Orange (Bedarf). */
-:root[data-farbe="thw"] {
+:root[data-farbe="zahnrad"] {
   --t-ink:         #14213a;
   --t-paper:       #eef2f8;
   --t-flaeche:     #fff;
@@ -408,13 +408,13 @@
   --t-raus-text:   #a3241b;
   --t-amber-text:  #8a4500;
 }
-:root[data-farbe="thw"] .t-topbar {
+:root[data-farbe="zahnrad"] .t-topbar {
   border-bottom: 10px solid #fff;
   border-image: repeating-linear-gradient(-45deg, #fff 0 14px, #003e90 14px 28px) 10;
 }
-:root[data-farbe="thw"] .t-nav { background: #0b1b33; }
-:root[data-farbe="thw"] .t-name,
-:root[data-farbe="thw"] .t-abschnitt { color: #003e90; }
+:root[data-farbe="zahnrad"] .t-nav { background: #0b1b33; }
+:root[data-farbe="zahnrad"] .t-name,
+:root[data-farbe="zahnrad"] .t-abschnitt { color: #003e90; }
 
 /* Hoher Kontrast: Schwarz auf Weiß, dicke schwarze Rahmen, gewählte
    Optionen schwarz mit gelber Schrift. */
@@ -550,10 +550,10 @@
 :root[data-farbe="warnweste"] .t-nav-link.is-aktiv { box-shadow: inset 0 -5px 0 #fff; }
 :root[data-farbe="warnweste"] .t-kachel { border: 2px solid rgba(0,0,0,.25); }
 
-/* Wasserwacht: Wasserblau mit Wellenkante, Bereichsleiste in tiefem
+/* Wellenwacht: Wasserblau mit Wellenkante, Bereichsleiste in tiefem
    Blau. Kacheln: Rot (Entnahme), Wasserblau (Einlagern), Seegrün
    (Übersicht), Ocker (Bedarf). */
-:root[data-farbe="wasserwacht"] {
+:root[data-farbe="wellenwacht"] {
   --t-ink:         #0d2a3a;
   --t-paper:       #eaf6fb;
   --t-flaeche:     #fff;
@@ -578,8 +578,8 @@
   --t-raus-text:   #b3261e;
   --t-amber-text:  #7a5400;
 }
-:root[data-farbe="wasserwacht"] .t-topbar { position: relative; margin-bottom: 12px; }
-:root[data-farbe="wasserwacht"] .t-topbar::after {
+:root[data-farbe="wellenwacht"] .t-topbar { position: relative; margin-bottom: 12px; }
+:root[data-farbe="wellenwacht"] .t-topbar::after {
   content: '';
   position: absolute;
   left: 0;
@@ -588,7 +588,7 @@
   height: 12px;
   background: radial-gradient(circle at 12px 0, #005a85 11px, transparent 12px) 0 0 / 24px 12px repeat-x;
 }
-:root[data-farbe="wasserwacht"] .t-nav { background: #003a55; }
+:root[data-farbe="wellenwacht"] .t-nav { background: #003a55; }
 
 /* E-Ink: Graustufen, keine Bewegung, keine Schatten. Die Kacheln
    unterscheiden sich in der Helligkeit und durch ihr Zeichen. */
